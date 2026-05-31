@@ -67,10 +67,30 @@ async function verifyVersion(repo, version) {
 }
 
 /**
+ * Rewrite root-absolute links inside an injected Markdown file so they carry the
+ * package context. Source docs author links as if they sit at the site root
+ * (e.g. "/getting-started"), but the hub serves them under /{repo}/ (see the
+ * VitePress `rewrites` in docs/.vitepress/config.ts) — without this, every
+ * in-package link 404s. Covers Markdown links, inline HTML href, and YAML
+ * frontmatter `link:` fields (home-layout hero actions / features). External
+ * (http(s):, //), anchor (#) and relative (./) links are left untouched.
+ */
+function rewriteLinks(markdown, repo) {
+  return markdown
+    .replace(/\]\(\/(?!\/)([^)]*)\)/g, `](/${repo}/$1)`)
+    .replace(/href="\/(?!\/)([^"]*)"/g, `href="/${repo}/$1"`)
+    // Frontmatter link: fields — scoped to the leading --- block so body
+    // prose/code containing "link:" is never touched.
+    .replace(/^---\n[\s\S]*?\n---/, (block) =>
+      block.replace(/(\blink:\s*['"]?)\/(?!\/)/g, `$1/${repo}/`),
+    )
+}
+
+/**
  * Download every file of the docs artifact into docs/injected/{repo}/{version}/.
  * The file set is discovered at runtime via listArtifacts (proxy ?list=true);
  * returned keys may include subdirectories, so each file's parent dir is created
- * before writing.
+ * before writing. Markdown files get their in-package links rewritten first.
  */
 async function downloadDocs(repo, version) {
   const outDir = join(INJECTED_DIR, repo, version)
@@ -87,7 +107,11 @@ async function downloadDocs(repo, version) {
     const res = await proxyGet(artifactUrl(repo, version, file))
     const dest = join(outDir, file)
     await mkdir(dirname(dest), { recursive: true })
-    await writeFile(dest, Buffer.from(await res.arrayBuffer()))
+    if (file.endsWith('.md')) {
+      await writeFile(dest, rewriteLinks(await res.text(), repo), 'utf8')
+    } else {
+      await writeFile(dest, Buffer.from(await res.arrayBuffer()))
+    }
     count++
   }
   return { outDir, count }
