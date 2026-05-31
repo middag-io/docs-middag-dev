@@ -1,0 +1,50 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One production deploy per ref; a newer push cancels an in-flight run.
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # checkout
+  packages: read # GITHUB_TOKEN fallback for reading @middag-io packages
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      # The committed .npmrc maps the @middag-io scope to GitHub Packages and
+      # reads the token from ${NODE_AUTH_TOKEN}. Prefer a PAT with read:packages
+      # (secret NODE_AUTH_TOKEN); fall back to the repo GITHUB_TOKEN, which works
+      # only if those packages grant this repo access.
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      # docs:prebuild pulls library docs from the PUBLIC docs proxy anonymously,
+      # then VitePress builds into docs/.vitepress/dist — no DOCS_PROXY_TOKEN needed.
+      - name: Build
+        run: npm run docs:build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs/.vitepress/dist --project-name=docs-middag-dev --branch=main
