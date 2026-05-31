@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Build-time injected docs — reproduced by `npm run docs:prebuild`, never committed (ADR-016)
+docs/injected/
+
+# VitePress output + cache
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# IDE
+.idea/
