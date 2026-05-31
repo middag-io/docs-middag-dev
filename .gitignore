@@ -257,3 +257,10 @@ skills-lock.json
 *.temp
 *.bak
 *.orig
+
+# -----------------------------------------------------------------------------
+# Documentação injetada (build-time, ADR-016)
+# -----------------------------------------------------------------------------
+# Puxada do docs proxy por `npm run docs:prebuild`; reproduzível a cada build,
+# nunca versionada.
+docs/injected/
