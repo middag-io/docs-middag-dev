@@ -53,16 +53,22 @@ async function proxyGet(url) {
   return res
 }
 
-/** Confirm the package/version is published, using the real client method. */
+/**
+ * Surface the package's published manifest and warn on pin-vs-latest drift. The
+ * proxy manifest lists ONLY the latest version (see middag-react
+ * prepare-docs-payload.mjs), so a pinned older — but still retained — version
+ * legitimately won't appear there. That is a warning, not an error: real
+ * availability is enforced by listArtifacts() in downloadDocs(). fetchManifest()
+ * still throws on an unreachable proxy / unknown package.
+ */
 async function verifyVersion(repo, version) {
   const manifest = await client.fetchManifest(repo)
-  // The live /{repo}/manifest.json payload is { package, latest, versions:{...} }
-  // (see middag-react prepare-docs-payload.mjs). The client's TS Manifest type
-  // ({ sources }) does not match it yet — tolerate both shapes.
-  const versions = manifest?.versions
-  if (versions && !versions[version]) {
-    const known = Object.keys(versions).join(', ') || '(none)'
-    throw new Error(`${repo}@${version} not found in proxy manifest. Published: ${known}`)
+  const latest = manifest?.latest
+  if (latest && latest !== version) {
+    console.warn(
+      `[inject] ${repo}: pinned ${version}, proxy latest is ${latest} — serving ` +
+        `${version} from retained artifacts (manifest lists latest only).`,
+    )
   }
 }
 

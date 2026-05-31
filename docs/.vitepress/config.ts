@@ -10,7 +10,7 @@ import { defineConfig } from 'vitepress'
 
 // Kept in sync with hub.config.json (middag-react version) — the injected docs
 // land at docs/injected/middag-react/{version}/ during `npm run docs:prebuild`.
-const MIDDAG_REACT_VERSION = '0.19.0'
+const MIDDAG_REACT_VERSION = '0.20.0'
 
 export default defineConfig({
   title: 'MIDDAG Docs',
