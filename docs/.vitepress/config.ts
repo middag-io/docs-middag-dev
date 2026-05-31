@@ -20,6 +20,8 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
 
+  sitemap: { hostname: 'https://docs.middag.dev' },
+
   // Serve injected library docs at clean, version-less URLs:
   //   docs/injected/{repo}/{version}/**  ->  /{repo}/**
   // VitePress 1.6.4 resolves the OBJECT form of `rewrites` through path-to-regexp
