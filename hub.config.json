@@ -1,5 +1,8 @@
 {
-  "dependencies": {
-    "middag-react": "0.20.0"
+  "repos": {
+    "middag-react": {
+      "label": "MIDDAG React",
+      "channels": ["latest", "0.30.x", "0.20.x"]
+    }
   }
 }

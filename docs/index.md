@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: middag-react
-      link: /middag-react/
+      link: /middag-react/latest/
 
 features:
   - title: Build-time aggregation

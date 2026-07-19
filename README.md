@@ -26,28 +26,33 @@ flowchart TD
 
 ### How it works
 
-1. **Manifest** — `hub.config.json` is the explicit, reviewable list of which
-   library and version the hub documents.
+1. **Allowlist** — `hub.config.json` is the explicit, reviewable list of which
+   libraries the hub documents and, per library, which **channels** (versions)
+   are published. Nothing appears on the site unless declared here — adding a
+   channel IS the deliberate publish action (an operational workflow step).
 2. **Fetch & inject** (`scripts/fetch-injected-docs.mjs`, run as `docs:prebuild`):
-   - Uses `@middag-io/docs-proxy-client` to `fetchManifest()` (sanity/drift check)
-     and `listArtifacts()` to **discover** the doc set — no filenames are
-     hardcoded. The proxy enumerates files via its `?list=true` endpoint.
+   - Discovers the retained versions per repo via the proxy `?list=true`
+     endpoint and resolves each declared channel selector to a concrete version:
+     `latest` → the manifest's newest, `0.30.x` → highest retained `0.30.*`, or
+     an exact pin. No filenames or versions are hardcoded.
    - Downloads every file (including subdirectories) into
-     `docs/injected/{repo}/{version}/`.
+     `docs/injected/{repo}/{segment}/`, one folder per channel (segment:
+     `latest` stays `latest`; `0.30.x` → `0.30`).
    - **Rewrites in-package links** so they survive the URL remap: root-absolute
      Markdown links `](/x)`, inline `href="/x"`, and home-layout frontmatter
-     `link:` fields become `/{repo}/x`. External, anchor, and relative links are
-     left untouched.
-3. **Build** — VitePress compiles the site. A `rewrites` function maps
-   `injected/{repo}/{version}/**` → `/{repo}/**`, so the physical folder and the
-   version are hidden from public URLs (e.g. `/middag-react/getting-started`).
+     `link:` fields become `/{repo}/{segment}/x`. External, anchor, and relative
+     links are left untouched.
+   - Writes `docs/injected/{repo}/_channels.json` (label + resolved channels)
+     for the config to build the nav, sidebars and version switcher.
+3. **Build** — VitePress compiles the site. `docs/.vitepress/config.ts` reads
+   the injected tree + `_channels.json` and generates, **fully dynamically**, a
+   per-repo version-switcher dropdown and a per-channel sidebar. A `rewrites`
+   function maps `injected/{repo}/{segment}/**` → `/{repo}/{segment}/**`, giving
+   versioned URLs (e.g. `/middag-react/0.30/getting-started`).
 4. **Deploy** — GitHub Actions builds and ships `docs/.vitepress/dist` to
    Cloudflare Pages on every push to `main`.
 
-`docs/injected/` is **gitignored** — it is reproduced on every build and never
-committed. The proxy manifest lists only the *latest* version, so the injector
-treats a pin-vs-latest mismatch as a warning (real availability is enforced by
-`listArtifacts`), not a failure.
+`docs/injected/` is **gitignored** — reproduced on every build, never committed.
 
 ## Project layout
 
@@ -55,11 +60,11 @@ treats a pin-vs-latest mismatch as a warning (real availability is enforced by
 docs-middag-dev/
 ├─ .github/workflows/deploy.yml      # CD → Cloudflare Pages
 ├─ docs/
-│  ├─ .vitepress/config.ts           # VitePress config: rewrites, nav, sidebar, sitemap
+│  ├─ .vitepress/config.ts           # VitePress config: rewrites + DYNAMIC nav/sidebar/switcher
 │  ├─ index.md                       # hub homepage
 │  └─ injected/                      # generated at build time (gitignored)
-├─ scripts/fetch-injected-docs.mjs   # build-time documentation injector
-├─ hub.config.json                   # documentation dependency manifest
+├─ scripts/fetch-injected-docs.mjs   # build-time documentation injector (multi-channel)
+├─ hub.config.json                   # publish allowlist: repos → label + channels
 ├─ .npmrc                            # maps the @middag-io scope to GitHub Packages
 └─ package.json
 ```
@@ -90,23 +95,34 @@ private proxy deployment.
 
 | Script          | What it does                                                       |
 | --------------- | ------------------------------------------------------------------ |
-| `docs:prebuild` | Fetch and inject library docs from the proxy into `docs/injected/` |
-| `docs:dev`      | `docs:prebuild`, then the VitePress dev server                     |
-| `docs:build`    | `docs:prebuild`, then build the static site to `docs/.vitepress/dist` |
-| `docs:preview`  | Serve the built site locally                                       |
+| `docs:prebuild`   | Fetch and inject the declared channels from the proxy into `docs/injected/` |
+| `docs:dev`        | `docs:prebuild`, then the VitePress dev server                        |
+| `docs:dev:nofetch`| Dev server against the already-injected tree (skips the proxy fetch)  |
+| `docs:build`      | `docs:prebuild`, then build the static site to `docs/.vitepress/dist` |
+| `docs:preview`    | Serve the built site locally                                          |
+| `docs:available`  | Read-only discovery: list repos/versions in the proxy and diff against the allowlist |
 
-## Adding a library to the hub
+## Publishing a library / version to the hub
 
-1. Add it to `hub.config.json`:
-   ```json
-   { "dependencies": { "middag-react": "0.20.0", "another-lib": "1.2.0" } }
-   ```
-2. Add a `nav`/`sidebar` entry in `docs/.vitepress/config.ts` pointing at the
-   clean URL `/{repo}/` (the prebuild discovers and injects the files; the
-   `rewrites` function serves them there).
+`hub.config.json` is the allowlist. Declare the repo, a friendly `label`, and
+the `channels` to publish (order = display order; the first is the default):
 
-The library must publish a `docs` payload to the proxy (see ADR-016 and each
-library's `prepare-docs-payload` step).
+```json
+{
+  "repos": {
+    "middag-react": { "label": "MIDDAG React", "channels": ["latest", "0.30.x", "0.20.x"] },
+    "another-lib":  { "label": "Another Lib",  "channels": ["latest"] }
+  }
+}
+```
+
+Channel selectors: `latest` (proxy manifest's newest), `MAJOR.MINOR.x` (highest
+retained patch of that line), or an exact `X.Y.Z` pin. Each becomes a versioned
+URL `/{repo}/{segment}/` and an entry in that repo's version-switcher dropdown.
+**No config.ts edit is needed** — nav, sidebars and switcher are generated from
+the injected tree. The library must publish a `docs` payload to the proxy (see
+ADR-016 and each library's `prepare-docs-payload` step). To unpublish a version,
+remove its channel here — allowlist is default-hidden.
 
 ## Deployment
 
