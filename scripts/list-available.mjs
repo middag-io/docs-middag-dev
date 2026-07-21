@@ -97,7 +97,9 @@ async function main() {
   const repos = reposFromKeys(rootKeys)
 
   console.log(`docs proxy: ${BASE_URL}${TOKEN ? ' (authenticated)' : ' (anonymous)'}`)
-  console.log(`repos in bucket: ${repos.length} | published in hub.config.json: ${Object.keys(allow).length}\n`)
+  console.log(
+    `repos in bucket: ${repos.length} | published in hub.config.json: ${Object.keys(allow).length}\n`,
+  )
 
   for (const repo of repos) {
     const keys = await listKeys(repo)
@@ -124,7 +126,9 @@ async function main() {
         console.log(`  note: newest (${latest}) is NOT on a "latest" channel here.`)
       }
     } else {
-      console.log(`  to publish: add "${repo}": { "label": "…", "channels": ["latest"] } to hub.config.json`)
+      console.log(
+        `  to publish: add "${repo}": { "label": "…", "channels": ["latest"] } to hub.config.json`,
+      )
     }
     console.log('')
   }

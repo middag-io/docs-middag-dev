@@ -10,13 +10,16 @@
     "docs:dev:nofetch": "vitepress dev docs",
     "docs:build": "npm run docs:prebuild && vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:available": "node scripts/list-available.mjs"
+    "docs:available": "node scripts/list-available.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@middag-io/docs-proxy-client": "^0.2.0",
     "@middag-io/docs-theme": "^0.1.0"
   },
   "devDependencies": {
+    "prettier": "^3.8.3",
     "vitepress": "^2.0.0-alpha.18"
   }
 }

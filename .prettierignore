@@ -1,0 +1,12 @@
+node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+package-lock.json
+
+# Aggregated content (ADR-016) — never touch what a library's own repo owns.
+docs/injected/
+
+# Hand-authored prose. Prettier reflows/reformats markdown in ways that
+# fight hand-written docs (list markers, table padding, prose wrapping).
+*.md
+*.mdx

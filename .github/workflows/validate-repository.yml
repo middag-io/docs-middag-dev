@@ -1,0 +1,21 @@
+name: Validate Repository
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mdgstan:
+    name: MDG-Stan (in-repo)
+    # Level "1" — first adoption in this repo (per DP-18 phased rollout), not
+    # yet checked against L2+ (branch protection, actionlint-clean, ...). Bump
+    # once this repo has been run through the same remediation as
+    # .github-private (see its validate-repository.yml, currently at L3).
+    uses: middag-io/.github-private/.github/workflows/lint-in-repo.yml@main
+    with:
+      level: "1"

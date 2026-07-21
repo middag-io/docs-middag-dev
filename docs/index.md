@@ -3,17 +3,23 @@ layout: home
 
 hero:
   name: MIDDAG Docs
-  text: Unified documentation hub
-  tagline: Library documentation, aggregated at build time from the MIDDAG edge (ADR-016).
+  text: The developer front of MIDDAG
+  tagline: Write your domain once, against contracts, not against the host. Run it in Moodle, WordPress, or standalone.
   actions:
     - theme: brand
+      text: MIDDAG Framework
+      link: /framework/
+    - theme: alt
       text: middag-react
       link: /middag-react/latest/
 
 features:
-  - title: Build-time aggregation
-    details: Library docs are pulled from the docs proxy (Cloudflare R2) during prebuild — this hub never vendors them.
+  - title: MIDDAG Framework
+    details: Platform-agnostic PHP — DI, PSR-15 HTTP, query builder, forms, command bus, Inertia. Apache-2.0.
+    link: /framework/
   - title: middag-react
-    details: Component library reference and guides.
-    link: /middag-react/
+    details: React component library for the frontend side of a MIDDAG-based app.
+    link: /middag-react/latest/
 ---
+
+New here? [What is MIDDAG?](/about)
