@@ -145,9 +145,9 @@ function channelSidebar(repo: string, segment: string, header: string): DefaultT
 }
 
 // ---------------------------------------------------------------------------
-// Own-authored content: docs this hub writes directly (ADR-016 amendment,
-// see decisions/ADR-CANDIDATE-docs-middag-dev-diataxis-ownership-DRAFT.md in
-// tool-middag-planning) instead of aggregating from a library's `docs/`.
+// Own-authored content: docs this hub writes directly (ADR-020, which amends
+// ADR-016 — docs-middag-ops/internal/decisions/ADR-020-docs-middag-dev-diataxis-ownership.md)
+// instead of aggregating from a library's `docs/`.
 // No version segment yet — add one if/when a 2.x line needs it. Walked
 // recursively so nested concern folders (adapters/moodle/, ui/) drill down
 // as collapsible sub-groups instead of a flat list.
@@ -223,8 +223,8 @@ type NavSection = { items?: NavLeaf[]; ui?: NavLeaf[] }
  * Every field is optional except `label` (which itself defaults to the dir
  * name) — a repo only declares the sections it actually has. `core/` won't
  * need `tutorials`/`howTo` (Surface API is reference-only) but will likely
- * need 2 adapters (Moodle + WordPress, per the ADR-CANDIDATE draft in
- * tool-middag-planning) instead of framework's 1 — hence `adapters` being a
+ * need 2 adapters (Moodle + WordPress, per ADR-020's Product axis) instead of
+ * framework's 1 — hence `adapters` being a
  * named array rather than a single hardcoded `adaptersMoodleGroups` field.
  */
 type OwnedNav = {
@@ -386,7 +386,7 @@ for (const r of repos) {
 export default defineConfig({
   title: 'MIDDAG Docs',
   description:
-    'Unified documentation hub for MIDDAG libraries — build-time aggregated via edge storage (ADR-016).',
+    'Unified documentation hub for MIDDAG libraries — own-authored framework docs (ADR-020) plus library docs aggregated at build time via edge storage (ADR-016).',
   lang: 'en',
   cleanUrls: true,
   lastUpdated: true,
