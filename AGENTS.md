@@ -37,3 +37,7 @@ Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject
 1. Nav/sidebar is generated dynamically from the injected tree — don't hardcode entries.
 2. Multi-version channels come from the `hub.config.json` allowlist — adding a repo/version happens there, not in VitePress config.
 3. `npm run docs:dev:nofetch` skips the proxy fetch — use it when offline or iterating on theme only.
+
+## Local path
+
+Lives at `/var/www/middag-org/docs-middag-dev` (organizational workspace — Policy `local-workspace-paths.md` v1.1, `docs-middag-ops#42`), not `/var/www/docs-middag-dev`.
