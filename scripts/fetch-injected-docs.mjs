@@ -112,9 +112,7 @@ async function downloadChannel(repo, version, segment, keys) {
   await mkdir(outDir, { recursive: true })
 
   const prefix = `${KIND}/${version}/`
-  const files = keys
-    .filter((k) => k.startsWith(prefix))
-    .map((k) => k.slice(prefix.length))
+  const files = keys.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length))
   if (files.length === 0) {
     throw new Error(`${repo}@${version}: no ${KIND} files under ${prefix}`)
   }

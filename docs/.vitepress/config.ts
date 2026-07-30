@@ -100,11 +100,7 @@ function orderBy(slug: string, order: string[], last: string[] = []): number {
 }
 
 /** Build the sidebar item list for one repo channel (base = {repo}/{segment}). */
-function channelSidebar(
-  repo: string,
-  segment: string,
-  header: string,
-): DefaultTheme.SidebarItem[] {
+function channelSidebar(repo: string, segment: string, header: string): DefaultTheme.SidebarItem[] {
   const base = join(INJECTED_DIR, repo, segment)
   const items: DefaultTheme.SidebarItem[] = []
 
@@ -133,9 +129,7 @@ function channelSidebar(
       return oa !== ob ? oa - ob : a.localeCompare(b)
     })
   for (const group of groups) {
-    const files = markdownFiles(join(base, group)).sort((a, b) =>
-      a.slug.localeCompare(b.slug),
-    )
+    const files = markdownFiles(join(base, group)).sort((a, b) => a.slug.localeCompare(b.slug))
     if (!files.length) continue
     items.push({
       text: humanize(group),
@@ -148,6 +142,180 @@ function channelSidebar(
   }
 
   return items
+}
+
+// ---------------------------------------------------------------------------
+// Own-authored content: docs this hub writes directly (ADR-020, which amends
+// ADR-016 — docs-middag-ops/internal/decisions/ADR-020-docs-middag-dev-diataxis-ownership.md)
+// instead of aggregating from a library's `docs/`.
+// No version segment yet — add one if/when a 2.x line needs it. Walked
+// recursively so nested concern folders (adapters/moodle/, ui/) drill down
+// as collapsible sub-groups instead of a flat list.
+//
+// Which repo is "owned" is discovered, not hardcoded (see discoverOwnedRepos
+// below) — no repo name/slug lives in this file. Adding `core/` later means
+// dropping a `docs/core/` folder (+ optional `nav.json`) on disk, nothing
+// in config.ts to touch.
+// ---------------------------------------------------------------------------
+const RESERVED_DOC_DIRS = new Set(['injected', '.vitepress', 'public'])
+
+const OWNED_TYPE_ORDER = ['tutorials', 'how-to', 'reference', 'explanation']
+
+/** Recursively build sidebar items for an own-authored doc tree. */
+function ownedSidebarItems(
+  absDir: string,
+  urlBase: string,
+  depth: number,
+): DefaultTheme.SidebarItem[] {
+  const items: DefaultTheme.SidebarItem[] = markdownFiles(absDir)
+    .sort((a, b) => a.slug.localeCompare(b.slug))
+    .map((f) => ({
+      text: pageTitle(f.abs, f.slug),
+      link: `${urlBase}/${f.slug}`,
+    }))
+
+  const subdirs = safeReaddir(absDir)
+    .filter((d) => isDir(join(absDir, d)))
+    .sort((a, b) => {
+      const order = depth === 0 ? OWNED_TYPE_ORDER : []
+      const oa = orderBy(a, order)
+      const ob = orderBy(b, order)
+      return oa !== ob ? oa - ob : a.localeCompare(b)
+    })
+
+  for (const dir of subdirs) {
+    const nested = ownedSidebarItems(join(absDir, dir), `${urlBase}/${dir}`, depth + 1)
+    if (!nested.length) continue
+    items.push({
+      text: humanize(dir),
+      // Top-level Diataxis-type groups (tutorials/reference/…) open by
+      // default; nested concern groups (ui/, adapters/moodle/) start
+      // collapsed so a reader drills down deliberately.
+      collapsed: depth > 0,
+      items: nested,
+    })
+  }
+
+  return items
+}
+
+// ---------------------------------------------------------------------------
+// Curated nav for own-authored repos: labels + topic-cluster order chosen by
+// reading every doc's full content (not derived from filenames/frontmatter —
+// that produced a flat, redundant-prefixed sidebar). See the nav-redesign
+// workflow in tool-middag-planning session history for how this was built:
+// 3 read-and-propose passes -> synthesis -> adversarial completeness + IA
+// review -> one repair pass, then flattened to match laravel.com/docs'
+// actual sidebar shape (verified 2026-07-21: Section -> Page, two levels
+// max, never deeper — not even for closely-related pairs like Database /
+// Eloquent ORM, which are two flat sibling sections, not nested).
+//
+// Data lives in `docs/<repo>/nav.json`, kept out of this file on purpose so
+// editing the nav doesn't mean touching TypeScript. Plain data, no runtime
+// drift-check: whoever adds/removes a doc updates nav.json in the same
+// change (same as hand-maintaining Laravel's own doc sidebar). A repo with
+// no nav.json falls back to `ownedSidebarItems()` (mechanical, uncurated).
+// ---------------------------------------------------------------------------
+type NavLeaf = { file: string; label: string }
+type NavGroup = { label: string; order?: number; files: string[]; labels?: NavLeaf[] }
+type NavSection = { items?: NavLeaf[]; ui?: NavLeaf[] }
+/**
+ * Every field is optional except `label` (which itself defaults to the dir
+ * name) — a repo only declares the sections it actually has. `core/` won't
+ * need `tutorials`/`howTo` (Surface API is reference-only) but will likely
+ * need 2 adapters (Moodle + WordPress, per ADR-020's Product axis) instead of
+ * framework's 1 — hence `adapters` being a
+ * named array rather than a single hardcoded `adaptersMoodleGroups` field.
+ */
+type OwnedNav = {
+  label?: string
+  tutorials?: NavSection
+  howTo?: NavSection
+  explanation?: NavSection
+  reference?: { groups?: NavGroup[]; ui?: NavLeaf[] }
+  adapters?: { name: string; groups: NavGroup[] }[]
+}
+
+function readNavJson(absDir: string): OwnedNav | null {
+  const file = join(absDir, 'nav.json')
+  if (!existsSync(file)) return null
+  try {
+    return JSON.parse(readFileSync(file, 'utf8')) as OwnedNav
+  } catch (err) {
+    console.warn(`[docs-middag-dev] failed to parse ${file}: ${(err as Error).message}`)
+    return null
+  }
+}
+
+/** Every top-level `docs/<dir>/` that isn't reserved infra — no repo name hardcoded here. */
+function discoverOwnedRepos(): { dir: string; label: string }[] {
+  return safeReaddir(DOCS_DIR)
+    .filter((d) => isDir(join(DOCS_DIR, d)) && !RESERVED_DOC_DIRS.has(d))
+    .map((dir) => ({ dir, label: readNavJson(join(DOCS_DIR, dir))?.label ?? humanize(dir) }))
+    .sort((a, b) => a.dir.localeCompare(b.dir))
+}
+
+function ownedLeaf(urlBase: string, l: NavLeaf): DefaultTheme.SidebarItem {
+  return { text: l.label, link: `${urlBase}/${l.file}` }
+}
+
+/** Leaves of one topic cluster, flattened (no nested group node) — see curatedOwnedSidebar. */
+function clusterLeaves(urlBase: string, g: NavGroup): DefaultTheme.SidebarItem[] {
+  const labelFor = (file: string) =>
+    g.labels?.find((x) => x.file === file)?.label ?? humanize(file.split('/').pop() ?? file)
+  return g.files.map((file) => ({ text: labelFor(file), link: `${urlBase}/${file}` }))
+}
+
+function uiLeaf(urlBase: string, l: NavLeaf): DefaultTheme.SidebarItem {
+  return ownedLeaf(urlBase, { file: l.file, label: `UI: ${l.label}` })
+}
+
+/**
+ * Curated (semantic, hand-labeled) sidebar built from a repo's `nav.json`.
+ * Flat Section -> Page, two levels max, matching how laravel.com/docs
+ * actually structures its own sidebar (11 sections, up to 21 items each,
+ * verified 2026-07-21: never a 3rd nesting level, not even for closely-
+ * related pairs like Database/Eloquent ORM — those are two flat sibling
+ * sections, not one nested under the other). The topic clusters in
+ * nav.json still drive item ORDER (foundational first, legacy last) and
+ * disambiguating labels; they just don't become their own
+ * clickable/collapsible tree nodes anymore. Moodle's reference docs get
+ * their own top-level section (mirrors Eloquent ORM living next to
+ * Database) instead of being buried under Reference > Adapters > Moodle.
+ */
+function curatedOwnedSidebar(urlBase: string, spec: OwnedNav): DefaultTheme.SidebarItem[] {
+  const byOrder = (gs: NavGroup[]) => [...gs].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  const sectionItems = (s?: NavSection) => [
+    ...(s?.items ?? []).map((l) => ownedLeaf(urlBase, l)),
+    ...(s?.ui ?? []).map((l) => uiLeaf(urlBase, l)),
+  ]
+
+  const sections: DefaultTheme.SidebarItem[] = []
+
+  const tutorials = sectionItems(spec.tutorials)
+  if (tutorials.length) sections.push({ text: 'Tutorials', items: tutorials })
+
+  const howTo = (spec.howTo?.items ?? []).map((l) => ownedLeaf(urlBase, l))
+  if (howTo.length) sections.push({ text: 'How-to', items: howTo })
+
+  const reference = [
+    ...byOrder(spec.reference?.groups ?? []).flatMap((g) => clusterLeaves(urlBase, g)),
+    ...(spec.reference?.ui ?? []).map((l) => uiLeaf(urlBase, l)),
+  ]
+  if (reference.length) sections.push({ text: 'Reference', items: reference })
+
+  // Each adapter (Moodle, WordPress, …) is its own top-level sibling
+  // section — mirrors laravel.com/docs keeping Eloquent ORM next to
+  // Database rather than nesting one inside the other.
+  for (const adapter of spec.adapters ?? []) {
+    const items = byOrder(adapter.groups).flatMap((g) => clusterLeaves(urlBase, g))
+    if (items.length) sections.push({ text: adapter.name, items })
+  }
+
+  const explanation = sectionItems(spec.explanation)
+  if (explanation.length) sections.push({ text: 'Explanation', items: explanation })
+
+  return sections
 }
 
 /** Read every repo's _channels.json produced by the prebuild step. */
@@ -180,9 +348,12 @@ function channelLabel(c: Channel): string {
 }
 
 const repos = injectedRepos()
+const ownedRepos = discoverOwnedRepos()
 
 const nav: DefaultTheme.NavItem[] = [
   { text: 'Home', link: '/' },
+  { text: 'About', link: '/about' },
+  ...ownedRepos.map((r) => ({ text: r.label, link: `/${r.dir}/` })),
   ...repos.map((r) => ({
     // Repo dropdown = version switcher.
     text: r.label,
@@ -194,6 +365,14 @@ const nav: DefaultTheme.NavItem[] = [
 ]
 
 const sidebar: DefaultTheme.SidebarMulti = {}
+for (const r of ownedRepos) {
+  const urlBase = `/${r.dir}`
+  const absDir = join(DOCS_DIR, r.dir)
+  const ownedNav = readNavJson(absDir)
+  sidebar[`${urlBase}/`] = ownedNav
+    ? curatedOwnedSidebar(urlBase, ownedNav)
+    : ownedSidebarItems(absDir, urlBase, 0)
+}
 for (const r of repos) {
   for (const c of r.channels) {
     sidebar[`/${r.repo}/${c.segment}/`] = channelSidebar(
@@ -207,7 +386,7 @@ for (const r of repos) {
 export default defineConfig({
   title: 'MIDDAG Docs',
   description:
-    'Unified documentation hub for MIDDAG libraries — build-time aggregated via edge storage (ADR-016).',
+    'Unified documentation hub for MIDDAG libraries — own-authored framework docs (ADR-020) plus library docs aggregated at build time via edge storage (ADR-016).',
   lang: 'en',
   cleanUrls: true,
   lastUpdated: true,

@@ -1,0 +1,325 @@
+{
+  "label": "MIDDAG Framework",
+  "tutorials": {
+    "items": [
+      {
+        "file": "tutorials/getting-started",
+        "label": "Getting Started"
+      }
+    ],
+    "ui": [
+      {
+        "file": "tutorials/ui/getting-started",
+        "label": "Getting Started"
+      }
+    ]
+  },
+  "howTo": {
+    "items": [
+      {
+        "file": "how-to/pre-pr-boundary-checklist",
+        "label": "Pre-PR Boundary Checklist"
+      }
+    ]
+  },
+  "explanation": {
+    "items": [
+      {
+        "file": "explanation/overview",
+        "label": "Overview"
+      },
+      {
+        "file": "explanation/architecture",
+        "label": "Architecture"
+      },
+      {
+        "file": "explanation/bootstrap-lifecycle",
+        "label": "Bootstrap Lifecycle"
+      }
+    ],
+    "ui": [
+      {
+        "file": "explanation/ui/overview",
+        "label": "Overview"
+      },
+      {
+        "file": "explanation/ui/architecture",
+        "label": "Architecture"
+      }
+    ]
+  },
+  "reference": {
+    "groups": [
+      {
+        "label": "HTTP, Routing & Rendering",
+        "order": 1,
+        "files": [
+          "reference/attribute-routing-and-auth-model",
+          "reference/psr15-bridge-and-middleware",
+          "reference/rendering-mode-selection",
+          "reference/inertia-protocol"
+        ],
+        "labels": [
+          {
+            "file": "reference/attribute-routing-and-auth-model",
+            "label": "Routing & Auth Attributes"
+          },
+          {
+            "file": "reference/psr15-bridge-and-middleware",
+            "label": "PSR-15 Bridge & Middleware"
+          },
+          {
+            "file": "reference/rendering-mode-selection",
+            "label": "Rendering Mode Selection"
+          },
+          {
+            "file": "reference/inertia-protocol",
+            "label": "Inertia Protocol"
+          }
+        ]
+      },
+      {
+        "label": "Forms",
+        "order": 2,
+        "files": [
+          "reference/form-lifecycle-and-validation",
+          "reference/form-field-catalog-and-anti-corruption"
+        ],
+        "labels": [
+          {
+            "file": "reference/form-lifecycle-and-validation",
+            "label": "Form Lifecycle & Validation"
+          },
+          {
+            "file": "reference/form-field-catalog-and-anti-corruption",
+            "label": "Form Field Catalog"
+          }
+        ]
+      },
+      {
+        "label": "Persistence",
+        "order": 3,
+        "files": ["reference/active-record-eloquent-compatibility"],
+        "labels": [
+          {
+            "file": "reference/active-record-eloquent-compatibility",
+            "label": "Active Record (Eloquent Compatibility)"
+          }
+        ]
+      },
+      {
+        "label": "Command Bus & Scheduling",
+        "order": 4,
+        "files": ["reference/command-bus"],
+        "labels": [
+          {
+            "file": "reference/command-bus",
+            "label": "Dispatch, Handlers & Job Model"
+          }
+        ]
+      },
+      {
+        "label": "Kernel, Contracts & Adapters",
+        "order": 5,
+        "files": [
+          "reference/kernel-boot-lifecycle",
+          "reference/bootstrap-contracts",
+          "reference/bridge-contracts",
+          "reference/module-layout-convention",
+          "reference/exception-hierarchy"
+        ],
+        "labels": [
+          {
+            "file": "reference/kernel-boot-lifecycle",
+            "label": "Kernel Boot Lifecycle"
+          },
+          {
+            "file": "reference/bootstrap-contracts",
+            "label": "Boot-Time Built-In Features"
+          },
+          {
+            "file": "reference/bridge-contracts",
+            "label": "Adapter Port Catalog"
+          },
+          {
+            "file": "reference/module-layout-convention",
+            "label": "Module Layout Convention"
+          },
+          {
+            "file": "reference/exception-hierarchy",
+            "label": "Exception Hierarchy"
+          }
+        ]
+      },
+      {
+        "label": "Reactive & Hook Model",
+        "order": 6,
+        "files": ["reference/signal-hook-legacy-mechanics"],
+        "labels": [
+          {
+            "file": "reference/signal-hook-legacy-mechanics",
+            "label": "Hooks, Filters & Signal Dispatch"
+          }
+        ]
+      },
+      {
+        "label": "Legacy & Historical",
+        "order": 7,
+        "files": [
+          "reference/portability-audit-historical",
+          "reference/repository-persistence-families",
+          "reference/shortcode-legacy-detail"
+        ],
+        "labels": [
+          {
+            "file": "reference/portability-audit-historical",
+            "label": "Composer Portability Audit"
+          },
+          {
+            "file": "reference/repository-persistence-families",
+            "label": "Repository Persistence Families"
+          },
+          {
+            "file": "reference/shortcode-legacy-detail",
+            "label": "Shortcode Processing"
+          }
+        ]
+      }
+    ],
+    "ui": [
+      {
+        "file": "reference/ui/composition-levels-and-capabilities",
+        "label": "Composition Levels & Capabilities"
+      },
+      {
+        "file": "reference/ui/design-system-catalog",
+        "label": "Design System & Licensing"
+      }
+    ]
+  },
+  "adapters": [
+    {
+      "name": "Moodle Adapter",
+      "groups": [
+        {
+          "label": "Boundary & Coverage",
+          "order": 1,
+          "files": [
+            "reference/adapters/moodle/support-class-inventory",
+            "reference/adapters/moodle/boundary-whitelist",
+            "reference/adapters/moodle/api-coverage-inventory"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/moodle/support-class-inventory",
+              "label": "Support Layer & Anti-Patterns"
+            },
+            {
+              "file": "reference/adapters/moodle/boundary-whitelist",
+              "label": "Boundary Whitelist"
+            },
+            {
+              "file": "reference/adapters/moodle/api-coverage-inventory",
+              "label": "API Coverage Inventory"
+            }
+          ]
+        },
+        {
+          "label": "DI & Events",
+          "order": 2,
+          "files": [
+            "reference/adapters/moodle/di-bridge-mechanics",
+            "reference/adapters/moodle/event-observation-detail"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/moodle/di-bridge-mechanics",
+              "label": "DI Bridge"
+            },
+            {
+              "file": "reference/adapters/moodle/event-observation-detail",
+              "label": "Event Observation"
+            }
+          ]
+        },
+        {
+          "label": "Routing & Navigation",
+          "order": 3,
+          "files": [
+            "reference/adapters/moodle/routing-bridge-maturity",
+            "reference/adapters/moodle/navigation-integration-detail",
+            "reference/adapters/moodle/file-areas-pluginfile-routing"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/moodle/routing-bridge-maturity",
+              "label": "Routing Bridge Maturity"
+            },
+            {
+              "file": "reference/adapters/moodle/navigation-integration-detail",
+              "label": "Navigation Integration"
+            },
+            {
+              "file": "reference/adapters/moodle/file-areas-pluginfile-routing",
+              "label": "File Areas & Pluginfile Routing"
+            }
+          ]
+        },
+        {
+          "label": "Config & Cache",
+          "order": 4,
+          "files": [
+            "reference/adapters/moodle/config-schema-inventory",
+            "reference/adapters/moodle/cache-decorator"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/moodle/config-schema-inventory",
+              "label": "Config Schema & Settings DSL"
+            },
+            {
+              "file": "reference/adapters/moodle/cache-decorator",
+              "label": "Cache Decorator"
+            }
+          ]
+        },
+        {
+          "label": "External Services & Data Migration",
+          "order": 5,
+          "files": [
+            "reference/adapters/moodle/external-services-migration",
+            "reference/adapters/moodle/import-repository-contract"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/moodle/external-services-migration",
+              "label": "External Services & Mobile API"
+            },
+            {
+              "file": "reference/adapters/moodle/import-repository-contract",
+              "label": "Import Repository (Backup/Restore)"
+            }
+          ]
+        },
+        {
+          "label": "Frontend & Codegen",
+          "order": 6,
+          "files": [
+            "reference/adapters/moodle/frontend-build-detail",
+            "reference/adapters/moodle/statics-generation"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/moodle/frontend-build-detail",
+              "label": "Frontend Build & Theme Bridge"
+            },
+            {
+              "file": "reference/adapters/moodle/statics-generation",
+              "label": "Statics Generation"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
