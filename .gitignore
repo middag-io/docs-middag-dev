@@ -216,35 +216,13 @@ compose.override.yml
 !.vigim/content/data/*.csv
 
 # -----------------------------------------------------------------------------
-# Agentes, skills e configurações locais de IA
+# AI agents: local state/runtime (never track)
 # -----------------------------------------------------------------------------
-# AIOX: instalador/runtime local de agentes. Guia:
-# docs-site/guides/G09-ai-agents-local-setup.md
+# The repo only tracks shared, reviewed configuration.
 .aiox-core/
-.aiox-core/local/
 .aiox/install-log.txt
-
-# Ralph: estado de execução local do agente/plugin.
-.ralph/.call_count
-.ralph/.circuit_breaker_history
-.ralph/.circuit_breaker_state
-.ralph/.claude_session_id
-.ralph/.exit_signals
-.ralph/.last_reset
-.ralph/.loop_start_sha
-.ralph/.ralph_session
-.ralph/.ralph_session_history
-.ralph/live.log
-.ralph/logs/
-.ralph/progress.json
-.ralph/status.json
-.ralph/docs/generated/
-
-# GStack: estado local de orquestração/stack de agentes.
+.ralph/
 .gstack/
-
-# Caveman/Claude/Codex e outros plugins podem instalar skills localmente.
-# O repositório deve versionar apenas configurações compartilhadas e revisadas.
 .agents/
 .claude/settings.local.json
 .claude/skills/
