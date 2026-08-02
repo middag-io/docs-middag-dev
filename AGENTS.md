@@ -47,4 +47,4 @@ Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject
 
 ## Local path
 
-Lives at `/var/www/middag-org/docs-middag-dev` (organizational workspace — Policy `local-workspace-paths.md` v1.1, `docs-middag-ops#42`), not `/var/www/docs-middag-dev`.
+Lives at `/var/www/middag-org/docs-middag-dev` (organizational workspace — Policy `local-workspace-paths.md`, `docs-middag-ops#42`), not `/var/www/docs-middag-dev`.
