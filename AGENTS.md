@@ -10,7 +10,7 @@ MIDDAG's unified developer documentation hub — a VitePress static site publish
 - ADRs are never hosted here — every lib/product keeps its own `docs/decisions/`, in both layers (ADR-020, explicit).
 - Source of the variable layer: aggregated content is authored in the source repo's `docs/` — never edited here.
 - The proxy/edge layer lives in `worker-ts-middag-docs-proxy` (aggregator doctrine in its README); the doctrine-search MCP in `worker-ts-middag-docs-mcp`.
-- Client-facing product docs are `docs-middag-io`; ops doctrine is `docs-middag-ops`.
+- Client-facing product docs are `docs-middag-io`. Org-wide norms live in `docs-middag-standards`, MIDDAG values in `org-middag`, and `docs-middag-ops` documents the MIDDAG profile (how MIDDAG applies those norms; ADR-030, proposed).
 
 ## Git
 
@@ -29,7 +29,9 @@ Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject
 
 - ADR-020 (direct content ownership for the nuclear family; nav IA in `docs-middag-ops/internal/reference/docs-middag-dev-ia-tree.md`).
 - ADR-016 (build-time aggregation via edge storage) + the aggregator doctrine in `worker-ts-middag-docs-proxy`.
-- Org doctrine via docs-MCP (alias `ops`) or `docs-middag-ops`; planning/backlog in `tool-middag-planning`.
+- Org rules: norms in `docs-middag-standards` (Standards `MSR-NNN`, Practices `MPR-*`), values in `org-middag`, MIDDAG profile in `docs-middag-ops` (also via docs-MCP, alias `ops`). Cite the part (`MSR-NNN.Rn(x)`) or the profile key; do not copy the rule.
+- Recommended developer tooling: `MPR-recommended-tooling-catalog` in `docs-middag-standards`.
+- Planning/backlog in `tool-middag-planning`.
 
 ## NOT in scope / do not do without permission
 
