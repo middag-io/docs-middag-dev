@@ -1,4 +1,6 @@
-# Copy to .env and fill in. .env is gitignored.
+# .env.local.tpl — local template. Resolve with `cp .env.local.tpl .env` and
+# fill in. .env is gitignored. One name shape for every environment template
+# (middag-io/docs-middag-ops#27); this file holds no 1Password reference.
 
 # Bearer token for the PRIVATE docs proxy deployment (Cloudflare Access service
 # token). Leave unset to use the public proxy. Read by scripts/fetch-injected-docs.mjs

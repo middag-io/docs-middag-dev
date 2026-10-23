@@ -14,8 +14,7 @@
 # Normalmente devem continuar rastreados:
 # - composer.lock
 # - package-lock.json / pnpm-lock.yaml / yarn.lock
-# - .env.example
-# - .env.*.tpl
+# - .env.*.tpl  (local, staging, production — uma forma só; docs-middag-ops#27)
 # - docker-compose.yml
 # - Makefile
 # - configurações de ferramentas (.php-cs-fixer.php, phpstan.neon, rector.php)
@@ -39,9 +38,10 @@ desktop.ini
 # -----------------------------------------------------------------------------
 .env
 .env.*
-!.env.example
-!.env.*.example
-!.env.tpl
+# UMA exceção só (middag-io/docs-middag-ops#27): os templates versionados dos 3
+# ambientes têm a MESMA forma de nome — .env.local.tpl, .env.staging.tpl,
+# .env.production.tpl. As exceções `!.env.example` / `!.env.*.example` /
+# `!.env.tpl` saíram: nomes alternativos para o mesmo contrato de chaves.
 !.env.*.tpl
 
 auth.json
