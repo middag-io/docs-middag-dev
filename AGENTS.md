@@ -2,7 +2,7 @@
 
 MIDDAG's unified developer documentation hub — a VitePress static site published to Cloudflare Pages at <https://docs.middag.dev>. It serves **two content layers**:
 
-- **Fixed (own-authored, versionless).** Diataxis content this repo authors and owns directly, living in `docs/<axis>/{tutorials,how-to,reference,explanation}/`. Used for the OSS "nuclear family" (the MIDDAG Framework and its host adapters, plus `middag-php-ui`): those subjects interleave too much to document one repo at a time, so they are condensed here into a single coherent tree instead of being split across the source repos. Ratified in ADR-020 (amends ADR-016).
+- **Fixed (own-authored, versionless).** Diataxis content this repo authors and owns directly, living in `docs/<axis>/{tutorials,how-to,reference,explanation}/`. Used for the OSS "nuclear family" (the MIDDAG Framework and its host adapters, plus `middag-php-ui`): those subjects interleave too much to document one repo at a time, so they are condensed here into a single coherent tree instead of being split across the source repos. Ratified in ADR-020 (narrows ADR-016).
 - **Variable (aggregated, versioned).** Repos that keep their own independent doc-site (e.g. `middag-react`) publish a versioned docs payload to the docs proxy (Worker + R2); `docs:prebuild` pulls and injects them under `docs/injected/` at build time. Original ADR-016 flow, unchanged.
 
 **What this repo is NOT:**
@@ -10,7 +10,7 @@ MIDDAG's unified developer documentation hub — a VitePress static site publish
 - ADRs are never hosted here — every lib/product keeps its own `docs/decisions/`, in both layers (ADR-020, explicit).
 - Source of the variable layer: aggregated content is authored in the source repo's `docs/` — never edited here.
 - The proxy/edge layer lives in `worker-ts-middag-docs-proxy` (aggregator doctrine in its README); the doctrine-search MCP in `worker-ts-middag-docs-mcp`.
-- Client-facing product docs are `docs-middag-io`. Org-wide norms live in `docs-middag-standards`, MIDDAG values in `org-middag`, and `docs-middag-ops` documents the MIDDAG profile (how MIDDAG applies those norms; ADR-030, proposed).
+- Client-facing product docs are `docs-middag-io`. The neutral norm, valid for any adopting organization, lives in `docs-middag-standards`, MIDDAG values in `org-middag`, and `docs-middag-ops` documents the MIDDAG profile (how MIDDAG applies the norm; ADR-030).
 
 ## Git
 
@@ -29,9 +29,10 @@ Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject
 
 - ADR-020 (direct content ownership for the nuclear family; nav IA in `docs-middag-ops/internal/reference/docs-middag-dev-ia-tree.md`).
 - ADR-016 (build-time aggregation via edge storage) + the aggregator doctrine in `worker-ts-middag-docs-proxy`.
-- Org rules: norms in `docs-middag-standards` (Standards `MSR-NNN`, Practices `MPR-*`), values in `org-middag`, MIDDAG profile in `docs-middag-ops` (also via docs-MCP, alias `ops`). Cite the part (`MSR-NNN.Rn(x)`) or the profile key; do not copy the rule.
-- Recommended developer tooling: `MPR-recommended-tooling-catalog` in `docs-middag-standards`.
-- Planning/backlog in `tool-middag-planning`.
+- Home model: where content lives follows the MIDDAG Home model (Norm, Product, Adoption, Custody); the canonical page is internal to MIDDAG and is not part of this repository.
+- Norm and profile: the neutral norm in `docs-middag-standards` (Standards `MSR-NNN`, Practices `MPR-*`), values in `org-middag`, MIDDAG profile in `docs-middag-ops` (also via docs-MCP, alias `ops`). Cite the part (`MSR-NNN.Rn(x)`) or the profile key; do not copy the rule.
+- Backlog: issues in the owning repository and the organization's board; `tool-middag-planning` is the PMO agent, not the backlog.
+- How agents decide to keep working or to stop, and how issue and comment bodies are edited: Policies `agent-ways-of-working` and `forge-collaboration` of `docs-middag-ops` — point to them, never restate them.
 
 ## NOT in scope / do not do without permission
 
