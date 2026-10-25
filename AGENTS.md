@@ -2,7 +2,7 @@
 
 MIDDAG's unified developer documentation hub — a VitePress static site published to Cloudflare Pages at <https://docs.middag.dev>. It serves **two content layers**:
 
-- **Fixed (own-authored, versionless).** Diataxis content this repo authors and owns directly, living in `docs/<axis>/{tutorials,how-to,reference,explanation}/`. Used for the OSS "nuclear family" (the MIDDAG Framework and its host adapters, plus `middag-php-ui`): those subjects interleave too much to document one repo at a time, so they are condensed here into a single coherent tree instead of being split across the source repos. Ratified in ADR-020 (amends ADR-016).
+- **Fixed (own-authored, versionless).** Diataxis content this repo authors and owns directly, living in `docs/<axis>/{tutorials,how-to,reference,explanation}/`. Used for the OSS "nuclear family" (the MIDDAG Framework and its host adapters, plus `middag-php-ui`): those subjects interleave too much to document one repo at a time, so they are condensed here into a single coherent tree instead of being split across the source repos. Ratified in ADR-020 (narrows ADR-016).
 - **Variable (aggregated, versioned).** Repos that keep their own independent doc-site (e.g. `middag-react`) publish a versioned docs payload to the docs proxy (Worker + R2); `docs:prebuild` pulls and injects them under `docs/injected/` at build time. Original ADR-016 flow, unchanged.
 
 **What this repo is NOT:**
