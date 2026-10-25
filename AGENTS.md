@@ -10,7 +10,7 @@ MIDDAG's unified developer documentation hub — a VitePress static site publish
 - ADRs are never hosted here — every lib/product keeps its own `docs/decisions/`, in both layers (ADR-020, explicit).
 - Source of the variable layer: aggregated content is authored in the source repo's `docs/` — never edited here.
 - The proxy/edge layer lives in `worker-ts-middag-docs-proxy` (aggregator doctrine in its README); the doctrine-search MCP in `worker-ts-middag-docs-mcp`.
-- Client-facing product docs are `docs-middag-io`. Org-wide norms live in `docs-middag-standards`, MIDDAG values in `org-middag`, and `docs-middag-ops` documents the MIDDAG profile (how MIDDAG applies those norms; ADR-030, proposed).
+- Client-facing product docs are `docs-middag-io`. Org-wide norms live in `docs-middag-standards`, MIDDAG values in `org-middag`, and `docs-middag-ops` documents the MIDDAG profile (how MIDDAG applies those norms; ADR-030).
 
 ## Git
 
