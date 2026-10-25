@@ -31,7 +31,7 @@ Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject
 - ADR-016 (build-time aggregation via edge storage) + the aggregator doctrine in `worker-ts-middag-docs-proxy`.
 - Home model: where content lives follows the MIDDAG Home model (Norm, Product, Adoption, Custody); the canonical page is internal to MIDDAG and is not part of this repository.
 - Norm and profile: the neutral norm in `docs-middag-standards` (Standards `MSR-NNN`, Practices `MPR-*`), values in `org-middag`, MIDDAG profile in `docs-middag-ops` (also via docs-MCP, alias `ops`). Cite the part (`MSR-NNN.Rn(x)`) or the profile key; do not copy the rule.
-- Planning/backlog in `tool-middag-planning`.
+- Backlog: issues in the owning repository and the organization's board; `tool-middag-planning` is the PMO agent, not the backlog.
 
 ## NOT in scope / do not do without permission
 
