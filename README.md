@@ -137,7 +137,7 @@ on push to `main` (or manual `workflow_dispatch`) it installs, runs
 
 ## References
 
-- **ADR-016** — Build-Time Aggregation via Edge Storage.
+- **ADR-016** — Build-Time Documentation Aggregation via Edge Storage.
 - **ADR-020** — docs-middag-dev Direct Content Ownership for the Nuclear Family (narrows ADR-016).
 - [`worker-ts-middag-docs-proxy`](https://github.com/middag-io/worker-ts-middag-docs-proxy)
   — the docs proxy (Cloudflare Worker + R2) and the `@middag-io/docs-proxy-client`
