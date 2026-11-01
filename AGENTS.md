@@ -29,7 +29,7 @@ Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject
 
 - ADR-020 (direct content ownership for the nuclear family; nav IA in `docs-middag-ops/internal/reference/docs-middag-dev-ia-tree.md`).
 - ADR-016 (build-time aggregation via edge storage) + the aggregator doctrine in `worker-ts-middag-docs-proxy`.
-- Home model: where content lives follows the MIDDAG Home model (Norm, Product, Adoption, Custody); the canonical page is internal to MIDDAG and is not part of this repository.
+- Sources of truth: where content lives and which document prevails follows an internal MIDDAG Policy, which is not part of this repository.
 - Norm and profile: the neutral norm in `docs-middag-standards` (Standards `MSR-NNN`, Practices `MPR-*`), values in `org-middag`, MIDDAG profile in `docs-middag-ops` (also via docs-MCP, alias `ops`). Cite the part (`MSR-NNN.Rn(x)`) or the profile key; do not copy the rule.
 - Backlog: issues in the owning repository and the organization's board; `tool-middag-planning` is the PMO agent, not the backlog.
 - How agents decide to keep working or to stop, and how issue and comment bodies are edited: Policies `agent-ways-of-working` and `forge-collaboration` of `docs-middag-ops` — point to them, never restate them.
