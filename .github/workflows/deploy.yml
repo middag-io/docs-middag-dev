@@ -3,6 +3,20 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches: [main]
+    # Deploy only when the site can change: a push whose every path is in this
+    # list (license, agent instructions, repository metadata, local tooling
+    # config) is skipped. Any other path, README.md and this workflow included,
+    # deploys. workflow_dispatch is not filtered.
+    paths-ignore:
+      - "LICENSE*"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".claude/**"
+      - ".github/*"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".env.local.tpl"
+      - ".prettierrc.json"
+      - ".prettierignore"
   workflow_dispatch:
 
 # One production deploy per ref; a newer push cancels an in-flight run.
