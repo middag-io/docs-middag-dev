@@ -20,6 +20,7 @@ Information-oriented API and contract detail, grouped by topic (see the sidebar 
 
 ## Persistence
 
+- [Database Schema & Migrations](./database-schema-and-migrations)
 - [Active Record (Eloquent Compatibility)](./active-record-eloquent-compatibility)
 
 ## Command Bus & Scheduling
@@ -33,16 +34,19 @@ Information-oriented API and contract detail, grouped by topic (see the sidebar 
 - [Adapter Port Catalog](./bridge-contracts)
 - [Module Layout Convention](./module-layout-convention)
 - [Exception Hierarchy](./exception-hierarchy)
+- [Standalone Runtime](./standalone-runtime)
+- [Logging & Observability](./logging-and-observability)
 
 ## Reactive & Hook Model
 
+- [Hooks — Public Surface & Naming](./hooks-public-surface)
 - [Hooks, Filters & Signal Dispatch](./signal-hook-legacy-mechanics)
 
 ## Legacy & Historical
 
-- [Composer Portability Audit](./portability-audit-historical)
+- [Composer Portability Audit (Historical)](./portability-audit-historical)
 - [Repository Persistence Families](./repository-persistence-families)
-- [Shortcode Processing](./shortcode-legacy-detail)
+- [Shortcode Processing (Historical)](./shortcode-legacy-detail)
 
 ## By concern
 

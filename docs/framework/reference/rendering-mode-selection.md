@@ -4,7 +4,7 @@ title: 'Framework — Rendering Mode Selection & Anti-Patterns'
 
 # Rendering Mode Selection & Anti-Patterns
 
-Reference for how `middag-io/framework` picks between a server-rendered host page, an Inertia SPA response, and a pure JSON API response — and the anti-patterns to avoid on any of the three. Backs [FW-005](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-005-multi-mode-rendering-model.md).
+Reference for how `middag-io/framework` picks between a server-rendered host page, an Inertia SPA response, and a pure JSON API response — and the anti-patterns to avoid on any of the three. Backs [FW-005](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-005-multi-mode-rendering-model.md). Provenance: legacy vault ADR-803 (2026-04-05).
 
 ## Mode selection
 
@@ -14,9 +14,13 @@ Reference for how `middag-io/framework` picks between a server-rendered host pag
 | SPA (Inertia) | `AbstractController` + `InertiaAdapter::render()` | JSON to React | Dashboards, dynamic forms |
 | API (JSON) | `AbstractApiController` | Pure JSON | REST / AJAX / mobile |
 
-`AbstractController` and `AbstractApiController` (`Http/Controller/`) are the only two OSS base classes. Host pages and Inertia SPA screens share the same base — the only difference is whether the controller calls `InertiaAdapter::render()`; see [FW-006](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-006-inertia-spa-bridge.md) for the Inertia wire protocol itself (shared props, redirects, partial reloads, versioning).
+`AbstractController` and `AbstractApiController` (`Http/Controller/`) are the only two OSS base classes. Host pages and Inertia SPA screens share the same base — the only difference is whether the controller calls `InertiaAdapter::render()`; see [FW-006](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-006-inertia-spa-bridge.md) for the Inertia wire protocol itself (shared props, redirects, partial reloads, versioning).
 
 A single extension can mix all three modes freely across its own controllers — nothing forces every screen in an extension onto the same mode, and using Inertia is never mandatory. A simple extension can stay entirely on host pages.
+
+## No framework template engine
+
+The framework ships no textual template engine (no Blade- or Twig-shaped layer): `composer.json` requires none, and `src/` has no template concern. Host-page HTML comes from the host's own output layer through the adapter; page composition for SPA screens is the declarative page contract in `middag-io/ui`.
 
 ## Anti-patterns
 

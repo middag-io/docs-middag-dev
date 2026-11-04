@@ -39,6 +39,20 @@ The payload methods use **camelCase** (`toPayload()`/`fromPayload()`), matching 
 
 The framework also defines the retry seam, all `@api` under [`Bus/Retry`](https://github.com/middag-io/middag-php-framework/tree/main/src/Bus/Retry): `RetryPolicyInterface` with the default `MultiplierRetryPolicy` (exponential backoff with a cap and optional jitter), `AttemptableInterface` (an item's attempts, ceiling and next eligible time), `AttemptStoreInterface` (the persistence boundary for those items) and `AttemptStamp` (binds a received envelope to its stored item). When an envelope carries `AttemptStamp` and the worker is constructed with both a retry policy and an attempt store, a handler failure is classified by the policy and recorded through the store. Without them, the worker logs and rejects the failed message.
 
+### Worker stop conditions and liveness
+
+`CommandWorker::drain()` honours an optional [`WorkerLimits`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/WorkerLimits.php) (`@api`): a message count, a time limit in seconds and a memory limit in bytes, each nullable (unlimited); `WorkerLimits::fromCliOptions()` parses `--limit`, `--time-limit` and `--memory-limit`. A bound [`WorkerHeartbeatInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/WorkerHeartbeatInterface.php) (`@api`) receives `beat()` once per loop cycle so a supervisor can tell a hung worker from an idle one. The framework ships no heartbeat implementation, because recording one always touches a host resource.
+
+### The durable transport is for standalone hosts
+
+`DoctrineTransportFactory` lives in this OSS package because it is thin plumbing with no MIDDAG know-how: it hands Symfony's Doctrine bridge a DBAL connection and the `CommandSerializer` (decision A2, cited in `src/Bus/Transport/DoctrineTransportFactory.php:35`). `doctrine/dbal` and `symfony/doctrine-messenger` are `suggest` dependencies, never `require`; `DoctrineTransportFactory::missingReason()` lets a host degrade with a warning instead of a fatal. On PostgreSQL the factory uses `LISTEN/NOTIFY`; other engines poll at roughly one second. `auto_setup` stays on, so the transport creates its `messenger_messages` table on first use. That table is a pipe, not a job ledger: a row exists only while its message is in flight.
+
+The transport is meant for a standalone PHP host, wired through [`StandaloneKernel`](./standalone-runtime). Under Moodle or WordPress it would open a second database connection, create a table outside `install.xml`/`dbDelta` (invisible to backup, restore and uninstall) and ignore the host's table prefix. The framework cannot know which host it runs on, so refusing the transport on those hosts is the host side's job.
+
+## Dispatch API history
+
+The legacy decision (vault ADR-705, 2026-03-29) specified two methods, `dispatch()` for sync and `dispatch_async()` for async, while its reference companion described a static `command_bus::handle()`/`dispatch_async()` facade. Neither shipped. The code converged on one `dispatch()` call, with routing deciding sync or async, and on camelCase `toPayload()`/`fromPayload()` instead of PHP `serialize()` or a generic JSON encoding of the object.
+
 ## Boundary of governed jobs
 
 This package ships no `AttemptStoreInterface` implementation, and its bundled transports do not attach `AttemptStamp`. The persisted store, retry history, correlation and job lifecycle belong to the host side, for example `middag-php-core` and its host adapters. A command dispatched through this framework is therefore not automatically a persisted job aggregate, and this page does not define job fields, states or database behavior for the OSS bus.
