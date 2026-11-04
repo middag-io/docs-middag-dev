@@ -15,8 +15,6 @@ title: 'UI stack and design system'
 
 At the 2026-11-04 review (`middag-react/main@56f72c697f79da42c4b811f272053a5d1e668c17`, package version 0.42.0), `@middag-io/react` declared React 19 and `@inertiajs/react` 3 as peer dependencies. Check the package version used by a product before selecting components or installation steps. Component inventory, bundle size, and third-party license terms belong to the current package and its dependencies; this page does not freeze those changing values.
 
-## Why React and ReUI
+## Client stack rationale
 
-The first-party client moved from Vue 3 + Inertia + PrimeVue + Pinia to React + TypeScript + `@inertiajs/react` because ReUI's copy-paste distribution needs React at runtime and no Vue design system of comparable maturity existed. Atlaskit was rejected because its license limits use to products that interoperate with Atlassian software, and Forge UI because its renderer only runs inside the Forge sandbox. Inertia stayed the transport; only the client target changed. There is no Vue/React coexistence layer: migration is incremental, per extension.
-
-The wire contract does not depend on this choice. Another renderer can consume the same JSON; see [UI wire contract](./wire-contract). Host theme bridging (for example Moodle color tokens to Tailwind tokens) belongs to the host adapter, not to the client or the contracts.
+Why the first-party client is React + TypeScript with ReUI, and what that choice costs, is explained in [ui architecture](../../explanation/ui/architecture#why-the-first-party-client-is-react-and-reui). The wire contract does not depend on that choice: another renderer can consume the same JSON; see [UI wire contract](./wire-contract).
