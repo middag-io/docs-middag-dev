@@ -4,13 +4,13 @@ title: 'Page composition contract'
 
 # Page composition contract
 
-The [`middag-php-ui` page contract](https://github.com/middag-io/middag-php-ui/blob/main/src/Page/PageContract.php) carries the server's page description to a client renderer. [UI-002](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-002-page-contract-composition-model.md) records the choice to use one contract across progressively customized pages. This reference describes the verified PHP surface; product and host adapters decide how to render and expose it.
+The [`middag-php-ui` page contract](https://github.com/middag-io/middag-php-ui/blob/main/src/Page/PageContract.php) carries the server's page description to a client renderer. [UI-002](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-002-page-contract-composition-model.md) records the choice of one versioned contract that every composition level emits. The envelope, schemas and fragments are specified in [UI wire contract](./wire-contract). This reference describes the verified PHP surface; product and host adapters decide how to render and expose it.
 
 ## Contract shape
 
 `PageContract` serializes a version, a shell, page metadata, and a layout. It can also include resources, notifications, and entity route patterns. The layout contains named regions; each region holds typed block descriptors. [`BlockDescriptor`](https://github.com/middag-io/middag-php-ui/blob/main/src/Block/BlockDescriptor.php) serializes a `type`, `key`, and `data`, with optional presentation, actions, polling, deferral, and remembered state.
 
-| Level in UI-002 | Verified PHP entry point | Scope |
+| Level | Verified PHP entry point | Scope |
 | --- | --- | --- |
 | L1 — convention | `PageBuilder::crud(Entity::class)` returning `CrudBuilder` | Generate a standard CRUD page from an entity. |
 | L2 — configured convention | The same `CrudBuilder`, with explicit configuration | Adjust the generated page while keeping the contract. |

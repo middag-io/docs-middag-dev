@@ -14,6 +14,8 @@ The contract is the entire public surface: if a value can appear on the wire, it
 
 ## Why nothing here renders
 
+[UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) records this decision.
+
 `middag-io/ui` sits at the bottom of the stack and defines only generic contracts. Rendering, host wiring, and HTTP transport all live downstream, never here:
 
 - **No contract produces HTML** (`render(): string`). Contracts produce **data / value objects** (e.g. `FormRendererInterface` → `RendererOutput`, not a string) — rendering is a product/host concern.
@@ -26,9 +28,10 @@ The library's `src/` is organized by **UI concern**, each a top-level directory:
 
 | Concern | What it carries |
 |---|---|
-| `Action/` | The canonical `Action` value object + its discriminated `ActionTarget` (link / route / request). |
+| `Action/` | The canonical `Action` value object + its discriminated `ActionTarget` (link / route / request / panel). |
 | `Block/` | Content blocks (`BlockBuilder`, `BlockDescriptor`) and the `Section` layout primitive. |
 | `Condition/` | The `Condition` value object (field visibility/requirement rules). |
+| `EditablePanel/` | The editable side-panel descriptor that an action of kind `panel` opens. |
 | `Envelope/` | The response envelope around a contract. |
 | `Form/` | The form model — `FieldDefinition`, `Group`, form state and renderer contracts. |
 | `Inspector/` | Detail/inspector view contracts. |
@@ -49,7 +52,7 @@ The builders meet the caller at whatever level of control is needed — see [Pag
 
 ## Wire contract and JSON schemas
 
-The JSON schemas emitted under `schema/` (`page-contract.json`, `fragment.json`) are **published artifacts**: the `@middag-io/react` client and other consumers codegen against them. `SchemaRegistry` (in `Schema/`) is the single source of truth; `bin/emit-schemas.php` writes the files, and `composer check` runs it with `--check` to fail on drift. The schemas are strict — every object is `additionalProperties:false`, and discriminated unions (like `ActionTarget`) use `oneOf` on a `kind` const — so the contract stays a small, stable, machine-checkable wire format.
+The JSON schemas emitted under `schema/` (`page-contract.json`, `fragment.json`) are **published artifacts**: the `@middag-io/react` client and other consumers codegen against them. `SchemaRegistry` (in `Schema/`) is the single source of truth; `bin/emit-schemas.php` writes the files, and `composer check` runs it with `--check` to fail on drift. The schemas are strict — every value object is `additionalProperties:false` (only passthrough bags such as block `data`/`meta`, a fragment `payload` and parameter maps are open), and discriminated unions (like `ActionTarget`) use `oneOf` on a `kind` const — so the contract stays a small, stable, machine-checkable wire format. [UI-002](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-002-page-contract-composition-model.md) records why; [UI wire contract](../../reference/ui/wire-contract) is the full specification.
 
 ## Relationship to other packages
 
