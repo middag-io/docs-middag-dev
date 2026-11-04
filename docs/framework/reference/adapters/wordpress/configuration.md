@@ -4,7 +4,7 @@ title: 'wordpress adapter — Configuration & Identity'
 
 # Configuration & Identity
 
-Reference for how a WordPress plugin gives `middag-io/wordpress` its identity and configuration. Backs [WP-002](https://github.com/middag-io/middag-php-wordpress/tree/main/docs/decisions) (injected per-plugin identity, neutral defaults, no mutable static state), which applies [FW-015](https://github.com/middag-io/middag-php-framework/tree/main/docs/decisions) and [FW-016](https://github.com/middag-io/middag-php-framework/tree/main/docs/decisions) to WordPress.
+Reference for how a WordPress plugin gives `middag-io/wordpress` its identity and configuration. Backs [WP-002](https://github.com/middag-io/middag-php-wordpress/blob/main/docs/decisions/WP-002-config-resolver-neutral-default-prefix.md) (injected per-plugin identity, neutral defaults, no mutable static state), which applies [FW-015](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-015-hosts-are-adapters-of-framework-ports.md) and [FW-016](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-016-statics-as-a-bounded-exception.md) to WordPress.
 
 Verified against `middag-php-wordpress/main@bc1bc59` on 2026-11-04.
 
