@@ -1,78 +1,82 @@
 ---
-title: 'moodle adapter — Static Generation: CLI, Naming & Pipeline Exclusions'
+title: 'Moodle Adapter — Static Generation: Definitions, Naming & Exclusions'
 ---
 
-# Static Generation: CLI, Naming & Pipeline Exclusions
+# Static Generation: Definitions, Naming & Exclusions
 
-Reference for how `middag-io/moodle` generates the family of Moodle static artifacts a plugin needs — capabilities, services, events, message providers, hooks, caches, and file areas — from typed definition objects.
+Reference for how the static files a Moodle plugin needs (`db/access.php`, `db/caches.php`, `db/services.php`, `db/messages.php`, `db/hooks.php`, `db/events.php` and the generated event classes, `db/tasks.php`) are produced from typed definitions. Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
 
-## What gets generated
+## Who does what
 
-One typed definition class per kind of Moodle static, living in the boundary's `definition/` subdirectory. Extensions declare their statics by implementing the matching method on the extension interface:
+| Piece                                                                 | Where                                     |
+| --------------------------------------------------------------------- | ----------------------------------------- |
+| Typed definition classes (`@api`, `final readonly`)                   | This adapter, `src/Definition/`           |
+| Declaring definitions                                                 | The consumer's extensions (modules)       |
+| Collecting, rendering and writing the files                           | Build tooling outside this package        |
 
-| Static kind  | Declaration method          |
-|--------------|------------------------------|
-| Cache        | `get_cache_definitions()`    |
-| Capability   | `get_capabilities()`         |
-| Service      | (see services reference)     |
-| Message      | (message provider method)    |
-| Hook         | (hook definition method)     |
-| Event        | (event definition method)    |
-| File area    | (file area definition method) |
+Every definition implements `Definition\Contract\DefinitionInterface`:
 
-Services and file areas have non-trivial integration and their own dedicated reference material — see the Decision record links at the bottom of this page.
+| Method                                   | Purpose                                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------------------- |
+| `toMoodleArray(string $plugin_name)`     | The entry exactly as Moodle expects it in the generated file                  |
+| `isCompatible(string $moodle_version)`   | Applies the definition's `min_moodle` / `max_moodle` range                    |
+| `getName()`                              | The key the entry is written under                                            |
 
-## CLI entry point
+## Definition classes
 
-```
-php cli/build.php --statics [target] [--basedir=.] [--dry-run]
-```
+| Definition             | Target                                         | Declared by the extension through | Main fields                                                                                                                   |
+| ---------------------- | ---------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `CacheDefinition`      | `db/caches.php`                                | `getCacheDefinitions()`           | `name`, `mode` (`CacheMode`, default application), `simple_keys`, `simple_data`                                               |
+| `CapabilityDefinition` | `db/access.php`                                | `getCapabilities()`               | `name`, `archetypes`, `type` (`CapabilityType`), `context` (`ContextLevel`), `risk` (`CapabilityRisk`), `clone_from`          |
+| `ServiceDefinition`    | `db/services.php` (`$functions`)               | `getServiceDefinitions()`         | `name`, `classname`, `type` (`read`/`write`), `method`, `description`, `ajax`, `services`, `capabilities`                       |
+| `WebServiceDefinition` | `db/services.php` (`$services`)                | `getWebServiceDefinitions()`      | `name`, `shortname`, `functions`, `enabled`, `restricted_users`                                                               |
+| `MessageDefinition`    | `db/messages.php`                              | `getMessageDefinitions()`         | `name`, `popup`, `email` (`MessagePermission`)                                                                                 |
+| `HookDefinition`       | `db/hooks.php`                                 | `getHookDefinitions()`            | `hook_class`, `callback`, `priority`; `min_moodle` defaults to `'4.3'`                                                        |
+| `EventDefinition`      | `db/events.php` and `classes/event/*`          | `getEventDefinitions()`           | `name`, `crud`, `edulevel` (`EventEdulevel`), `objecttable`, `description`                                                    |
+| `FileAreaDefinition`   | Not generated; read at request time            | `getFileAreaDefinitions()`        | `name`, `context_level`, `handler`, `supports_preview`, `description`; see [File Areas](./file-areas-pluginfile-routing)       |
+| `CheckDefinition`      | Not generated; collected at runtime for `lib.php` callbacks | (consumer-defined)      | `name`, `classname`, `type` (`CheckType`)                                                                                     |
+| `LangDefinition`       | A managed block inside `lang/<locale>/<plugin>.php` | Passed explicitly to the generator (framework-layer catalogs, not extensions) | `key`, `strings` (locale ⇒ string, `en` required)                                       |
 
-| Flag | Purpose |
-|---|---|
-| `target` | Optional — restrict generation to one static kind (e.g. `capability`, `cache`). Omit to generate all kinds. |
-| `--basedir=.` | Project root the generator runs against. Defaults to the current directory. |
-| `--dry-run` | Preview generated output without writing files. |
+Every definition also carries `min_moodle` / `max_moodle`.
 
-This single entry point replaced two separate legacy scripts, `build_tasks.php` and `build_events.php`, which were removed with no backward-compatibility shim.
+### Tasks
 
-## Task declaration — two mechanisms
+Scheduled tasks are declared with the framework's `#[Schedule]` attribute (`Middag\Framework\Bus\Attribute\Schedule`) on the task class. `Support\TaskDefinitionBuilder::build()` is the canonical statement of how a `Schedule` maps onto a `db/tasks.php` row; tooling that cannot require this package re-implements the mapping and pins parity against it. The legacy plugin also accepted a `get_task_definitions()` method as a compatibility path.
 
-| Mechanism | Status | When to use |
-|---|---|---|
-| `#[schedule]` attribute | Preferred | Inline, directly on the task class |
-| `get_task_definitions()` | Compatibility | Cases the attribute doesn't fit |
+## Naming
 
-## Naming convention
+Capabilities and file areas share one convention, implemented by `getQualifiedName()`:
 
-Capability and file-area naming follow the same rule:
+| Extension      | Capability                                                         | File area                                        |
+| -------------- | ------------------------------------------------------------------ | ------------------------------------------------ |
+| `core` or none | `{plugin}:{name}` (for example `local/example:manage`)             | `{name}` (for example `attachments`)             |
+| Any other      | `{plugin}:{extension}_{name}` (for example `local/example:ecommerce_manage`) | `{extension}_{name}` (for example `customdocs_templates`) |
 
-| Extension | Convention | Example |
-|---|---|---|
-| `core` | No prefix | `local/middag:manage` |
-| Any other extension | `{extension_slug}_` prefix | `local/middag:ecommerce_manage` |
+Here `{plugin}` is the frankenstyle name with `_` replaced by `/`. External functions are named `{plugin_name}_{name}` (`ServiceDefinition::getQualifiedName()`). Generated event classes are `\{plugin_name}\event\{extension}_{name}`, with no extension prefix for `core` (`EventDefinition::getEventClassname()`); see [Event Observation](./event-observation-detail).
 
-## Ordering
+## Generation
 
-All generated files are ordered alphabetically. This is a deliberate choice: it keeps diffs predictable and reviewable — a generated file changing for an unrelated reason is easy to spot.
+The generator sorts entries by name, so diffs stay predictable and a file that changes for an unrelated reason is easy to spot, and it writes idempotently (unchanged input leaves files untouched). It is not part of this package. The legacy plugin drove it through one consolidated entry point, `php cli/build.php --statics [target] [--basedir=.] [--dry-run]`, which replaced the per-target scripts `build_tasks.php` and `build_events.php` (removed without a compatibility shim).
 
-## Excluded from the generation pipeline
+## Outside the pipeline
 
-These stay manual, with no generation involved:
+| Path                                       | How it is maintained                                                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `db/install.xml`                           | By hand (XMLDB)                                                                                                                            |
+| `db/upgrade*.php`, `db/install.php`        | By hand, delegating to the adapter (`Persistence\UpgradeHelper`, `Database\Schema\XmldbSchemaAdapter`); the consumer may offer before/after install hooks to its extensions (the legacy plugin exposed `extend_local_middag_install_before` / `_after`) |
+| `lang/`                                    | By hand, except the managed block rendered from `LangDefinition` catalogs; hand-written strings outside the block are preserved            |
+| Admin settings                             | Not generated: the same typed-definition pattern, resolved at runtime by `SettingsResolver`; see [Settings & Config Keys](./settings-and-config-keys) |
+| File-area routing                          | Not generated: resolved at request time; see [File Areas](./file-areas-pluginfile-routing)                                                  |
 
-| Path | Notes |
-|---|---|
-| `db/install.xml` | Schema install definition |
-| `db/upgrade*.php` | Schema upgrade steps |
-| `db/install.php` | Install/upgrade procedural logic |
-| `lang/` | Translation strings |
+## Enforcement state
 
-Install/upgrade extension hooks are available as the escape valve for extension-specific logic at these lifecycle points: `extend_local_middag_install_before` / `extend_local_middag_install_after`.
-
-## Settings — the documented exception
-
-Admin settings use the same typed-definition *pattern* as the other static kinds, but they are **not generated** by this pipeline. They resolve at runtime instead, via `settings_resolver`. See the settings-declaration reference material linked below for the full mechanism.
+| Clause                                                         | State                                                                 |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| One typed definition per static kind                           | **coded** — the `Definition/` classes; review decides new kinds       |
+| Generated files are never edited by hand                       | **planned** — no check in this package                                |
+| Capability and file-area naming                                | **coded** — `getQualifiedName()` on the definitions                   |
+| Settings and file-area routing stay out of generation          | **planned** — architectural choice, no check                          |
 
 ---
 
-Decision record: [MDL-016 — Typed Definitions Generate Moodle Statics; Settings Are the Documented Exception](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-016-moodle-statics-generation.md).
+Decision record: MDL-016 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

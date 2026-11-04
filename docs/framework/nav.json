@@ -232,7 +232,8 @@
           "files": [
             "reference/adapters/moodle/support-class-inventory",
             "reference/adapters/moodle/boundary-whitelist",
-            "reference/adapters/moodle/api-coverage-inventory"
+            "reference/adapters/moodle/api-coverage-inventory",
+            "reference/adapters/moodle/shared-namespace-dependencies"
           ],
           "labels": [
             {
@@ -241,11 +242,15 @@
             },
             {
               "file": "reference/adapters/moodle/boundary-whitelist",
-              "label": "Boundary Whitelist"
+              "label": "Boundary & Whitelist"
             },
             {
               "file": "reference/adapters/moodle/api-coverage-inventory",
-              "label": "API Coverage Inventory"
+              "label": "API Coverage & Version Gates"
+            },
+            {
+              "file": "reference/adapters/moodle/shared-namespace-dependencies",
+              "label": "Shared-Namespace Dependencies"
             }
           ]
         },
@@ -294,17 +299,22 @@
           "label": "Config & Cache",
           "order": 4,
           "files": [
+            "reference/adapters/moodle/settings-and-config-keys",
             "reference/adapters/moodle/config-schema-inventory",
             "reference/adapters/moodle/cache-decorator"
           ],
           "labels": [
             {
+              "file": "reference/adapters/moodle/settings-and-config-keys",
+              "label": "Settings & Config Keys"
+            },
+            {
               "file": "reference/adapters/moodle/config-schema-inventory",
-              "label": "Config Schema & Settings DSL"
+              "label": "Config Schema Inventory (Downstream)"
             },
             {
               "file": "reference/adapters/moodle/cache-decorator",
-              "label": "Cache Decorator"
+              "label": "Cache Decorator (Downstream)"
             }
           ]
         },
@@ -322,7 +332,7 @@
             },
             {
               "file": "reference/adapters/moodle/import-repository-contract",
-              "label": "Import Repository (Backup/Restore)"
+              "label": "Import Repository (Downstream)"
             }
           ]
         },

@@ -46,6 +46,23 @@ Logging and observability ports are documented in [Logging & observability](./lo
 
 `HostContext::set()` is a single process-wide slot that static adapter helpers outside the DI graph read through `HostContext::get()` (null when unset). It models one active host component per process, which holds for Moodle (one plugin boots per request). It does not hold for WordPress, where several plugins built on the WordPress adapter share one PHP process: each would overwrite the slot and the last write would win. WordPress consumers therefore never read `HostContext`; each plugin injects its `WpComponentContext` through its own container.
 
+## Transactions — the Moodle mapping
+
+`TransactionManagerInterface` (`Database/Contract/`, `@api`) has two boundaries; the one-aggregate-per-transaction policy they serve is the framework's ([FW-013](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-013-repository-persistence-boundary.md)). The Moodle adapter's `Database\TransactionManager` (`@internal`, bind it through the interface) maps them onto Moodle's delegated transactions:
+
+| Framework boundary                       | Moodle implementation                                                                                                                                                                                                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `executeAtomic(callable $operation)`     | `DbSupport::startDelegatedTransaction()`, run the operation, `allow_commit()`. On any `Throwable`: roll back and re-throw the original. A non-`Exception` `Throwable` is wrapped in a `moodle_exception` for `rollback()`, which only accepts exceptions; an exception thrown by `rollback()` itself is suppressed so the original surfaces |
+| `executeGraceful(callable $operation)`   | Same start and commit. On failure it rolls back, then checks `$DB->is_transaction_started()`: if the outermost transaction has fully unwound, it **returns** the `Throwable`; if a transaction is still open (a nested boundary Moodle dooms), it re-throws, honoring Moodle's cascading rollback |
+
+Rules that apply on Moodle as on every host:
+
+- One aggregate per transaction. Each aggregate commits on its own; coordination between aggregates goes through signals or events with eventual consistency, never a shared transaction.
+- The only exception is a case where Moodle's own platform semantics force atomicity across the boundary, and it must be documented in code next to the call, with its justification.
+- No automated check inspects call sites for cross-aggregate repository use inside the callable yet; the rule is enforced in review.
+
+The WordPress adapter does not implement this port.
+
 ## Controller roles
 
 `ControllerInterface` is the union of three host-neutral role interfaces, so a host composes only the roles its dispatch model runs:

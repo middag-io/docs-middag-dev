@@ -1,45 +1,74 @@
 ---
-title: 'moodle — Event Observation: Inbound Paths, Naming & Anti-Patterns'
+title: 'Moodle Adapter — Event Observation: Inbound, Outbound & Naming'
 ---
 
-# Event Observation: Inbound Paths, Naming & Anti-Patterns
+# Event Observation: Inbound, Outbound & Naming
 
-Reference for how the Moodle adapter (`middag-io/middag-php-moodle`) observes native Moodle events (inbound) and emits its own domain activity into Moodle's logstore (outbound). Backs [MDL-015](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-015-moodle-event-observation-model.md).
+Reference for how Moodle events reach consumer code (inbound) and how consumer activity reaches Moodle's logstore (outbound). Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
 
-## Inbound paths, in order of preference
+## What ships where
 
-| Path | Mechanism | When to use |
-|---|---|---|
-| Attribute-based (preferred) | `#[moodle_event(...)]` on the signal class, auto-discovered by `moodle_signal_loader` | Default choice — zero registration boilerplate. Requires the file to be suffixed `_signal.php`; without it, the attribute is present but discovery silently does not happen. |
-| Bridge registration | `moodle_event_bridge::register()` / `register_declarative()`, called from `boot()` | Middle-ground path when the attribute convention doesn't fit. |
-| Manual observer | `middag_observer` with explicit signal publication | Only when the Moodle event needs data enrichment before becoming an internal signal — not for simple pass-through mappings. |
+| Piece                                                                                         | Where                     |
+| --------------------------------------------------------------------------------------------- | ------------------------- |
+| `Bus\MoodleHostEventBridge` (`@api`): the framework `HostEventBridgeInterface` over the bound `HookManagerInterface` | This adapter |
+| `Domain\Event\Attribute\MoodleEvent` (`@api`): marks a signal class as the handler of a Moodle event | This adapter        |
+| `Definition\EventDefinition` (`@api`): outbound event declaration                             | This adapter              |
+| `Support\EventSupport`: lists core and plugin event classes, by educational level             | This adapter              |
+| Typed Moodle-event-to-signal bridge, signal loader, observers, signal naming contract          | Downstream (proprietary)  |
 
-## Duplicate registration
+## The generic host event seam (OSS)
 
-Registering the same Moodle event class through more than one of the three paths above is a configuration error. In practice, the bridge resolves it by **last-write-wins, silently** — no fallback, no hard failure. This is looser than the item-type system's identifier-collision rule (a separate mechanism), which treats a collision as fatal rather than resolved by precedence.
+`MoodleHostEventBridge` implements the framework's platform-agnostic `HostEventBridgeInterface`: `dispatch($eventName, $payload)` fires an action hook, `listen($eventName, $listener, $priority)` registers an action callback. Execution is synchronous and in-process. The consumer's composition root binds the concrete to the interface, so listeners depend only on the framework contract. This is the basic eventing seam; it does not map Moodle core events onto typed signals.
 
-## Signal naming
+## Outbound: consumer activity into Moodle's logstore
 
-Hierarchy defined by `aggregate_signal_interface`:
+Extensions declare `getEventDefinitions()` returning `EventDefinition` objects (`name`, `crud`, `edulevel`, `objecttable`, `description`, `min_moodle`, `max_moodle`). The static generator writes the `db/events.php` entries and one class per definition under the consumer's `classes/event/`, extending `\core\event\base` (see [Static Generation](./statics-generation)).
 
-| Form | Pattern | Use |
-|---|---|---|
-| General | `middag/{aggregate}/{action}` | Default signal name. |
-| Specific | `middag/{aggregate}/{action}/{type}` | Variant scoped to a type. |
+Generated class names come from `EventDefinition::getEventClassname($plugin_name, $extension)`: `\{plugin_name}\event\{extension}_{name}`, with no extension prefix for `core`. With `name` written as `{entity}_{action}` (for example `order_created`), the class is `{extension}_{entity}_{action}`. Outbound emission may also fire an internal signal.
 
-## Outbound naming
+## Inbound: Moodle events into signals (downstream)
 
-Generated event classes are named `{extension}_{entity}_{action}`, under the namespace `\local_middag\event\` (or `\{plugin}\event\` for external plugins), extending `\core\event\base`. Generation itself is handled by the static-generation pipeline — see [MDL-016](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-016-moodle-statics-generation.md).
+> **Downstream.** The inbound machinery below lives in a proprietary package built on this adapter. Only the `#[MoodleEvent]` attribute is OSS.
 
-## External plugin extension point
+Three inbound paths coexist, in order of preference:
 
-`{plugin}_extend_local_middag_moodle_signal_loader(array $dirs): array` is the single hook an external plugin implements to expose its own signal-class directories to the loader.
+| Path                        | Mechanism                                                                                                 | When                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Attribute (preferred)       | `#[MoodleEvent(\core\event\user_enrolment_created::class)]` on the signal class, discovered by the signal loader | Default: no registration boilerplate. The file must end in `_signal.php`, or it is never scanned |
+| Bridge registration         | The typed bridge's `register()` / `registerDeclarative()`, called from an extension's `boot()`              | When the attribute convention does not fit                                                   |
+| Manual observer             | An observer class that publishes the signal itself                                                         | Only when the event needs data enrichment first                                              |
+
+A class carrying `#[MoodleEvent]` must accept `\core\event\base` as its first (and only required) constructor argument.
+
+Registering one Moodle event through more than one path is a configuration error. The bridge resolves it by **last write wins**, silently, with no fallback and no failure. This is looser than the item-type rule, where an identifier collision is fatal.
+
+Observer modes:
+
+| Mode                    | Behavior                                                       | Recommendation                                                       |
+| ----------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Explicit list (default) | Observers for the events the extensions list                   | Default in production                                                |
+| Catch-all               | One wildcard (`*`) observer invoked for every Moodle event     | Gated by configuration (the legacy key was `moodle_events_catch_all`); keep it off in production (cost on every event site-wide) |
+
+### Signal naming
+
+Signals that represent an aggregate change name themselves hierarchically from `getAggregate()`, `getAction()` and `getType()`:
+
+| Form     | Pattern                              | Use                       |
+| -------- | ------------------------------------ | ------------------------- |
+| General  | `middag/{aggregate}/{action}`        | Default signal name       |
+| Specific | `middag/{aggregate}/{action}/{type}` | Variant scoped to a type  |
+
+External plugins expose their signal-class directories to the loader through one hook the consumer provides (in the MIDDAG product: `{plugin}_extend_local_middag_moodle_signal_loader(array $dirs): array`).
 
 ## Anti-patterns
 
-| Anti-pattern | Why it's wrong |
-|---|---|
-| Registering the same event through two different paths | Last-write-wins resolves it silently — the losing registration simply never fires, with no error raised to signal the mistake. |
-| `#[moodle_event]` on a class without the `_signal.php` suffix | Not discovered — silently, since the attribute is syntactically valid but never scanned by the loader. |
-| Manual observer for a direct, no-enrichment mapping | Unnecessary boilerplate when the attribute path would do. |
-| `catch_all` (wildcard) left ON in production | Real performance cost — invoked for every Moodle event site-wide. |
+| Anti-pattern                                                  | Why it is wrong                                                                         |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Registering one event through two paths                       | Last write wins silently; the losing registration never fires and nothing reports it    |
+| `#[MoodleEvent]` in a file without the `_signal.php` suffix   | Never scanned, silently                                                                 |
+| A manual observer for a direct, no-enrichment mapping         | Boilerplate the attribute path removes                                                   |
+| Catch-all left on in production                               | Invoked for every Moodle event on the site                                              |
+
+---
+
+Decision records: MDL-001 (inbound host seam), MDL-015 and MDL-016 (outbound generation) in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
