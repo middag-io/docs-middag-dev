@@ -54,6 +54,17 @@ The builders meet the caller at whatever level of control is needed — see [Pag
 
 The JSON schemas emitted under `schema/` (`page-contract.json`, `fragment.json`) are **published artifacts**: the `@middag-io/react` client and other consumers codegen against them. `SchemaRegistry` (in `Schema/`) is the single source of truth; `bin/emit-schemas.php` writes the files, and `composer check` runs it with `--check` to fail on drift. The schemas are strict — every value object is `additionalProperties:false` (only passthrough bags such as block `data`/`meta`, a fragment `payload` and parameter maps are open), and discriminated unions (like `ActionTarget`) use `oneOf` on a `kind` const — so the contract stays a small, stable, machine-checkable wire format. [UI-002](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-002-page-contract-composition-model.md) records why; [UI wire contract](../../reference/ui/wire-contract) is the full specification.
 
+## Why the first-party client is React and ReUI
+
+The contracts do not choose a renderer, but MIDDAG ships one first-party client, `@middag-io/react`. It is React + TypeScript over `@inertiajs/react`, with ReUI (shadcn/ui, Radix UI and Tailwind CSS, MIT, copy-paste distribution) as the design system foundation. The [design system catalog](../../reference/ui/design-system-catalog) lists the current package and versions.
+
+- **Why it moved off Vue.** The earlier client was Vue 3 + Inertia + PrimeVue + Pinia, chosen to align with Moodle core, which uses Vue internally. ReUI's copy-paste distribution needs React at runtime, and no Vue design system of comparable maturity existed.
+- **Rejected alternatives.** Atlaskit, because its license limits use to products that interoperate with Atlassian software; Forge UI, because its renderer only runs inside the Forge sandbox.
+- **What stayed.** Inertia stayed the transport; only the client target changed (`@inertiajs/vue3` to `@inertiajs/react`).
+- **No coexistence layer.** There is no Vue/React bridge. Migration is incremental, per extension, and existing Vue routes keep working until they are rewritten.
+- **Trade-offs accepted.** The client diverges from Moodle core's internal Vue usage; the product ships as an embedded app with its own UI identity rather than sharing components with Moodle core. The existing Vue frontend has to be rewritten in full, which the per-extension migration spreads out instead of a big-bang cutover. One stack removes the cost of parallel build, test and onboarding paths.
+- **Where host styling goes.** Host theme bridging (for example Moodle color tokens to Tailwind tokens) belongs to the host adapter, not to the client or the contracts.
+
 ## Relationship to other packages
 
 ```

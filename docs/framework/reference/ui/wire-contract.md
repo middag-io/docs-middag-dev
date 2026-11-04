@@ -33,11 +33,35 @@ A `PageContract` is built from five layers:
 
 ### Open vocabulary
 
-Shell names, layout templates, region names and block types are plain strings in PHP and in the schema. The package does not enumerate them: the client's registry decides which values it can render. [`BlockBuilder`](https://github.com/middag-io/middag-php-ui/blob/main/src/Block/BlockBuilder.php) and [`RegionBuilder`](https://github.com/middag-io/middag-php-ui/blob/main/src/Region/RegionBuilder.php) ship named constructors for the standard block types (`dense_table`, `form_panel`, `detail_panel`, `metric_card`, `empty_state`, `status_strip`, `activity_timeline`, `markdown_panel`, `card_grid`, `action_grid`, `link_list`, `chart`, `tabs`). `RegionBuilder::block()` emits any other type, and the same contract carries standard and custom blocks the same way. Tables and forms are blocks (`dense_table`, `form_panel`), not per-screen code.
+Shell names, layout templates, region names and block types are plain strings in PHP and in the schema. The package does not enumerate them: the client's registry decides which values it can render. [`BlockBuilder`](https://github.com/middag-io/middag-php-ui/blob/main/src/Block/BlockBuilder.php) and [`RegionBuilder`](https://github.com/middag-io/middag-php-ui/blob/main/src/Region/RegionBuilder.php) ship named constructors for the standard block types (`dense_table`, `form_panel`, `detail_panel`, `metric_card`, `empty_state`, `status_strip`, `activity_timeline`, `markdown_panel`, `card_grid`, `action_grid`, `link_list`, `chart`, `tabs`). `RegionBuilder::block()` emits any other type, and the same contract carries standard and custom blocks the same way. Tables and forms are blocks (`dense_table`, `form_panel`), not per-screen code; see [Tables and forms](#tables-and-forms).
 
 ### Block hints
 
 `deferred: true` marks a block whose data the client fetches after the first render. `remember: true` marks a block whose local UI state the client restores on back and forward navigation. Both are omitted when false. Their docblocks describe them in terms of the first-party client's transport (Inertia deferred props and `useRemember`); whether they stay renderer-neutral is an open question in UI-002.
+
+## Tables and forms
+
+### Tables
+
+A `dense_table` block carries a table definition plus the current page of rows. [`TableConfig`](https://github.com/middag-io/middag-php-ui/blob/main/src/Table/TableConfig.php) (built by [`TableBuilder`](https://github.com/middag-io/middag-php-ui/blob/main/src/Table/TableBuilder.php), or by `CrudBuilder` for an L1/L2 index page) serializes:
+
+| Key | Value object | Carries |
+| --- | --- | --- |
+| `columns` | [`Column`](https://github.com/middag-io/middag-php-ui/blob/main/src/Table/Column.php) | `key`, `label`, `sortable`, `searchable`, a `format` (`ValueFormat`), optional `formatOptions`, `options` and a cell `variant` (`ColumnVariant`, see [optional capabilities](./composition-levels-and-capabilities#optional-capabilities-in-the-php-contract)). |
+| `filters` | [`FilterDefinition`](https://github.com/middag-io/middag-php-ui/blob/main/src/Table/FilterDefinition.php) | `key`, `label`, a control `type` (`FilterType`: `select`, `text`, `date`, `date_range`, `boolean`, `number_range`), and optional `options`, `placeholder` and `default`. |
+| `rowActions` | `Action` | Per-row actions; their targets use an `{id}` placeholder for the row. |
+| `bulkActions` | `Action` | Actions applied to the selected rows. |
+| `options` | [`TableDisplayOptions`](https://github.com/middag-io/middag-php-ui/blob/main/src/Table/TableDisplayOptions.php) | `perPage` (default 25), optional `sortColumn`, `sortDirection` (default `desc`), `selectable` and `searchable`. |
+
+`CrudBuilder` merges this configuration with `rows` and a [`Pagination`](https://github.com/middag-io/middag-php-ui/blob/main/src/Table/Pagination.php) (`page`, `perPage`, `total`, `lastPage`; `Pagination::of()` derives `lastPage`) into the block `data`. The contract declares which columns sort and search and which filters exist; the server applies sorting, filtering and pagination and sends the resulting page. `CrudBuilder` turns `selectable` on when bulk actions are configured and `searchable` on when any column is searchable. The block `meta` bag can ask the client to sort, filter and paginate the supplied rows itself (`clientSide`); `meta` is passthrough, so the client decides which keys it reads.
+
+`TableConfig`, `TableDisplayOptions`, `FilterDefinition`, `Pagination` and `Column` are registered in the schema bundles, but the `dense_table` block `data` stays a passthrough object, so the schema does not validate a table payload inside a page.
+
+### Forms
+
+A `form_panel` block carries `action`, a lowercase `method`, a `schema` (a list of form schema nodes), `values`, `errors` and `meta`; `BlockBuilder::formPanel()` defaults `errors` to an empty object and `meta.validation` to `both`, and adds `steps` and `multiStep` for a multi-step form. Each `schema` entry is either a [`FormSchemaNodeInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/Contract/FormSchemaNodeInterface.php) value object (`FormFieldNode`, `FormGroupNode`, `FormSectionNode`, `FormHeaderNode`), serialized by the builder, or a loose array that passes through unchanged while producers migrate to the value objects. A file field's value is a [`FileValue`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/FileValue.php) (or a list of them), on the wire either a bare URL or an object with `url` and optional `name`, `size`, `type`, `id` and `draftitemid`.
+
+The form DSL itself lives in the framework. A host renderer that cannot consume the JSON implements [`FormRendererInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/Contract/FormRendererInterface.php), which returns a `RendererOutput` for one `RenderTarget`; those renderers live in the framework and the host adapters, not in this package.
 
 ## Fragments and mutation results
 
@@ -94,4 +118,4 @@ The schemas are strict. Every value object is `additionalProperties: false`, and
 
 The contract does not guarantee that a particular host or client renders every block type, layout or shell; that is the client registry's job. Rendering, HTTP transport and host wiring live in `middag-io/framework`, the host adapters and the client. See [Page composition contract](./composition-levels-and-capabilities) for the builder levels and [ui architecture](../../explanation/ui/architecture) for the package boundaries.
 
-Verified against `middag-php-ui/main@e752e2aa8e2577cccef4135a9472df597056dc55` on 2026-11-04.
+Verified against `middag-php-ui/main@8602bb179816ed2c51c633855535a985792abb72` on 2026-11-04.

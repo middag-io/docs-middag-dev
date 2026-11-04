@@ -32,6 +32,16 @@ $page = PageBuilder::page('segments.index')
 
 ## Optional capabilities in the PHP contract
 
-[`PollConfig`](https://github.com/middag-io/middag-php-ui/blob/main/src/Region/PollConfig.php) supplies a refresh endpoint and interval for a block or inspector. [`Confirmation`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/Confirmation.php) describes the labels, message, and variant of a guarded action. These are serialized data contracts; the active React and host versions determine their runtime behavior. Consult the [React package documentation](https://github.com/middag-io/middag-react/tree/main/docs) for rendering and client APIs.
+These are serialized data contracts; the active React and host versions determine their runtime behavior.
 
-Verified against `middag-php-ui/main@e752e2aa8e2577cccef4135a9472df597056dc55` on 2026-11-04. The old `REF-UI-002-01` and previous versions of this page included method names and feature claims that were not verified against this source; they are not used as current API evidence here.
+| Capability | Value object | What the contract carries |
+| --- | --- | --- |
+| Polling | [`PollConfig`](https://github.com/middag-io/middag-php-ui/blob/main/src/Region/PollConfig.php) | A refresh `endpoint` and `intervalMs` for a block or inspector, an optional `stopAfterMs`, and `pauseWhenHidden` (default true). |
+| Confirmation dialogs | [`Confirmation`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/Confirmation.php) | The `title`, `message`, optional confirm and cancel labels, and a `variant` of a guarded action. `CrudBuilder` attaches a `danger` confirmation to its `delete` row and bulk actions. |
+| Action state | [`Action`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/Action.php) | An `intent`, an optional `icon`, an opaque `capability` token, and `disabled` and `loading` flags. There is no per-row visibility condition: a row action applies to every row, and the server omits or disables it when it does not apply. |
+| Notifications (flash and toast) | [`Notification`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/ValueObject/Notification.php) | A `level` (`NotificationLevel`: `success`, `info`, `warning`, `error`), a `message`, an optional `title`, `dismissible` (default true), an optional `timeout` and an optional follow-up `Action`. `PageContract`, `Fragment` (including a `notifications` fragment) and `ActionResult` carry them. |
+| Column cell variants | [`ColumnVariant`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/Enum/ColumnVariant.php) | The cell component for a `dense_table` column: `text`, `status`, `badge`, `boolean`, `timestamp`, `link`, `rich_status`, `html`, `link_group`, `annotated`, `progress`. `rich_status` reads a `{label, appearance}` value, so the colour does not depend on translated text; `annotated` and `progress` read their own structured values. A null variant leaves the client on `text`. |
+
+`variant` and `format` (`ValueFormat`: how a scalar is formatted) are separate: a column that needs a coloured pill declares the variant, because `format: badge` alone leaves the cell as text. Consult the [React package documentation](https://github.com/middag-io/middag-react/tree/main/docs) for rendering and client APIs.
+
+Verified against `middag-php-ui/main@8602bb179816ed2c51c633855535a985792abb72` on 2026-11-04. The old `REF-UI-002-01` and previous versions of this page included method names and feature claims that were not verified against this source; they are not used as current API evidence here.
