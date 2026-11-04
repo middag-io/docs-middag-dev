@@ -4,7 +4,7 @@ title: 'wordpress adapter — Routing Surfaces'
 
 # Routing Surfaces
 
-Reference for how `middag-io/wordpress` routes requests into a consumer plugin. Backs [WP-001](https://github.com/middag-io/middag-php-wordpress/tree/main/docs/decisions) (WordPress HTTP integration). The controller classes behind these surfaces are in [Controller Bases](./controller-bases).
+Reference for how `middag-io/wordpress` routes requests into a consumer plugin. Backs [WP-001](https://github.com/middag-io/middag-php-wordpress/blob/main/docs/decisions/WP-001-page-controller-base-and-rest-divergence.md) (WordPress HTTP integration). The controller classes behind these surfaces are in [Controller Bases](./controller-bases).
 
 Verified against `middag-php-wordpress/main@bc1bc59` on 2026-11-04.
 

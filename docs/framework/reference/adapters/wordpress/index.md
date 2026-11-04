@@ -4,7 +4,7 @@ title: 'Reference — WordPress Adapter'
 
 # Reference — WordPress Adapter
 
-Reference for `middag-io/wordpress` (`middag-php-wordpress`), the OSS adapter that plugs a WordPress host into `middag-io/framework`. Backs [WP-003](https://github.com/middag-io/middag-php-wordpress/tree/main/docs/decisions) (WordPress is an adapter of the framework's ports), which applies [FW-015](https://github.com/middag-io/middag-php-framework/tree/main/docs/decisions) to WordPress.
+Reference for `middag-io/wordpress` (`middag-php-wordpress`), the OSS adapter that plugs a WordPress host into `middag-io/framework`. Backs [WP-003](https://github.com/middag-io/middag-php-wordpress/blob/main/docs/decisions/WP-003-wordpress-is-an-adapter-of-framework-ports.md) (WordPress is an adapter of the framework's ports), which applies [FW-015](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-015-hosts-are-adapters-of-framework-ports.md) to WordPress.
 
 Verified against `middag-php-wordpress/main@bc1bc59` on 2026-11-04.
 
