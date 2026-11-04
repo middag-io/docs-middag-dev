@@ -215,6 +215,10 @@
       {
         "file": "reference/ui/design-system-catalog",
         "label": "UI Stack & Design System"
+      },
+      {
+        "file": "reference/ui/wire-contract",
+        "label": "UI Wire Contract"
       }
     ]
   },
