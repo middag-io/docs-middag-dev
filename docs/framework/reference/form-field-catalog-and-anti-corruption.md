@@ -4,7 +4,7 @@ title: 'framework — Form Field Type Catalog & Renderer Anti-Corruption'
 
 # Form Field Type Catalog & Renderer Anti-Corruption
 
-Reference for the field-type DSL and the renderer boundary in `middag-io/framework`'s form engine. Backs [FW-004](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-004-form-renderer-adapters-field-type-dsl.md).
+Reference for the field-type DSL and the renderer boundary in `middag-io/framework`'s form engine. Backs [FW-004](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-004-form-renderer-adapters-field-type-dsl.md). Provenance: legacy vault ADR-805 (renderer adapters) and ADR-806 (field type DSL), both 2026-04-13.
 
 ## Renderer boundary
 
@@ -26,9 +26,11 @@ interface FormRendererInterface
 
 A controller has one default renderer. A specific route can override it per call to target a different output. There is no global per-extension config and no per-user toggle — an override is always an explicit, per-call choice.
 
-### Legacy precedent for a non-Inertia renderer
+### Host widgets live only in adapter renderers
 
-The Moodle-era interface additionally shipped an `mform_renderer`, producing `MoodleQuickForm` HTML output as the default for host-page controllers. That renderer does not exist in this repo — the standalone framework carries no mform code today. Any adapter that builds a non-Inertia renderer (Moodle or otherwise) inherits the responsibility of keeping its host-specific types inside its own renderer file; nothing in this framework enforces that boundary automatically — see the Enforcement table in FW-004.
+Host form widgets exist only inside renderers that ship with a host adapter, never in this framework's `Form/` code. The Moodle adapter's `MformRenderer` (`middag-php-moodle`, `src/Form/MformRenderer.php`) implements the same `FormRendererInterface` and maps the schema onto `MoodleQuickForm` through `MformFieldMapper`. The WordPress adapter ships no form renderer of its own and uses the framework's `InertiaRenderer`.
+
+The legacy Moodle-era design had the same split: an `mform_renderer` producing `MoodleQuickForm` HTML as the default for host-page controllers. Nothing in this framework checks the boundary automatically; each adapter keeps its host-specific types inside its own renderer files.
 
 ## Field type catalog
 
@@ -55,12 +57,13 @@ The Moodle-era interface additionally shipped an `mform_renderer`, producing `Mo
 | `entityPicker()` | `EntityPickerField` | — |
 | `hidden()` | `GenericField` | `FieldType::Hidden` |
 | `header()` | `StaticField` | `FieldType::Header` |
+| `display()` | `StaticField` | — |
 
-Plus two layout primitives: `section::of()` and `group::of()`.
+Layout primitives come from `middag-io/ui`: `Middag\Ui\Form\Group::of()` (inline field group) and `Middag\Ui\Block\Section::of()`.
 
 `FieldType` — the enum distinguishing variants like `Email`/`Password`/`Url` within one `TextField` class — lives in `Middag\Ui\Shared\Enum\FieldType`, in `middag-io/ui`, not in this framework. Field-shape vocabulary is shared cross-repo so the UI package's block/page builders speak the same type language as the form DSL without depending on `Form/` internals.
 
-Not yet confirmed against current code as of this writing — verify against `FieldFactory`/`AbstractField` before relying on either: a `static`/`STATIC` factory-method equivalent, and the exact current name for a pattern/regex condition (`->pattern()` vs `->regex()`).
+There is no separate `static` factory method: static, non-input content uses `header()` and `display()`, both backed by `StaticField`. A regex constraint is declared with `TextField::pattern()`, which `FormValidator` turns into `Assert\Regex`.
 
 ### Out of MVP scope (still true today)
 

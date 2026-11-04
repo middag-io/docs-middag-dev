@@ -4,9 +4,9 @@ title: 'Signal & Hook Reactive Model — Legacy Mechanics and Core-Owned Design'
 
 # Signal & Hook Reactive Model — Legacy Mechanics and Core-Owned Design
 
-Reference for the reactive (signal/hook/filter) model behind `middag-io/framework`, its WordPress-style `HookManager` (shipped, current), and the governed dispatch/hierarchy/outbox engine that is **not** shipped in this OSS repo but reserved for `middag-io/core`. Backs [FW-007](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-007-signal-hook-reactive-model.md).
+Reference for the reactive (signal/hook/filter) model behind `middag-io/framework`, its WordPress-style `HookManager` (shipped, current), and the governed dispatch/hierarchy/outbox engine that is **not** shipped in this OSS repo but reserved for `middag-io/core`. Backs [FW-007](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-007-signal-hook-reactive-model.md). Provenance: legacy vault ADR-701 (general model) and ADR-702 (failure isolation), 2026-03-29; ADR-703 (WordPress-style hooks), 2026-04-04; ADR-707 (async signal outbox), 2026-04-20.
 
-> Read the mechanisms marked **core-owned** below as archaeology for whoever implements or maintains `middag-io/core` — they describe the legacy `moodle-local_middag` design, not anything shipped in this framework today. The mechanisms marked **shipped** are real and current; check `Kernel/Manager/HookManager.php` before restating any exact behaviour, since implementation detail can drift from this document.
+> Read the mechanisms marked **core-owned** below as archaeology for whoever implements or maintains `middag-io/core` — they describe the legacy `moodle-local_middag` design, not anything shipped in this framework today. The mechanisms marked **shipped** are real and current. The public hook surface, its stability tags and the naming convention are specified in [Hooks — Public Surface and Naming](./hooks-public-surface).
 
 ## Three-mechanism hierarchy
 
@@ -73,7 +73,7 @@ A composite key `{class}:{action}:{type}:{id}` guarded against loops:
 | Reentrant call | Behaviour |
 |---|---|
 | First reentrant call on a key | Skipped, with a warning logged |
-| Second reentrant call on the same key | Throws `middag_lifecycle_violation_exception` (see [exception hierarchy](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-010-typed-exception-hierarchy.md) for the current mapping) |
+| Second reentrant call on the same key | Throws `middag_lifecycle_violation_exception` (see [exception hierarchy](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-010-typed-exception-hierarchy.md) for the current mapping) |
 | Different actions on the same ID, or same signal across different IDs | Never blocked — this guard targets true reentrance, not general high-frequency dispatch |
 
 Not mentioned in `ADR-701` at all; reconstructed separately.
@@ -88,7 +88,7 @@ A `moodle_event_bridge`-equivalent converted native host events into signals thr
 
 External plugins extended this via a `lib.php`-style hook: `{plugin}_extend_local_middag_moodle_signal_loader(array $dirs): array`.
 
-This entire bridge is host-adapter territory by construction — it translates a specific host's native events, so it cannot live in a host-agnostic framework. Whether it now lives in a host adapter repo or in core was not confirmed at reconstruction time.
+This entire bridge is host-adapter territory by construction: it translates a specific host's native events, so it cannot live in a host-agnostic framework. Today the split is: the framework ships the `@api` `HostEventBridgeInterface` for named events; the adapters implement it (`MoodleHostEventBridge` delegates to the framework `HookManager`, `WpHostEventBridge` maps onto native `do_action`/`add_action` under a `middag/` prefix); and the mapping of typed Moodle core events onto signals belongs to the downstream governed signal layer.
 
 ## Failure isolation matrix
 
@@ -98,7 +98,7 @@ This entire bridge is host-adapter territory by construction — it translates a
 | `hook_manager::do_action()` | Lateral | Yes (even though lateral) |
 | `hook_manager::apply_filters()` | Mandatory | Yes |
 | A selected shortcode render | Mandatory | Yes |
-| Bootstrap/discovery loaders | Its own bootstrap-exception rule | See [FW-012](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-012-kernel-boot-lifecycle.md) |
+| Bootstrap/discovery loaders | Its own bootstrap-exception rule | See [FW-012](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-012-kernel-boot-lifecycle.md) |
 
 The decisive rule is not "hook versus service" — it is whether the step composes the contract promised to the caller (a return value or a documented mandatory side effect). If it does, its failure travels with the main flow; otherwise it is lateral by default. **Lateral never means automatically suppressed** — there is no implicit try/catch in the hook manager; an action-hook or filter callback's exception propagates exactly like any other PHP exception, and it is the registering developer's responsibility to handle it if it should not bubble up. The one carve-out with a different rule entirely is boot-time failure isolation (FW-012, originally `ADR-609`) — that rule isolates a misbehaving *extension* at boot, a different question from whether a *single reactive callback's* exception should propagate.
 
@@ -111,13 +111,13 @@ The decisive rule is not "hook versus service" — it is whether the step compos
 | Actions | `add_action`/`do_action` — side effects, no return value |
 | Filters | `add_filter`/`apply_filters` — synchronous transform, mandatory return value |
 | Ordering | Priority (lower runs earlier) + accepted-argument count |
-| Naming | Derived automatically from the signal's FQCN, same convention as the dispatch bridge; legacy `lib.php` host-integration hooks not derived from a signal kept a host-specific prefix |
-| Registration | Per extension at boot: inline in a `register_hooks()`-style method, or auto-discovery via classes extending `Kernel/Module/AbstractHookRegister.php` |
+| Naming | `HookManager` accepts any string tag and enforces no convention. The ecosystem uses `middag/`-prefixed, `/`-separated names; see [Hooks — Public Surface and Naming](./hooks-public-surface). In the legacy design the signal bridge derived hook names from the signal's FQCN, and `lib.php` host-integration hooks kept a host-specific prefix |
+| Registration | Per module at boot: `AbstractModule::registerHooks()` discovers `*Hooks` classes (typically extending the `@internal` `AbstractHookRegister`, whose static `register()` calls `registerActions()`/`registerFilters()`), or an adapter's `HookfileLoader` loads hookfiles |
 | State | Per-instance, not static/global — closes a multi-plugin-collision failure mode the legacy static registry carried |
-| Observability | The legacy `hook_manager` measured execution time per callback and logged a warning past a configurable slow-callback threshold (`middag_hook_slow_threshold_ms`, default 100 ms, `0` disables it) — purely passive, no throttling or cancellation. Whether the live `HookManager`'s opt-in `setProfileCollector()` mechanism still enforces a default threshold, or leaves that entirely to the bound `ProfileCollectorInterface` consumer, was not confirmed at reconstruction time — check `Kernel/Manager/HookManager.php` before restating either behaviour as current. |
+| Observability | Each callback is timed; one slower than the threshold logs a PSR-3 `warning` (`HookManager` constructor argument `slowThresholdMs`, default 100 ms, `0` disables, also `setSlowThreshold()`). Passive only: no throttling or cancellation. Separately, an attached `ProfileCollectorInterface` (`setProfileCollector()`) records every fired tag under category `hook`. The legacy `hook_manager` had the same 100 ms default under the setting `middag_hook_slow_threshold_ms` |
 | Coexistence with host hooks | Scoped as non-overlapping by design (e.g. Moodle Hooks 4.4+): host hooks integrate with the platform itself, MIDDAG hooks exist for product extensibility |
 
-Substantial I/O inside a callback was expected to move to the async command/job model instead — see [FW-008](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-008-command-bus-async-job-model.md), a deliberately distinct mechanism (explicit intent to do work, versus reactive observation here).
+Substantial I/O inside a callback was expected to move to the async command/job model instead — see [FW-008](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-008-command-bus-async-job-model.md), a deliberately distinct mechanism (explicit intent to do work, versus reactive observation here).
 
 ## The legacy async signal outbox (core-owned)
 

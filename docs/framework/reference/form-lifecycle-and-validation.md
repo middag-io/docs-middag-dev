@@ -6,7 +6,8 @@ title: 'framework — Form Lifecycle & Validation Reference'
 
 Reference for how a `Form` moves from construction to submission, how field-level
 validation is enforced, and how the `FormRequest` escalation path relates to it.
-Backs [FW-003](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-003-schema-first-forms-form-request-escalation.md).
+Backs [FW-003](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-003-schema-first-forms-form-request-escalation.md).
+Provenance: legacy vault ADR-802 (2026-04-13).
 
 ## Lifecycle
 
@@ -140,6 +141,32 @@ Pairing a `Form` with a `FormRequest` today is a controller-signature convention
 both), not a binding the framework reads off a class constant — `AbstractForm` and
 `FormResolver` carry no such property. When both declare a rule for the same field, the
 `FormRequest` rule is the one that applies — never duplicate a rule across the two.
+
+## `#[ValidatedDto]` — a typed DTO as the single declaration
+
+The third input path marks a controller parameter with [`#[ValidatedDto]`](https://github.com/middag-io/middag-php-framework/blob/main/src/Http/Attribute/ValidatedDto.php) (`@api`). The parameter's type is a plain class with no framework base class whose properties carry Symfony `#[Assert\*]` constraints:
+
+```php
+public function store(#[ValidatedDto] TicketRequest $ticket): Response
+{
+    // $ticket is hydrated and validated here.
+}
+```
+
+`ValidatedDtoResolver` (`@internal`) reads the request input (query, body and JSON), hydrates the object (snake_case input keys map to camelCase properties, scalars are coerced) and validates it before the action runs. Optional inputs should be nullable properties with a default.
+
+The same properties can also carry [`#[Field]`](https://github.com/middag-io/middag-php-framework/blob/main/src/Form/Attribute/Field.php) (`@api`), which `FieldSchemaReader` reflects into the same field list `schema()` returns. One DTO can then be the single declaration for form shape and validation. `#[Field]` covers declarative scalar fields; options, conditions and entity pickers still use the fluent `schema()` path.
+
+## One error shape
+
+`FormRequest` and `#[ValidatedDto]` both throw `MiddagValidationException` (HTTP 422) carrying a `field => message(s)` map. The kernel answers it in one of two ways:
+
+| Request | Response |
+| --- | --- |
+| JSON/XHR API, or no `FlashBag` bound | `422` with `{success: false, error: 'validation_failed', message, errors}` |
+| Browser or Inertia visit with a `FlashBag` bound | Errors flashed to the session and a `303` back to the referrer; `ShareFlashMiddleware` re-shares them as the Inertia `errors` prop |
+
+When the request carries an `X-Inertia-Error-Bag` header, the field map is nested under that bag name.
 
 ## i18n
 

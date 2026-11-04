@@ -1,10 +1,10 @@
 ---
-title: 'Bootstrap Lifecycle & Tier Responsibilities'
+title: 'Bootstrap Lifecycle & Layer Responsibilities'
 ---
 
-# Bootstrap Lifecycle & Tier Responsibilities
+# Bootstrap Lifecycle & Layer Responsibilities
 
-How the MIDDAG kernel boots a product — from container registration through module boot — and how responsibility for each part of that sequence splits across the adapter, core, and product layers. See [Bootstrap — Built-in Features & Adapter Contracts](../reference/bootstrap-contracts) for the concrete feature and contract lookup tables this page assumes, and [FW-012](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-012-kernel-boot-lifecycle.md) for the decision this lifecycle enforces.
+How the MIDDAG kernel boots a product — from container registration through module boot — and how responsibility for each part of that sequence splits across the adapter, core, and product layers. See [Bootstrap — Built-in Features & Adapter Contracts](../reference/bootstrap-contracts) for the concrete feature and contract lookup tables this page assumes, and [FW-012](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-012-kernel-boot-lifecycle.md) for the decision this lifecycle enforces.
 
 ## The boot sequence
 
@@ -35,8 +35,9 @@ The **product** — the composition root, e.g. `local_middag` — is what choose
 ```php
 // The product's AppBootstrap (illustrative)
 $bootstrap = new MoodleBootstrap(...);              // the target host's adapter
+$gate = new MoodleMaintenanceGate();                 // the adapter's MaintenanceGateInterface
 
-if ($bootstrap->maintenanceGate()->isUnderMaintenance()) {
+if ($gate->isUnderMaintenance()) {
     return;                                          // host upgrading → MIDDAG does not boot
 }
 
@@ -54,10 +55,10 @@ $factory->bootModules($modules);
 
 Two things vary outside this shape:
 
-- **Standalone** (no host at all): `StandaloneKernel` is the HTTP entry point, wired with a minimal `BootstrapInterface` whose `platform()` returns `'standalone'`, and `NullMaintenanceGate` as the gate.
-- **Where the adapter triggers this inside the host** differs by platform — a Moodle callback / `setup`, a WordPress `plugins_loaded` / `init` hook — and is the adapter's own responsibility, still to be confirmed once each adapter is actually built.
+- **Standalone** (no host at all): a minimal `BootstrapInterface` whose `platform()` returns `'standalone'`, with `NullMaintenanceGate` as the gate, serves the HTTP side. A worker process can skip the container and use `StandaloneKernel`, which wires one PDO connection, the bus and a `CommandWorker`; see [Standalone Runtime](../reference/standalone-runtime).
+- **Where the adapter triggers this inside the host** differs by platform — a Moodle callback / `setup`, a WordPress `plugins_loaded` / `init` hook — and is the adapter's own responsibility.
 
-## Tier responsibilities
+## Layer responsibilities
 
 - **Adapter:** implements the bridge contracts (see the reference doc linked above); binds `BootIsolateFailurePolicy`; registers `FatalErrorHandler` / `ShutdownCleanup`; decides where in the host it injects itself.
 - **Core:** subclasses `ServiceProvider` and modules for cross-cutting concerns (signal, job, EAV, multi-tenant); binds a governed boot policy; never imports an adapter.
@@ -65,5 +66,5 @@ Two things vary outside this shape:
 
 ## Known limitations
 
-- **Multi-plugin collision.** PHP does not isolate classes per plugin, so two MIDDAG-based products at different versions installed on the same host will collide. The real mitigation lives at the product's build step — PHP-Scoper or Mozart prefixing the `Middag\` namespace — not in this framework. The framework helps by avoiding global `static` state, so per-instance state doesn't leak across the two installs, but it does not solve the double-autoload problem itself. Whichever guide a product team follows when installing two MIDDAG products side by side on one host needs to spell this out.
+- **Multi-plugin collision.** PHP does not isolate classes per plugin, so two MIDDAG-based products at different versions installed on the same host will collide. The real mitigation lives at the product's build step — PHP-Scoper or Mozart prefixing the `Middag\` namespace — not in this framework. The framework keeps most state per instance, but some process-wide statics remain by design (facades, `HostContext`, the Inertia shared props; see [Architecture](./architecture)), and it does not solve the double-autoload problem itself. Whichever guide a product team follows when installing two MIDDAG products side by side on one host needs to spell this out.
 - **No global recovery around `compile()`.** `ContainerFactory::build()` has no try/catch wrapping `compile()` itself. The `FatalErrorHandler` shutdown handler covers the boot fatal, but there is no per-service, granular recovery at compile time if a single definition is broken.

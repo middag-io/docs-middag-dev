@@ -99,8 +99,15 @@
       {
         "label": "Persistence",
         "order": 3,
-        "files": ["reference/active-record-eloquent-compatibility"],
+        "files": [
+          "reference/database-schema-and-migrations",
+          "reference/active-record-eloquent-compatibility"
+        ],
         "labels": [
+          {
+            "file": "reference/database-schema-and-migrations",
+            "label": "Database Schema & Migrations"
+          },
           {
             "file": "reference/active-record-eloquent-compatibility",
             "label": "Active Record (Eloquent Compatibility)"
@@ -126,7 +133,9 @@
           "reference/bootstrap-contracts",
           "reference/bridge-contracts",
           "reference/module-layout-convention",
-          "reference/exception-hierarchy"
+          "reference/exception-hierarchy",
+          "reference/standalone-runtime",
+          "reference/logging-and-observability"
         ],
         "labels": [
           {
@@ -148,14 +157,26 @@
           {
             "file": "reference/exception-hierarchy",
             "label": "Exception Hierarchy"
+          },
+          {
+            "file": "reference/standalone-runtime",
+            "label": "Standalone Runtime"
+          },
+          {
+            "file": "reference/logging-and-observability",
+            "label": "Logging & Observability"
           }
         ]
       },
       {
         "label": "Reactive & Hook Model",
         "order": 6,
-        "files": ["reference/signal-hook-legacy-mechanics"],
+        "files": ["reference/hooks-public-surface", "reference/signal-hook-legacy-mechanics"],
         "labels": [
+          {
+            "file": "reference/hooks-public-surface",
+            "label": "Hooks — Public Surface & Naming"
+          },
           {
             "file": "reference/signal-hook-legacy-mechanics",
             "label": "Hooks, Filters & Signal Dispatch"
@@ -173,7 +194,7 @@
         "labels": [
           {
             "file": "reference/portability-audit-historical",
-            "label": "Composer Portability Audit"
+            "label": "Composer Portability Audit (Historical)"
           },
           {
             "file": "reference/repository-persistence-families",
@@ -181,7 +202,7 @@
           },
           {
             "file": "reference/shortcode-legacy-detail",
-            "label": "Shortcode Processing"
+            "label": "Shortcode Processing (Historical)"
           }
         ]
       }

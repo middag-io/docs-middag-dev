@@ -14,6 +14,16 @@ title: 'framework — Active Record ↔ Eloquent Compatibility'
 
 **Two paths, by design, not an accident:** Active Record (`Model`) for fast writes inside infrastructure code; Data-Mapper (`Repository` → POPO) for a clean domain layer. The rule that ties them together: no domain entity ever extends `Model`, and no controller ever calls the query builder directly — both are the infrastructure/repository layer's job.
 
+## Repository boundary and transactions
+
+Rules the persistence layer follows ([FW-013](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-013-repository-persistence-boundary.md)):
+
+- **The repository is the domain's only path to storage.** A repository and its interface belong to the aggregate they serve. `ServiceProvider` discovers them by the `Repository` class-name suffix (see [Kernel Boot Lifecycle](./kernel-boot-lifecycle)). Controllers and services never call the query builder directly.
+- **`AbstractRepository`** (`@api`): a subclass declares `table()` and `mapper()` and inherits `find`/`findAll`/`save`/`delete`; custom finders use the protected `query()` builder. On insert, the generated id is not written back onto the persistence-ignorant entity; re-fetch with `find()` when it is needed.
+- **Caching decorates a repository**; it is never the repository's own responsibility. No cache decorator ships in this package.
+- **One aggregate per transaction by default.** [`TransactionManagerInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Database/Contract/TransactionManagerInterface.php) (`@api`) offers `executeAtomic()` (roll back and rethrow) and `executeGraceful()` (roll back the outermost transaction and return the `Throwable`; rethrow when nested). Each aggregate is its own atomic unit; coordination between aggregates is eventual, through signals or events. A transaction spanning aggregates is an exception that must be justified where it is written. The framework ships the contract only; host adapters implement it (for example the Moodle adapter's `TransactionManager` over delegated transactions). `ConnectionInterface::transaction()` is the plain connection-level primitive.
+- **Entity typing.** `#[EntityType]` with `EntityTypeRegistry`/`EntityTypeRegistrar` lets an entity declare its own type, with no EAV storage assumption. Concrete product schemas (EAV, audit, jobs, activity feed) live downstream; see [Repository Persistence Families](./repository-persistence-families) for the legacy catalog.
+
 ## Public API compatibility matrix
 
 The framework's Active Record layer honours a **subset** of Eloquent's public API, using the same names and semantics, plus one addition (the OFF mode above). A developer coming from Laravel will recognise the surface immediately — but the gaps and divergences below are real, and copying Eloquent habits blindly here will break.
