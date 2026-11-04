@@ -5,6 +5,8 @@ MIDDAG's unified developer documentation hub — a VitePress static site publish
 - **Fixed (own-authored, versionless).** Diataxis content this repo authors and owns directly, living in `docs/<axis>/{tutorials,how-to,reference,explanation}/`. Used for the OSS "nuclear family" (the MIDDAG Framework and its host adapters, plus `middag-php-ui`): those subjects interleave too much to document one repo at a time, so they are condensed here into a single coherent tree instead of being split across the source repos. Ratified in ADR-020 (narrows ADR-016).
 - **Variable (aggregated, versioned).** Repos that keep their own independent doc-site (e.g. `middag-react`) publish a versioned docs payload to the docs proxy (Worker + R2); `docs:prebuild` pulls and injects them under `docs/injected/` at build time. Original ADR-016 flow, unchanged.
 
+It is also the reader-facing hub for product developer documentation. `docs-middag-for-moodle/dev/` and `docs-middag-account/dev/` are the canonical sources for third-party integration with their respective products; each reaches this hub only after its publication channel is deliberately opened. Product specifications and decision records remain in each product's `internal/` tree. End-user and administrator guides go to `docs-middag-io`, sourced from the products' `public/` trees. The two layers above describe the library content already served; they do not transfer product authorship to this repository.
+
 **What this repo is NOT:**
 
 - ADRs are never hosted here — every lib/product keeps its own `docs/decisions/`, in both layers (ADR-020, explicit).
