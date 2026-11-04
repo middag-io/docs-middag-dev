@@ -38,4 +38,4 @@ That's the whole idea: you never write markup, you compose value objects — the
 ## Next
 
 - [Architecture](../../explanation/ui/architecture) — the PageContract system, the composition levels, the concern-first layout, and why nothing here renders.
-- [Composition Levels, Block Catalog & Capabilities](../../reference/ui/composition-levels-and-capabilities) — the L1-L4 API table and the full block/capability reference.
+- [Page Composition Contract](../../reference/ui/composition-levels-and-capabilities) — the verified L1-L3 PHP entry points and the `PageContract`/`BlockDescriptor` shape.

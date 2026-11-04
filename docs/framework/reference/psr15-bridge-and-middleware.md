@@ -28,8 +28,14 @@ This bridge keeps the public handler contract independent of Symfony request and
 
 The table locates implementations; it does not imply that every host enables every middleware or that the exception renderers are middleware. Consult the host adapter's composition and the kernel configuration for the active stack.
 
+## Route middleware
+
+Inside the kernel, a route can also carry its own middleware chain. Controllers declare it with the repeatable [`#[Middleware]`](https://github.com/middag-io/middag-php-framework/blob/main/src/Http/Attribute/Middleware.php) attribute on the class (outermost) or the action (innermost); a route registrar can declare it in the route defaults. [`RouteMiddlewareStack`](https://github.com/middag-io/middag-php-framework/blob/main/src/Http/Routing/RouteMiddlewareStack.php) merges both sources, and each entry implements [`RouteMiddlewareInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Http/Contract/RouteMiddlewareInterface.php). All three are `@api`. Route middleware works on the HttpFoundation request and response, not on PSR-7, and does not run through `MiddlewareDispatcher`.
+
+Per-route CORS follows the same split. The [`#[Cors]`](https://github.com/middag-io/middag-php-framework/blob/main/src/Http/Attribute/Cors.php) attribute (`@api`) on a controller class or action sets the `Access-Control-Allow-*` headers on the actual-request response; the kernel applies it through the `@internal` `CorsHeaderApplier`. The OPTIONS preflight keeps the kernel's global default. `CorsMiddleware` in the table above is the PSR-15 layer in front of the kernel.
+
 ## Dependencies and scope
 
 The framework's `composer.json` requires `psr/http-server-handler`, `psr/http-server-middleware`, `psr/http-message`, `symfony/psr-http-message-bridge`, and `nyholm/psr7`. Routing and controller authorization build on this boundary and have their own decision, [FW-002](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-002-attribute-routing-controller-auth-model.md).
 
-Verified against `middag-php-framework/main@faad209aee9b5308fc7bfc563079a6250ee5b89c` on 2026-11-03. Recheck the code and the installed version when implementing an adapter.
+Verified against `middag-php-framework/main@c9daec5fa289116487aa842f4de1dfa0fa8e2f2a` on 2026-11-04. Recheck the code and the installed version when implementing an adapter.

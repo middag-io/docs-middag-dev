@@ -45,7 +45,7 @@ The wire value objects form an intentionally interlinked cluster — an envelope
 
 ## Composition levels
 
-The builders meet the caller at whatever level of control is needed — see [Composition Levels, Block Catalog & Capabilities](../../reference/ui/composition-levels-and-capabilities) for the full level-by-level table (L1 convention through L4 fully custom).
+The builders meet the caller at whatever level of control is needed — see [Page Composition Contract](../../reference/ui/composition-levels-and-capabilities) for the verified L1-L3 entry points (L4 has no builder in this package; the consuming adapter owns it).
 
 ## Wire contract and JSON schemas
 

@@ -114,7 +114,7 @@
         "labels": [
           {
             "file": "reference/command-bus",
-            "label": "Dispatch, Handlers & Job Model"
+            "label": "Dispatch, Handlers & Scheduling"
           }
         ]
       },
@@ -189,11 +189,11 @@
     "ui": [
       {
         "file": "reference/ui/composition-levels-and-capabilities",
-        "label": "Composition Levels & Capabilities"
+        "label": "Page Composition Contract"
       },
       {
         "file": "reference/ui/design-system-catalog",
-        "label": "Design System & Licensing"
+        "label": "UI Stack & Design System"
       }
     ]
   },

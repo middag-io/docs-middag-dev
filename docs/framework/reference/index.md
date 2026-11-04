@@ -24,7 +24,7 @@ Information-oriented API and contract detail, grouped by topic (see the sidebar 
 
 ## Command Bus & Scheduling
 
-- [Dispatch, Handlers & Job Model](./command-bus)
+- [Dispatch, Handlers & Scheduling](./command-bus)
 
 ## Kernel, Contracts & Adapters
 
@@ -46,5 +46,5 @@ Information-oriented API and contract detail, grouped by topic (see the sidebar 
 
 ## By concern
 
-- **[UI](./ui/)** — composition levels, block catalog, design system.
+- **[UI](./ui/)** — page composition contract, UI stack and design system.
 - **[Adapters](./adapters/)** — host-specific implementation detail.

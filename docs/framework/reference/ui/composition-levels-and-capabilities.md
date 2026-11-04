@@ -15,7 +15,7 @@ The [`middag-php-ui` page contract](https://github.com/middag-io/middag-php-ui/b
 | L1 — convention | `PageBuilder::crud(Entity::class)` returning `CrudBuilder` | Generate a standard CRUD page from an entity. |
 | L2 — configured convention | The same `CrudBuilder`, with explicit configuration | Adjust the generated page while keeping the contract. |
 | L3 — composed page | `PageBuilder::page('key')` and its `region()` method | Assemble a page from named regions and block descriptors. |
-| L4 — dedicated frontend | No separate L4 builder in `mittag-php-ui` | A consuming product may render a dedicated React page; its adapter owns that integration. |
+| L4 — dedicated frontend | No separate L4 builder in `middag-php-ui` | A consuming product may render a dedicated React page; its adapter owns that integration. |
 
 For L3, the current builder can produce a contract with:
 
@@ -34,4 +34,4 @@ $page = PageBuilder::page('segments.index')
 
 [`PollConfig`](https://github.com/middag-io/middag-php-ui/blob/main/src/Region/PollConfig.php) supplies a refresh endpoint and interval for a block or inspector. [`Confirmation`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/Confirmation.php) describes the labels, message, and variant of a guarded action. These are serialized data contracts; the active React and host versions determine their runtime behavior. Consult the [React package documentation](https://github.com/middag-io/middag-react/tree/main/docs) for rendering and client APIs.
 
-Verified against `middag-php-ui/main@e752e2aa8e2577cccef4135a9472df597056dc55` on 2026-11-03. The old `REF-UI-002-01` and previous versions of this page included method names and feature claims that were not verified against this source; they are not used as current API evidence here.
+Verified against `middag-php-ui/main@e752e2aa8e2577cccef4135a9472df597056dc55` on 2026-11-04. The old `REF-UI-002-01` and previous versions of this page included method names and feature claims that were not verified against this source; they are not used as current API evidence here.

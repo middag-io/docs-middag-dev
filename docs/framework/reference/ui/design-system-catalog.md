@@ -13,4 +13,4 @@ title: 'UI stack and design system'
 | React components and renderer | [`middag-react/src`](https://github.com/middag-io/middag-react/tree/main/src) |
 | React setup and supported components | [`middag-react/docs`](https://github.com/middag-io/middag-react/tree/main/docs) |
 
-At the 2026-11-03 review, `@middag-io/react` declared React 19 and `@inertiajs/react` 3 as peer dependencies. Check the package version used by a product before selecting components or installation steps. Component inventory, bundle size, and third-party license terms belong to the current package and its dependencies; this page does not freeze those changing values.
+At the 2026-11-04 review (`middag-react/main@56f72c697f79da42c4b811f272053a5d1e668c17`, package version 0.42.0), `@middag-io/react` declared React 19 and `@inertiajs/react` 3 as peer dependencies. Check the package version used by a product before selecting components or installation steps. Component inventory, bundle size, and third-party license terms belong to the current package and its dependencies; this page does not freeze those changing values.
