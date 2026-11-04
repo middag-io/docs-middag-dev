@@ -19,7 +19,7 @@ It exists to decouple a business domain from whatever platform hosts it: control
 **Is not:**
 
 - **A host.** It never knows Moodle or WordPress — that knowledge lives entirely in adapters.
-- **The governed domain engine.** Reliable event delivery (Signal + outbox), async jobs with retry/audit, EAV, multi-tenancy and licensing are `middag-io/core`, a proprietary package layered on top. The framework ships only the generic seam — for example the `SignalDispatcherInterface` contract — the outbox implementation itself is core.
+- **The governed domain engine.** Reliable event delivery (Signal + outbox), async jobs with retry/audit, EAV and multi-tenancy are `middag-io/core`, a proprietary package layered on top; licensing is the separate proprietary leaf package `middag-io/licensing`, which core consumes. The framework ships only the generic seam — for example the `SignalDispatcherInterface` contract — the outbox implementation itself is core.
 - **A framework that hides the domain.** The goal is the opposite: a domain free of the host's constraints, not one wrapped in new ones.
 
 Five design promises run through everything below: the domain is absolute (plain PHP objects, no mandatory framework base class), the host is a detail (Ports & Adapters), persistence is isolated to infrastructure, DX doesn't cost architectural purity (DI + Facades implemented as real proxies, not magic globals), and named host events reach whatever hook system a host uses through an adapter (`HostEventBridgeInterface`).
@@ -38,8 +38,9 @@ The ecosystem is **Hexagonal (Ports & Adapters)**, arranged in four rings. Depen
         │ (proprietary)  │                  │ (OSS)            │
         │ Signal/outbox, │                  │ middag-php-moodle│
         │ Job, EAV,      │                  │ middag-php-      │
-        │ multi-tenant,  │                  │ wordpress        │
-        │ licensing      │                  │ ($DB/$wpdb wrap) │
+        │ multi-tenant   │                  │ wordpress        │
+        │ (+ licensing   │                  │ ($DB/$wpdb wrap) │
+        │  leaf pkg)     │                  │                  │
         └───────┬────────┘                  └────────┬─────────┘
                 │ imports                            │ imports
                 └──────────────┬─────────────────────┘
@@ -54,7 +55,7 @@ The ecosystem is **Hexagonal (Ports & Adapters)**, arranged in four rings. Depen
 |--------|--------------------------------------------------------|------------|-----------------|
 | **1. OSS Foundation** | `middag-php-framework`, `middag-php-ui` | The **Ports**: contracts, DI, HTTP, query, forms, bus, hooks. | `framework` wraps Symfony/PSR/Monolog (not zero-dep — see below). `ui` is pure PHP (`require: php` only). |
 | **2. OSS Adapters** | `middag-php-moodle`, `middag-php-wordpress` | The **Adapters**: implement the bridge contracts by talking to `$DB`/`$wpdb`. | Depend on `middag-php-framework` (and `middag-php-ui`) + the platform. Never import proprietary code — they stay OSS. |
-| **3. CORE (proprietary)** | `middag-php-core`, `middag-php-licensing`, `middag-php-dev-tools` | The business engine: governed Signal + outbox, async Job, EAV, multi-tenant, licensing. | `core` requires `middag-php-framework`, `middag-php-ui` and `middag-php-licensing`, and never requires the adapters at runtime — it runs on WP and Moodle by programming against the Pillar 1 interfaces. `licensing` is a leaf with no MIDDAG runtime dependency (it does not depend on the framework). `dev-tools` is build-time only (`require-dev` in consumers) and requires only the framework at runtime. |
+| **3. CORE (proprietary)** | `middag-php-core`, `middag-php-licensing`, `middag-php-dev-tools` | The business engine: governed Signal + outbox, async Job, EAV, multi-tenant (`core`); license lifecycle in the separate `licensing` leaf; build tooling (`dev-tools`). | `core` requires `middag-php-framework`, `middag-php-ui` and `middag-php-licensing`, and never requires the adapters at runtime — it runs on WP and Moodle by programming against the Pillar 1 interfaces. `licensing` is a leaf with no MIDDAG runtime dependency (it does not depend on the framework). `dev-tools` is build-time only (`require-dev` in consumers) and requires only the framework at runtime. |
 | **4. Composition Root** | `moodle-local_middag`, `wp-plugin-middag-account` | The real modular monolith: Aggregate Roots, vertical slices. | The only pillar that wires everything: imports framework + core + a specific adapter. |
 
 ### The boundary invariant
@@ -135,7 +136,7 @@ The framework keeps state per instance, with one bounded exception: static facad
 |---|---|---|
 | Facade container and resolved instances | `Kernel/Facade/AbstractFacade` | `setFacadeContainer()`, `swap()`, `reset()` |
 | Active host component context | `Kernel/HostContext` | `set()`, `reset()`; `get()` returns null when unset |
-| Inertia shared props, URL generator, asset version, bootstrap HTML and app id | `Http/Inertia/InertiaManager`, `InertiaAdapter`, `InertiaVersionManager`, `InertiaFactory` | `InertiaManager::flush()`, the setters |
+| Inertia shared props, URL generator, asset version, bootstrap HTML and app id | `Http/Inertia/InertiaManager`, `InertiaAdapter`, `InertiaVersionManager`, `InertiaFactory` | `InertiaManager::flush()`, the setters. Shared props are request-scoped (written by `ShareFlashMiddleware` and `VerifyCsrfMiddleware`), so a long-running worker must flush them between requests |
 | Active Record connection and cast resolvers | `Persistence/Model` | `setConnectionResolver()`, `setConnection()`, `setCastResolver()` |
 | Debug logger and config reader | `Shared/Util/Debug` | `setRuntime()`, `resetRuntime()` |
 | Reflection cache | `Http/Resolver/MethodParameterResolver` | pure cache of reflection results |
@@ -161,7 +162,7 @@ The framework keeps single-interface auto-aliasing as the common case; contextua
 
 - **[FW] Framework (OSS):** auth (`#[Auth]`, agnostic, no `symfony/security`) · CSRF · CORS (`CorsMiddleware`) · Inertia (version-skew, props) · logging (`RotatingStreamHandler`, secret redaction default-on) · errors (`mapThrowable` + status-mapped `MiddagException`, opt-in `FatalErrorHandler`, debug renderer default-off) · command bus (+ `InMemoryTransport`, standalone `DoctrineTransportFactory`, `CommandWorker`, `StandaloneKernel`) · API surface (`#[Route]`, `AbstractFormRequest`/`#[ValidatedDto]`, null-safe `toArray`) · schema (`SchemaBuilder`, forward-only `MigrationRunner`, `transaction`) · infra ports with OSS defaults (`Clock`, `Filesystem`/`LocalFilesystem`, `Mailer`/`NullMailer`, `Session`, `EnvConfigResolver`, `Translator`/`FallbackTranslator`, PSR-16 cache, `FlashBag`) · `#[TrustedOutput]`.
 - **[ADAPTER] Adapter:** host-capability auth · input sanitisation (e.g. undoing WP's magic-quotes slashing) · assets/url/i18n catalog/native REST · host cache pool · log base path · host error translation · native filesystem/mailer · host schema (xmldb/dbDelta) + table prefix · uninstall/roles.
-- **[CORE] Core (proprietary):** governed event delivery · async jobs · EAV query engine · multi-tenancy · licensing — the governed domain infrastructure built on top of this OSS, opt-in; the framework never imports it.
+- **[CORE] Core (proprietary):** governed event delivery · async jobs · EAV query engine · multi-tenancy — the governed domain infrastructure built on top of this OSS, opt-in; the framework never imports it. Licensing is a separate proprietary leaf package that core consumes.
 - **[PRODUCT] Product (composition root):** per-route rate limiting · single-run lock (`symfony/lock`) · CORS wiring · slugifier · vault/secrets · Redis driver · seeders · E2E · timezone policy · settings memoisation.
 - **[UI] `middag-io/ui`:** `FormRendererInterface` / field contracts (rendered to the wire by the framework).
 - **[DEVTOOLS] dev-tools:** generators (`install.xml`/`upgrade.php` from descriptors; the facade generator).
