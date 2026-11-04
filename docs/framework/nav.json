@@ -345,6 +345,39 @@
           ]
         }
       ]
+    },
+    {
+      "name": "WordPress Adapter",
+      "groups": [
+        {
+          "label": "WordPress Adapter",
+          "order": 1,
+          "files": [
+            "reference/adapters/wordpress/index",
+            "reference/adapters/wordpress/routing-surfaces",
+            "reference/adapters/wordpress/controller-bases",
+            "reference/adapters/wordpress/configuration"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/wordpress/index",
+              "label": "Overview, Support & Data"
+            },
+            {
+              "file": "reference/adapters/wordpress/routing-surfaces",
+              "label": "Routing Surfaces"
+            },
+            {
+              "file": "reference/adapters/wordpress/controller-bases",
+              "label": "Controller Bases"
+            },
+            {
+              "file": "reference/adapters/wordpress/configuration",
+              "label": "Configuration & Identity"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
