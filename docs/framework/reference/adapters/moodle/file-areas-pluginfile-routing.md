@@ -1,91 +1,108 @@
 ---
-title: 'moodle — Pluginfile Routing & File Areas Reference'
+title: 'Moodle Adapter — File Areas & Pluginfile Routing'
 ---
 
-# Pluginfile Routing & File Areas Reference
+# File Areas & Pluginfile Routing
 
-Reference for how the Moodle adapter (`middag-io/middag-php-moodle`) routes `pluginfile.php` requests to file areas through a typed registry and handler contract, instead of a hardcoded switch/case. Backs [MDL-008](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-008-file-areas-pluginfile-routing.md).
+Reference for declaring file areas and serving `pluginfile.php` requests through a typed definition and a handler contract instead of a hard-coded `switch`. Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
+
+## Who does what
+
+| Piece                                                                     | Where                          |
+| ------------------------------------------------------------------------- | ------------------------------ |
+| `Definition\FileAreaDefinition` (typed declaration, `@api`)               | This adapter                   |
+| `Domain\File\Contract\FileAreaHandlerInterface` (handler contract, `@api`) | This adapter                   |
+| `FileSupport`, `UrlSupport::pluginfile()` (File API wrappers)             | This adapter                   |
+| The `{component}_pluginfile()` callback in `lib.php`, the registry that maps an area to its handler, and the default handler | The consumer plugin            |
 
 ## Declaring a file area
 
+Extensions declare file areas through `getFileAreaDefinitions()`:
+
 ```php
-new file_area(
+new FileAreaDefinition(
     name: 'attachments',
-    description: 'File attachments for items',
-    context_level: context_level::SYSTEM,
-    handler: attachments_file_area_handler::class,
+    context_level: ContextLevel::System,
+    handler: AttachmentsFileAreaHandler::class,
     supports_preview: true,
+    description: 'File attachments for items',
 )
 ```
 
-Extensions declare file areas via `get_file_area_definitions()`; external plugins add more through the `extend_local_middag_file_areas` hook.
+| Field                      | Type                                                  | Purpose                                                                        |
+| -------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `name`                     | `string`                                              | Area name without extension prefix; the `{filearea}` segment of the URL        |
+| `context_level`            | `ContextLevel` (default `System`)                     | Moodle context level the area is scoped to                                     |
+| `handler`                  | `?string` (class implementing `FileAreaHandlerInterface`) | Handler class; `null` means the consumer's default handler                 |
+| `supports_preview`         | `bool` (default `false`)                              | Whether the area supports Moodle's file preview and thumbnails                 |
+| `description`              | `string`                                              | Human-readable label for admin and debug tooling                               |
+| `min_moodle`, `max_moodle` | `?string`                                             | Version range (`isCompatible()`)                                               |
 
-| Field | Type | Purpose |
-|---|---|---|
-| `name` | `string` | Area identifier — the `{filearea}` segment of the `pluginfile.php` URL. |
-| `description` | `string` | Human-readable label, used by admin/debug tooling. |
-| `context_level` | `context_level` enum | Moodle context level the file area is scoped to. |
-| `handler` | `class-string<file_area_handler_interface>` \| `null` | Handler class; `null` resolves to `default_file_area_handler`. |
-| `supports_preview` | `bool` | Whether the file area supports Moodle's built-in file preview UI. |
+File-area definitions are not generated into a static file: they are read at request time. Build tooling may emit documentation or validation from them, never the routing itself.
 
-## Naming convention
+## Naming
 
-Mirrors the capability naming convention used across the adapter's static-generation pipeline:
+`FileAreaDefinition::getQualifiedName($extension)`:
 
-| Owner | Pattern | Example |
-|---|---|---|
-| `core` extension | no prefix | `attachments` |
-| Other internal extensions | `{slug}_{area}` | `customdocs_templates` |
-| External plugins | `{plugin}_{slug}_{area}` | `middagpro_premium_reports_exports` |
+| Owner                      | Pattern                    | Example                               |
+| -------------------------- | -------------------------- | ------------------------------------- |
+| `core` extension (or none) | `{name}`                   | `attachments`                         |
+| Other internal extensions  | `{extension}_{name}`       | `customdocs_templates`                |
+| External plugins           | `{plugin}_{extension}_{name}` (consumer convention) | `middagpro_premium_reports_exports` |
 
 ## Handler contract
 
-`file_area_handler_interface` is Group A — stable public API:
+| Method      | Signature                                                                                         | Responsibility                                                                 |
+| ----------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `canAccess` | `canAccess(context $context, string $filearea, int $itemid, string $filepath, string $filename): bool` | Authorization: return `false` for anything the caller cannot legitimately reach |
+| `serve`     | `serve(stored_file $file, bool $forcedownload = false): void`                                     | Delivery: call `send_stored_file()`, never `send_file()`                       |
 
-| Method | Signature | Responsibility |
-|---|---|---|
-| `can_access` | `can_access(context $context, string $filearea, int $itemid, string $filepath, string $filename): bool` | Authorization — must return `false` for anything the caller can't legitimately reach. |
-| `serve` | `serve(stored_file $file, bool $forcedownload): void` | Delivery — must call `send_stored_file()`, never `send_file()`. |
-
-When a `file_area` definition omits `handler`, the framework resolves `default_file_area_handler` in its place.
-
-## Request flow
+## Request flow (consumer callback)
 
 ```
 Browser
-  -> /pluginfile.php/{contextid}/local_middag/{filearea}/...
-  -> local_middag_pluginfile()
-  -> resolve handler from the registry (owning extension -> container)
-  -> handler::can_access()
-  -> handler::serve()
+  -> /pluginfile.php/{contextid}/{component}/{filearea}/{itemid}/{path}
+  -> {component}_pluginfile()             (consumer lib.php)
+  -> resolve the handler for {filearea}   (consumer registry: owning extension -> container)
+  -> handler->canAccess()                 (deny -> send_file_not_found / exception)
+  -> handler->serve()
 ```
 
-The registry lookup happens at request time on every call — it is not build-time generated, unlike `db/services.php` for external services. `build_statics:fileareas` may generate documentation/validation artifacts, but never the routing or resolution itself.
+The registry lookup happens on every request; it is not generated at build time, unlike `db/services.php`.
 
-## `file_support` method inventory
+::: warning Security requirement for consumers
+The callback must call `canAccess()` and stop on `false` **before** it serves anything. A callback that falls back to serving a file without a handler decision (for example a generic `send_file()` path for undeclared areas) exposes every file in the area to any user who can guess the URL.
+:::
 
-| Method | Purpose |
-|---|---|
-| `get_file` | Fetch a single stored file. |
-| `get_area_files` | Fetch all files in a file area. |
-| `create_file_from_string` | Create a stored file from raw string content. |
-| `create_file_from_pathname` | Create a stored file from a filesystem path. |
-| `create_file_from_storedfile` | Copy an existing stored file. |
-| `delete_file` | Delete a single stored file. |
-| `delete_area_files` | Delete every file in a file area. |
-| `get_file_url` | Build a download URL for a stored file. |
-| `has_files` | Check whether a file area has any files. |
-| `get_area_size` | Total size (bytes) of a file area. |
-| `count_area_files` | Count files in a file area. |
-| `is_valid_image` | Validate that a stored file is a usable image. |
+External plugins add their own areas through a hook the consumer exposes (the MIDDAG product uses `extend_local_middag_file_areas`).
 
-`url_support::pluginfile(...)` builds the full `pluginfile.php` download URL with the correct signature for a given context/component/filearea/itemid/filepath/filename tuple.
+## `FileSupport` methods
+
+| Method                                                       | Purpose                                                     |
+| ------------------------------------------------------------ | ----------------------------------------------------------- |
+| `getStorage()`                                               | Moodle's `file_storage`                                     |
+| `getFile()`, `getFileByPath()`, `getFileById()`              | Fetch one stored file                                       |
+| `getAreaFiles()`, `getAreaFilesTyped()`                      | All files in an area (raw or as `Domain\File\StoredFile`)   |
+| `getFileEntity()`                                            | One file as `Domain\File\StoredFile`                        |
+| `createFileFromString()`, `createFileFromPathname()`, `createFileFromStored()` | Create a stored file                       |
+| `deleteFile()`, `deleteFileById()`, `deleteAreaFiles()`      | Delete one file or a whole area                             |
+| `getFileUrl()`                                               | Download URL for a stored file                              |
+| `hasFiles()`, `countAreaFiles()`, `getAreaSize()`            | Area inspection                                             |
+| `isValidImage()`                                             | Check that a stored file is a usable image                  |
+| `getContent()`, `getContentFileHandle()`                     | Read file content                                           |
+
+`UrlSupport::pluginfile(...)` builds the `pluginfile.php` URL for a context, component, file area, item id, path and file name.
 
 ## Anti-patterns
 
-| Anti-pattern | Why it's wrong |
-|---|---|
-| `can_access()` always returning `true` | Any user can access any file — defeats the purpose of a per-area authorization hook. |
-| Business logic inside the handler | Handlers should delegate to the domain layer, not implement business rules themselves. |
-| `send_file()` instead of `send_stored_file()` | Bypasses the File API's own headers/cache handling. |
-| Not declaring a file area at all | `local_middag_pluginfile()` finds no handler for the area and the request fails. |
+| Anti-pattern                              | Why it is wrong                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `canAccess()` always returning `true`     | Any user can read any file; the per-area authorization hook is defeated     |
+| Serving without calling `canAccess()`     | Same exposure, from the callback side                                       |
+| Business logic inside a handler           | A handler delegates to the domain; it does not implement rules              |
+| `send_file()` instead of `send_stored_file()` | Bypasses the File API's own headers and cache handling                  |
+| An undeclared file area                   | The callback finds no handler and the request fails                         |
+
+---
+
+Decision records: MDL-008 and MDL-016 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

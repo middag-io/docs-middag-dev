@@ -1,63 +1,77 @@
 ---
-title: 'moodle adapter — Support Class Inventory & Anti-Patterns'
+title: 'Moodle Adapter — Support Layer & Anti-Patterns'
 ---
 
-# Support Class Inventory & Anti-Patterns
+# Support Layer & Anti-Patterns
 
-Reference for the `*Support` layer in `middag-io/moodle` — the static, stateless facade that sits between the boundary and native Moodle APIs, one class per Moodle subsystem.
+Reference for the `*Support` layer in `middag-io/moodle`: the stateless wrappers that sit between the boundary and Moodle's procedural APIs, one class per Moodle subsystem. Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
 
 ## What a `*Support` class is
 
-| Property | Rule |
-|---|---|
-| Scope | One class per Moodle subsystem (`db_support`, `cache_support`, `context_support`, …) |
-| State | None — static, stateless methods only |
-| Logic | No business logic — pure interface translation, never a behavior decision |
-| Return type | Typed (`?Type`), converting Moodle's `false`/`stdClass` results |
-| Dependencies | `shared/`-equivalent code only — the one exception is the router bridge support, which reaches the kernel router for URL generation |
-| Admission threshold | 2+ real call sites in the framework consuming the same subsystem; a single-call convenience method is accepted only when no type transformation is involved |
+| Property            | Rule                                                                                                                                                                                                                                         |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope               | One class per Moodle subsystem (`DbSupport`, `CacheSupport`, `ContextSupport`, …), in `src/Support/`, suffixed `*Support`                                                                                                                     |
+| State               | None; static methods. Exceptions in the code today: `EventSupport`, `PluginSupport` and `TaskSupport` expose instance methods; `DiBridgeSupport` keeps a static export registry filled by the consumer                                        |
+| Logic               | No business logic; interface translation only, never a behavior decision                                                                                                                                                                     |
+| Return types        | Typed: Moodle's `false` / `stdClass` results become `?Type`, host entities or DTOs from `Domain/`                                                                                                                                              |
+| Return semantics    | A lookup where "not found" is a legitimate flow returns `?Type`; an operation where absence means an invalid state may expose a throwing variant, or both                                                                                     |
+| Dependencies        | `Shared/`, `Exception/`, `Config\ComponentContext`, host entities, DTOs and enums from `Domain/` (as return types), `Settings\SettingsNamingPolicy`, and framework `Shared` utilities. Never `Domain/*` services or `Http/`. The one documented exception is `RouterBridgeSupport`, which reaches `Runtime\Kernel` to dispatch proxied requests |
+| Admission threshold | A new wrapper needs 2 or more real call sites consuming the same subsystem. A single-call convenience method is accepted for testability when no type transformation is involved                                                             |
+| Layering            | Low level of the boundary. When a subsystem needs an OO contract for DI, a dedicated adapter delegates to the matching `*Support` (for example `Security\Capability` over `CapabilitySupport`, `Security\Authentication` over `AuthSupport`)                                                |
 
-## Legacy inventory — 40 support classes across 8 groups
+## Current inventory
 
-The `moodle-local_middag` legacy plugin grouped its 40 support classes as follows; all were `@internal`, consumed only through a generated facade mirror.
+42 `*Support` classes in `src/Support/`:
 
-| Group | Support classes |
-|---|---|
-| Data/Persistence | `db_support`, `cache_support`, `config_support`, `preference_support` |
-| Auth/Authorization | `auth_support`, `capability_support`, `session_support`, `role_support` |
-| Context/Entities | `context_support`, `user_support`, `course_support`, `category_support`, `group_support`, `cohort_support`, `enrol_support`, `custom_field_support`, `competency_support` |
-| Content/Files | `file_support`, `grade_support` |
-| Presentation/UI | `page_support`, `output_support`, `html_writer_support`, `url_support`, `lang_support` |
-| Communication/Events | `message_support`, `event_support`, `notification_support`, `calendar_support` |
-| Runtime/Infra | `task_support`, `plugin_support`, `request_support`, `version_support`, `time_support`, `lock_support`, `check_support`, `settings_support` |
-| Bridge | `di_bridge_support`, `router_bridge_support` |
+| Group                | Classes                                                                                                                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data and persistence | `DbSupport`, `CacheSupport`, `ConfigSupport`, `PreferenceSupport`, `SettingsSupport`                                                                                                                           |
+| Auth and access      | `AuthSupport`, `CapabilitySupport`, `SessionSupport`, `RoleSupport`                                                                                                                                            |
+| Context and entities | `ContextSupport`, `UserSupport`, `UserFieldSupport`, `CourseSupport`, `CategorySupport`, `GroupSupport`, `CohortSupport`, `EnrolSupport`, `CompletionSupport`, `CustomFieldSupport`, `CompetencySupport` |
+| Content and files    | `FileSupport`, `GradeSupport`                                                                                                                                                                                  |
+| Presentation         | `PageSupport`, `OutputSupport`, `HtmlWriterSupport`, `UrlSupport`, `LangSupport`, `ThemeSupport`                                                                                                               |
+| Communication        | `MessageSupport`, `EventSupport`, `NotificationSupport`, `CalendarSupport`                                                                                                                                     |
+| Runtime              | `TaskSupport`, `CronSupport`, `PluginSupport`, `RequestSupport`, `VersionSupport`, `TimeSupport`, `LockSupport`, `CheckSupport`                                                                                |
+| Bridges              | `DiBridgeSupport`, `RouterBridgeSupport`                                                                                                                                                                       |
 
-## Current inventory in this adapter (`middag-io/moodle`)
+Also in `src/Support/`:
 
-The OSS extraction grew the inventory to **45 `*Support` classes** under `src/Support/`, plus `Support/Moodle` — a static aggregator that returns fresh `*Support` instances, rather than a generated per-class facade.
+- `Moodle`: a static aggregator. Each method (`Moodle::db()`, `Moodle::user()`, `Moodle::config()`, …) returns a fresh instance of the matching wrapper. It covers every wrapper except `CronSupport`.
+- `CacheSupportPsr16`: the PSR-16 view of the plugin cache.
+- `TaskDefinitionBuilder` and `CrudConventionResolver` (`@internal` helpers).
 
-The legacy facade-generation mechanism (`build:facades`, one mirror class per support) is **not part of this OSS adapter** — it is a consumer-product concern. MIDDAG product facades are generated by dev-tools inside the *consumer* plugin (`{component}\facade\...`), never inside this package. Consequence: importing `Support\*Support` classes directly from this package is not an anti-pattern the way it was in the legacy plugin — there is no OSS-side facade layer to bypass here. The facade-bypass anti-pattern (below) is scoped to whichever facade convention a consumer project has adopted on top of this package, not to this package's own usage.
+The legacy `moodle-local_middag` plugin had 38 wrappers (snake_case, for example `db_support`, `di_bridge_support`). Every one of them has a PascalCase counterpart above; `CompletionSupport`, `CronSupport`, `ThemeSupport` and `UserFieldSupport` were added during the OSS extraction.
 
-## Auth/Capability — dual consumption path
+## Facades belong to the consumer
 
-`AuthSupport`/`CapabilitySupport`-equivalent classes still follow the `*Support` pattern, but consumption is deliberately split by context:
+The legacy plugin made facade consumption mandatory: every wrapper had a generated mirror facade, and importing the `support` namespace directly was an anti-pattern. This adapter ships no per-class facades. Facades are generated inside the **consumer** plugin (`{component}\facade\...`) by the consumer's own build tooling; the adapter provides only the generic mechanism (`Runtime\Facade\AbstractFacade`, `Runtime\Loader\FacadeLoader`).
 
-| Path | Mechanism | When to use |
-|---|---|---|
-| DI (preferred) | `Security\Authentication` / `Security\Authorizer` / `Security\Capability` contracts, in `src/Security/Contract/` | Controllers, services, extensions — anywhere DI is available |
-| Facade / direct call (fallback) | Direct `*Support` static call | Procedural contexts only: `lib.php`, navigation hooks, install/upgrade |
+Consequence: importing `Middag\Moodle\Support\*` directly is not an anti-pattern for code that depends on this package. The facade-bypass anti-pattern below applies only inside a consumer that has adopted a facade convention.
+
+## Auth and capability: two consumption paths
+
+`AuthSupport` and `CapabilitySupport` follow the wrapper pattern, but consumption is split by context:
+
+| Path              | Mechanism                                                                                                                 | When                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| DI (preferred)    | `Security\Contract\AuthenticationInterface`, `AuthorizerInterface`, `CapabilityInterface` (implemented by `Security\Authentication`, `Authorizer`, `Capability`) | Controllers, services, extensions: anywhere DI is available       |
+| Static (fallback) | `AuthSupport::requireLogin()`, `CapabilitySupport::has()`, …                                                              | Procedural contexts only: `lib.php`, navigation callbacks, install and upgrade |
 
 ## Anti-patterns
 
-| Anti-pattern | Why it's wrong |
-|---|---|
-| Direct import of a `support`-equivalent class from a consumer extension, bypassing that consumer's own facade convention | Defeats the indirection the consumer's facade layer exists to provide |
-| A support class carrying business logic | Should be a pure adapter — logic belongs in a service or domain layer |
-| Calling a Moodle API (`$DB`, `$PAGE`, …) outside a `*Support` class | Bypasses the boundary whitelist entirely |
-| Creating a support class with only 1 call site | Below the 2+ real call-site admission threshold |
-| Using the auth/capability facade fallback inside a controller instead of DI | Controllers always have DI available — no reason to fall back |
-| A support class depending on `domain/`, `service/`, or `kernel/`-equivalent layers | Only `shared/`-equivalent code is allowed (router bridge support is the sole documented exception) |
+| Anti-pattern                                                                                | Why it is wrong                                                                  |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| A consumer extension importing a wrapper directly when the consumer has a facade convention | Defeats the indirection the consumer's facade layer exists to provide            |
+| A wrapper carrying business logic                                                           | A wrapper translates; logic belongs in a service or the domain                   |
+| Calling a Moodle API (`$DB`, `$PAGE`, …) outside the boundary                               | Bypasses the boundary entirely (see [Boundary & Whitelist](./boundary-whitelist)) |
+| A new wrapper with a single call site                                                       | Below the 2-call-site admission threshold                                        |
+| The static auth/capability fallback inside a controller                                     | Controllers always have DI                                                       |
+| A wrapper depending on `Domain/*` services, `Http/` or `Runtime/`                           | Only the dependencies listed above are allowed (`RouterBridgeSupport` excepted)  |
+
+## Enforcement state
+
+None of the wrapper rules (one class per subsystem, statelessness, typed returns, the admission threshold, the dependency restriction, the DI-preferential rule) has a coded static-analysis check yet; they are reviewed at PR time.
 
 ---
 
-Decision record: [MDL-003 — Support Layer Pattern](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-003-support-layer-pattern.md).
+Decision record: MDL-003 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

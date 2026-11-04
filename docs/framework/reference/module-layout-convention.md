@@ -48,3 +48,42 @@ The rule that decides whether something gets a subfolder is **boundary-based**, 
 | A PHP 8 attribute for concern `Foo` | `Foo/Attribute/` |
 | A new extension point (a role a consumer can plug into) | Its own named subfolder under the concern, from the first file (`Foo/Renderer/`, `Foo/Field/`, `Foo/Transport/`, …) |
 | The concern's main entry point, factory, or orchestrator | Concern root (`Foo/Foo.php`, `Foo/FooFactory.php`) |
+
+## Moodle adapter: host domain surface
+
+The Moodle adapter (`middag-io/moodle`) applies the same layout and adds one rule for Moodle's own types. Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
+
+Typed representations of Moodle objects live in `src/Domain/<Subsystem>/`, one folder per Moodle capability area: `Backup`, `Calendar`, `Completion`, `Context`, `Course`, `CustomField`, `Enrolment`, `Event`, `File`, `Grade`, `Group`, `Message`, `Platform`, `Role`, `Task`, `User`.
+
+```
+src/Domain/Group/
+├── Contract/                 # local interfaces (GroupServiceInterface), not framework ports
+├── Enum/                     # Moodle constants as backed enums (GroupMode)
+├── Group.php                 # entity (stdClass → typed)
+├── GroupMemberDto.php        # DTO
+└── GroupService.php          # host domain service, implements Contract/GroupServiceInterface
+```
+
+| Rule                                                                                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The `Contract/` interfaces under `Domain/` describe the Moodle host domain. They stay local to the adapter and are **not** promoted to framework ports                         |
+| Entities, DTOs, enums and contracts are `@api` by default; infrastructure-only classes opt out with `@internal` (see [API Coverage & Version Gates](./adapters/moodle/api-coverage-inventory#api-internal-classification)) |
+| `Domain/AbstractMoodleEntity` implements the framework `EntityInterface`                                                                                                     |
+| The folders follow Moodle's capability areas because the types mirror Moodle objects. Everything else in the adapter stays concern-first (`Database/`, `Http/`, `Settings/`, `Support/`, …) |
+| A new folder is admitted only for a genuinely distinct native Moodle mechanism, never because a folder has grown to some file count                                           |
+
+The legacy `moodle-local_middag` plugin organized its boundary by technical type (`adapter/`, `contract/`, `service/`, `definition/`, `dto/`, `entity/`, `enum/`, `settings/`, `form/`, `support/`). In the adapter those roles map as follows:
+
+| Legacy folder | Adapter location                                                                                                 |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `adapter/`    | The concern that owns the port (`Security/`, `Logging/`, `Database/`, `Translation/`, `Output/`, …)               |
+| `contract/`   | The owning concern's `Contract/` (`Security/Contract/`, `Privacy/Contract/`, `Domain/<Subsystem>/Contract/`, …)   |
+| `service/`    | `Domain/<Subsystem>/*Service` (`UserService`, `MessageService`, `AdhocService`, `ScheduledService`, …)            |
+| `definition/` | `Definition/` (`*Definition`, see [Static Generation](./adapters/moodle/statics-generation))                     |
+| `dto/`, `entity/` | `Domain/<Subsystem>/`                                                                                        |
+| `enum/`       | `Domain/<Subsystem>/Enum/`, `Security/Enum/`, `Settings/Enum/`, `Shared/Enum/`                                    |
+| `settings/`   | `Settings/` and `Settings/Type/` (see [Settings & Config Keys](./adapters/moodle/settings-and-config-keys))       |
+| `form/`       | `Form/` (`MformRenderer`)                                                                                        |
+| `support/`    | `Support/` (see [Support Layer](./adapters/moodle/support-class-inventory))                                      |
+
+Decision record: MDL-002 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

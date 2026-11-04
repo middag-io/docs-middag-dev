@@ -1,10 +1,21 @@
 ---
-title: 'moodle — Routing Bridge Component Maturity'
+title: 'Moodle Adapter — Routing Bridge & Component Maturity'
 ---
 
 # Routing Bridge Component Maturity
 
-Reference for the Moodle adapter's (`middag-io/middag-php-moodle`) routing setup: which pieces are the framework's own router, which are the Moodle-native-router bridge, and the code-verified maturity of each. Backs [MDL-017](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-017-routing-bridge-coexistence.md).
+Reference for the Moodle adapter's (`middag-io/moodle`, [middag-php-moodle](https://github.com/middag-io/middag-php-moodle)) routing: which pieces are the framework's own router adapted to Moodle, which are the bridge to Moodle's native router, and the code-verified maturity of each. Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
+
+## The model
+
+The framework's router is the **primary** router for every controller, on every Moodle version. Moodle 5.1 adds its own router (Slim 4 and FastRoute, entry point `/r.php`); on 5.1+ that native router can optionally receive thin proxy routes that forward to the same framework kernel, so both paths converge on one dispatch.
+
+- Discovery is by namespace convention: Moodle scans the **consumer plugin's** `route\api\*` and `route\controller\*` namespaces (files under `classes/route/api/`). The proxies live there, not in this package.
+- Availability is version-gated: `RouterBridgeSupport::isAvailable()` is `false` below 5.1 (routing only through the consumer's own entry points) and `true` on 5.1+ when `core\router\route_loader_interface` exists.
+- What does not change: the consumer's entry points (`index.php`, `ajax.php`, and any webhook endpoint) stay primary; existing controllers need no change; the framework container keeps resolving controllers; Moodle's own middleware pipeline is fixed and outside this decision.
+- An extension that specifically needs Moodle's middleware (CORS, `wstoken`), visibility only in the Mobile App, or a place in Moodle's native OpenAPI spec may write a Moodle-native route itself, outside the framework kernel, and reach framework services through the [DI bridge](./di-bridge-mechanics).
+
+On 5.1+, the consumer's OpenAPI spec is reachable through Moodle's native Swagger UI (`getOpenapiJsonUrl()`, `getOpenapiYamlUrl()`).
 
 ## Component maturity at a glance
 
@@ -15,7 +26,7 @@ Reference for the Moodle adapter's (`middag-io/middag-php-moodle`) routing setup
 | `RouterBridgeSupport::register()` | same | **Coded, active (correct no-op)** | Moodle 5.1+ auto-discovers routes from the *consumer plugin's* `route\api\*`/`route\controller\*` namespaces — there is nothing for this OSS adapter to register programmatically. This is accurate behavior, not an unfinished implementation. |
 | `RouterBridgeSupport::getOpenapiJsonUrl()` / `getOpenapiYamlUrl()` | same | **Coded, active** | Build a URL from `$CFG->wwwroot` + `ComponentContext::baseUrlPath()`. No availability guard inside these methods themselves — the caller is expected to check `isAvailable()` first. |
 | `RouterBridgeSupport::proxyRequest()` | same | **Coded, active (fixed 2026-07-17)** | See "The 2026-07-17 fix" below. |
-| `MiddagProxy` | `src/Http/Routing/MiddagProxy.php` | **Blocked — inert placeholder** | 37-line file, entire body is `final class MiddagProxy {}`. Waits on Moodle's `core\router\route_controller` trait, confirmed absent from the Moodle 5.0.7 checkout audited alongside this reference. Instantiating it under Moodle 5.0.x is a no-op; Moodle's router does not see it. |
+| `MiddagProxy` | `src/Http/Routing/MiddagProxy.php` | **Inert placeholder (`@internal`)** | 37-line file, entire body is `final class MiddagProxy {}`. Its docblock waits on Moodle's `core\router\route_controller` trait. An earlier audit of a Moodle 5.0.7 checkout found the trait absent; a Moodle 5.0.9 checkout (Build 20260810) checked on 2026-11-04 ships both `core\router\route_controller` and `core\router\route_loader_interface` in `lib/classes/router/`. The adapter has not adopted the trait yet and still gates the bridge at 5.1, so Moodle's router does not see the class today. |
 
 ## `MoodleRouter` / `RouteLoader` — the framework's own router
 
@@ -43,4 +54,17 @@ Full suite (3140 + 8 tests) and `composer check` (style/rector/stan) pass clean 
 
 ## Version-guard cross-reference
 
-Ties to the Routing row of the [API coverage inventory](./api-coverage-inventory): `min_moodle: 5.1`, guard `class_exists('core\router\route_loader_interface')` via `router_bridge_support::is_available()`. That guard governs `RouterBridgeSupport` and `MiddagProxy`; it does not gate the framework's own router (`MoodleRouter`/`RouteLoader`), which has no Moodle-version dependency of its own.
+Ties to the native-router row of the [version gates](./api-coverage-inventory#version-gates-in-the-code): `VersionSupport::supports('moodle_router', ['since' => '5.1'])` and `VersionSupport::symbolExists('core\router\route_loader_interface')`, via `RouterBridgeSupport::isAvailable()`. That guard governs `RouterBridgeSupport` and `MiddagProxy`; it does not gate the framework's own router (`MoodleRouter`/`RouteLoader`), which has no Moodle-version dependency of its own.
+
+## Enforcement state
+
+| Clause                                                                       | Verification                                                                 | State       |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------- |
+| The framework router (`MoodleRouter`, `RouteLoader`) stays primary           | This page                                                                    | **coded**   |
+| `RouterBridgeSupport` works on Moodle 5.1+                                   | `tests/Support/RouterBridgeSupportCoverageTest.php`, full suite and `composer check` | **coded**   |
+| Availability gated below 5.1                                                 | `RouterBridgeSupport::isAvailable()`                                         | **coded**   |
+| `MiddagProxy` adopts `core\router\route_controller` (now present in Moodle 5.0.9) | Manual re-check against each Moodle core bump                                | **planned** |
+
+---
+
+Decision record: MDL-017 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

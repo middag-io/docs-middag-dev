@@ -1,47 +1,73 @@
 ---
-title: 'moodle — Navigation Delegation & Rendering-Path Detail'
+title: 'Moodle Adapter — Navigation Delegation & Rendering Paths'
 ---
 
-# Navigation Delegation & Rendering-Path Detail
+# Navigation Delegation & Rendering Paths
 
-Reference for how the four Moodle navigation callbacks in `middag-io/moodle` delegate to internal mechanisms, how the navigation-registration mechanism is migrating, and which rendering technology each navigation surface actually uses. Backs [MDL-018](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-018-moodle-navigation-integration.md).
+Reference for how a consumer plugin's Moodle navigation callbacks delegate to the adapter, how extensions register navigation items, and which rendering technology each navigation surface uses. Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
 
-## Delegation pattern (all four `lib.php` navigation callbacks)
+## The callbacks are the consumer's, and stay thin
 
-| Step | Responsibility |
-|---|---|
-| 1. Capability/auth check | Via `capability_interface`/`authentication_interface` — always first; no callback skips it. |
-| 2. Resolve navigation items | Via an extension or internal service. |
-| 3. Render | Through Moodle's navigation API (`navigation_node`, `pix_icon`, etc.). |
+Moodle exposes navigation extension points only as procedural callbacks in the consumer plugin's `lib.php`:
 
-Step 1 is non-negotiable: it is the authorization guarantee for every navigation entry, by construction rather than by convention.
+| Callback                                   | Moodle hook point  | Typical use                    |
+| ------------------------------------------ | ------------------ | ------------------------------ |
+| `{component}_extend_navigation()`          | Global navigation  | Main menu entry                |
+| `{component}_extend_navigation_course()`   | Course navigation  | Per-course items               |
+| `{component}_myprofile_navigation()`       | User profile       | A section on the profile page  |
+| `{component}_render_navbar_output()`       | Navbar             | A dropdown on the top bar      |
 
-## Registration-mechanism migration
+Moodle offers no hook-based alternative for these four surfaces, so the callbacks are permanent scaffolding. They are not phased out as registry-based registration grows. Each follows the same delegation pattern and never carries business logic:
 
-| Mechanism | Role | Status |
-|---|---|---|
-| `get_quick_access_links()` | Legacy navigation-registration path for extensions | Being progressively replaced |
-| `navigation_registry_interface` | Registration path for extensions, introduced by the broader frontend architecture decision (MDL-019 and the `ui` library's decisions record) | Primary path going forward; adoption in progress |
+| Step | Responsibility                                                                                                                                         |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | Check capability or authentication first: through `Security\Contract\CapabilityInterface` / `AuthenticationInterface` where DI is available, or the static `CapabilitySupport` / `AuthSupport` fallback in procedural code. No callback skips this step, so a navigation entry can never bypass authorization |
+| 2    | Resolve the items through an extension or a service                                                                                                   |
+| 3    | Render through Moodle's navigation API (`navigation_node`, `pix_icon`, …) or an adapter renderer                                                       |
 
-The four `lib.php` callbacks — `local_middag_extend_navigation()`, `local_middag_extend_navigation_course()`, `local_middag_myprofile_navigation()`, `local_middag_render_navbar_output()` — are independent of this migration. They are not candidates for replacement by a native Moodle hook: Moodle's plugin API gives no alternative entry point for global navigation, course navigation, profile navigation, or the navbar dropdown.
+A product may add further hooks of its own around these callbacks; the MIDDAG product, for example, lets extensions contribute content to its block through `local_middag_extend_block_middag_content()`.
 
-A separate hook, `local_middag_extend_block_middag_content()`, lets extensions contribute content into the MIDDAG block.
+## Adapter pieces
 
-## Rendering path — verified against real code (2026-07-17)
+| Piece                                                 | Role                                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Output\NavbarService::render($extra_items, $health_badge, $url_generator)` (`@internal`, called from the consumer's `render_navbar_output` callback) | Returns `''` unless the user has `moodle/site:config` in the system context; merges default items with the caller's extra items (items support `icon`, `separator`, `badge`, `badge_color`); drops invalid items; renders the `{component}/navbar-usernavigation` Mustache template with Bootstrap 5 attributes on Moodle 5.0+ and Bootstrap 4 attributes below |
+| `Http\Inertia\InertiaSharedProps::buildNavigation()`  | Builds the three-level navigation tree (`tree`, `activeKey`, `footer`) for SPA pages from the `NavigationRegistryInterface` service (from `middag-io/ui`) bound in the container, marking the current route as active                                                     |
 
-| Surface | Rendering technology | Notes |
-|---|---|---|
-| Institutional navigation — navbar dropdown (`src/Output/NavbarService.php`) | Mustache / native Moodle HTML output | Not Inertia. |
-| Product pages elsewhere in this package | Inertia (`src/Http/Inertia/InertiaSharedProps.php`, `src/Http/Inertia/MoodleInertiaBootstrap.php`) | Real, active infrastructure that coexists deliberately with the Mustache path above. |
+`NavbarService` uses only wrappers from `Support/`; extensibility through hooks stays with its caller in `lib.php`, which sits outside the adapter.
 
-`NavbarService`'s own docblock confirms the boundary discipline directly:
+## Registering navigation items
 
-> Uses only moodle/support/ dependencies (deptrac: MoodleInternal layer). Extensibility via hooks is handled by the caller (lib.php) which is outside the framework boundary.
+| Mechanism                                       | Role                                                                                         | Status                       |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------- |
+| A quick-access-links method on the extension (legacy plugin `get_quick_access_links()`) | Legacy registration path                                                                     | Being replaced progressively |
+| `NavigationRegistryInterface` (`middag-io/ui`)  | Extensions register items during `boot()`; the adapter reads the registry for SPA navigation | Primary path going forward   |
 
-These are two separate, coexisting rendering paths by design: institutional navigation uses Mustache; product pages use Inertia (the frontend architecture decisions in the `ui` library). The coexistence does not change the classification of the delegation pattern above — the callback-to-internal-mechanism pattern is generic Moodle boundary behavior, independent of which rendering technology a given extension chooses internally.
+The four `lib.php` callbacks are independent of this migration.
+
+## Rendering paths
+
+| Surface                                   | Technology                                     | Code                                                                                               |
+| ----------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Navbar dropdown (institutional navigation) | Mustache, native Moodle output                 | `src/Output/NavbarService.php`                                                                     |
+| SPA product pages                         | Inertia                                        | `src/Http/Inertia/InertiaSharedProps.php`, `src/Http/Inertia/MoodleInertiaBootstrap.php`           |
+
+The two paths coexist by design. The delegation pattern above is generic Moodle boundary behavior and does not depend on which technology a page uses.
+
+## Enforcement state
+
+| Clause                                                       | State                                       |
+| ------------------------------------------------------------ | ------------------------------------------- |
+| Every navigation callback checks capability or auth first    | **planned** — code review in the consumer   |
+| Callbacks only delegate                                      | **planned** — code review in the consumer   |
+| The four callbacks stay regardless of registry adoption      | **planned** — code review                   |
 
 ## Related
 
-- [MDL-001 — Consolidate the Moodle Boundary Behind a Physical Whitelist](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-001-boundary-consolidation-whitelist.md)
-- [MDL-017 — Routing Bridge Coexistence with the Native Moodle Router](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-017-routing-bridge-coexistence.md) — a structurally similar dual-path coexistence.
-- [MDL-019 — Frontend Moodle Integration: Theme Bridge & AMD Build](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-019-frontend-moodle-integration.md)
+- [Boundary & Whitelist](./boundary-whitelist)
+- [Routing Bridge](./routing-bridge-maturity): a similar coexistence of a framework-owned primary mechanism with Moodle-mandated entry points.
+- [Frontend Build & Theme Bridge](./frontend-build-detail)
+
+---
+
+Decision records: MDL-001 and MDL-018 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
