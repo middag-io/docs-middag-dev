@@ -75,7 +75,7 @@ Moodle requires some APIs of every plugin that stores data or serves pages. The 
 
 ## Static entry points
 
-`lib.php` callbacks, Moodle hooks and cron run in procedural contexts that receive no dependency injection. The adapter therefore keeps a static, per-request kernel: `Runtime\Kernel` is a singleton (`Kernel::init()`, `Kernel::get()`, `Kernel::handle()`, `Kernel::shutdown()`) that compiles the container once per request. One Moodle plugin boots per request, so a single process-wide slot is safe here. The WordPress adapter makes the opposite choice for the opposite reason (several plugins share one PHP process); see [Adapter Port Catalog — host identity](../../bridge-contracts#host-identity-in-a-shared-process).
+`lib.php` callbacks, Moodle hooks and cron run in procedural contexts that receive no dependency injection. The adapter therefore keeps a static, per-request kernel: `Runtime\Kernel` is a singleton (`Kernel::init()`, `Kernel::get()`, `Kernel::handle()`, `Kernel::shutdown()`) that compiles the container once per request. The static kernel assumes one consumer plugin built on this adapter per request: the `Kernel` instance and `ComponentContext` are process-wide slots, so two such plugins in one request share them and the last configuration wins. The WordPress adapter makes the opposite choice for the opposite reason (several plugins share one PHP process); see [Adapter Port Catalog — host identity](../../bridge-contracts#host-identity-in-a-shared-process).
 
 Facades over the support layer belong to the consumer, not to this package. `Support\Moodle` is a static aggregator that returns fresh `*Support` instances; generated facades live in the consumer plugin (`{component}\facade\...`).
 
