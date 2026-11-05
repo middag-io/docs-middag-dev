@@ -99,8 +99,15 @@
       {
         "label": "Persistence",
         "order": 3,
-        "files": ["reference/active-record-eloquent-compatibility"],
+        "files": [
+          "reference/database-schema-and-migrations",
+          "reference/active-record-eloquent-compatibility"
+        ],
         "labels": [
+          {
+            "file": "reference/database-schema-and-migrations",
+            "label": "Database Schema & Migrations"
+          },
           {
             "file": "reference/active-record-eloquent-compatibility",
             "label": "Active Record (Eloquent Compatibility)"
@@ -114,7 +121,7 @@
         "labels": [
           {
             "file": "reference/command-bus",
-            "label": "Dispatch, Handlers & Job Model"
+            "label": "Dispatch, Handlers & Scheduling"
           }
         ]
       },
@@ -126,7 +133,9 @@
           "reference/bootstrap-contracts",
           "reference/bridge-contracts",
           "reference/module-layout-convention",
-          "reference/exception-hierarchy"
+          "reference/exception-hierarchy",
+          "reference/standalone-runtime",
+          "reference/logging-and-observability"
         ],
         "labels": [
           {
@@ -148,14 +157,26 @@
           {
             "file": "reference/exception-hierarchy",
             "label": "Exception Hierarchy"
+          },
+          {
+            "file": "reference/standalone-runtime",
+            "label": "Standalone Runtime"
+          },
+          {
+            "file": "reference/logging-and-observability",
+            "label": "Logging & Observability"
           }
         ]
       },
       {
         "label": "Reactive & Hook Model",
         "order": 6,
-        "files": ["reference/signal-hook-legacy-mechanics"],
+        "files": ["reference/hooks-public-surface", "reference/signal-hook-legacy-mechanics"],
         "labels": [
+          {
+            "file": "reference/hooks-public-surface",
+            "label": "Hooks — Public Surface & Naming"
+          },
           {
             "file": "reference/signal-hook-legacy-mechanics",
             "label": "Hooks, Filters & Signal Dispatch"
@@ -173,7 +194,7 @@
         "labels": [
           {
             "file": "reference/portability-audit-historical",
-            "label": "Composer Portability Audit"
+            "label": "Composer Portability Audit (Historical)"
           },
           {
             "file": "reference/repository-persistence-families",
@@ -181,7 +202,7 @@
           },
           {
             "file": "reference/shortcode-legacy-detail",
-            "label": "Shortcode Processing"
+            "label": "Shortcode Processing (Historical)"
           }
         ]
       }
@@ -189,11 +210,15 @@
     "ui": [
       {
         "file": "reference/ui/composition-levels-and-capabilities",
-        "label": "Composition Levels & Capabilities"
+        "label": "Page Composition Contract"
       },
       {
         "file": "reference/ui/design-system-catalog",
-        "label": "Design System & Licensing"
+        "label": "UI Stack & Design System"
+      },
+      {
+        "file": "reference/ui/wire-contract",
+        "label": "UI Wire Contract"
       }
     ]
   },
@@ -207,7 +232,8 @@
           "files": [
             "reference/adapters/moodle/support-class-inventory",
             "reference/adapters/moodle/boundary-whitelist",
-            "reference/adapters/moodle/api-coverage-inventory"
+            "reference/adapters/moodle/api-coverage-inventory",
+            "reference/adapters/moodle/shared-namespace-dependencies"
           ],
           "labels": [
             {
@@ -216,11 +242,15 @@
             },
             {
               "file": "reference/adapters/moodle/boundary-whitelist",
-              "label": "Boundary Whitelist"
+              "label": "Boundary & Whitelist"
             },
             {
               "file": "reference/adapters/moodle/api-coverage-inventory",
-              "label": "API Coverage Inventory"
+              "label": "API Coverage & Version Gates"
+            },
+            {
+              "file": "reference/adapters/moodle/shared-namespace-dependencies",
+              "label": "Shared-Namespace Dependencies"
             }
           ]
         },
@@ -269,17 +299,22 @@
           "label": "Config & Cache",
           "order": 4,
           "files": [
+            "reference/adapters/moodle/settings-and-config-keys",
             "reference/adapters/moodle/config-schema-inventory",
             "reference/adapters/moodle/cache-decorator"
           ],
           "labels": [
             {
+              "file": "reference/adapters/moodle/settings-and-config-keys",
+              "label": "Settings & Config Keys"
+            },
+            {
               "file": "reference/adapters/moodle/config-schema-inventory",
-              "label": "Config Schema & Settings DSL"
+              "label": "Config Schema Inventory (Downstream)"
             },
             {
               "file": "reference/adapters/moodle/cache-decorator",
-              "label": "Cache Decorator"
+              "label": "Cache Decorator (Downstream)"
             }
           ]
         },
@@ -297,7 +332,7 @@
             },
             {
               "file": "reference/adapters/moodle/import-repository-contract",
-              "label": "Import Repository (Backup/Restore)"
+              "label": "Import Repository (Downstream)"
             }
           ]
         },
@@ -316,6 +351,39 @@
             {
               "file": "reference/adapters/moodle/statics-generation",
               "label": "Statics Generation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "WordPress Adapter",
+      "groups": [
+        {
+          "label": "WordPress Adapter",
+          "order": 1,
+          "files": [
+            "reference/adapters/wordpress/index",
+            "reference/adapters/wordpress/routing-surfaces",
+            "reference/adapters/wordpress/controller-bases",
+            "reference/adapters/wordpress/configuration"
+          ],
+          "labels": [
+            {
+              "file": "reference/adapters/wordpress/index",
+              "label": "Overview, Support & Data"
+            },
+            {
+              "file": "reference/adapters/wordpress/routing-surfaces",
+              "label": "Routing Surfaces"
+            },
+            {
+              "file": "reference/adapters/wordpress/controller-bases",
+              "label": "Controller Bases"
+            },
+            {
+              "file": "reference/adapters/wordpress/configuration",
+              "label": "Configuration & Identity"
             }
           ]
         }

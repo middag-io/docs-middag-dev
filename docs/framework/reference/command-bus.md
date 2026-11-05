@@ -1,109 +1,60 @@
 ---
-title: 'Command Bus — Dispatch, Scheduling & Job Model'
+title: 'Command bus, handlers and scheduling'
 ---
 
-# Command Bus — Dispatch, Scheduling & Job Model
+# Command bus, handlers and scheduling
 
-Reference for `middag-io/middag-php-framework`'s command bus: dispatch API, handler resolution, declarative scheduling, the (core-owned) job aggregate, and serialization rules. Backs [FW-008](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-008-command-bus-async-job-model.md).
+The framework exposes one dispatch operation for commands. A configured bus handles a message immediately when there is no sender route, or sends it to a transport for a worker to handle later. [FW-008](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-008-command-bus-async-job-model.md) records that choice. This reference describes the current `middag-php-framework` API.
 
-## Dispatching a command
+## Public contracts
 
-A command is a plain, `final readonly` class implementing `CommandInterface`; a handler is resolved for it and invoked through `Bus/MessageBus`:
+| Type | Role |
+| --- | --- |
+| [`CommandInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Contract/CommandInterface.php) | Command payload contract: `toPayload(): array` and `fromPayload(array): static`. |
+| [`AbstractCommand`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/AbstractCommand.php) | Optional base class implementing `CommandInterface`; a command may implement the interface directly. |
+| [`MessageBusInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Contract/MessageBusInterface.php) | Framework bus contract extending Symfony Messenger's message bus interface. Call `dispatch($command)` on this contract. |
+| [`MessageBusFactory`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/MessageBusFactory.php) | Creates the bus with send/handle middleware and a default convention handler locator. Accepts a sender locator, another handler locator and prepended middleware. |
 
-```php
-final readonly class CreateItem implements CommandInterface
-{
-    public function __construct(
-        public string $type,
-        public array $metadata,
-        public int $userId,
-    ) {}
-}
+The concrete `MessageBus` is `@internal`; integrations depend on `MessageBusInterface`. The factory's default has no sender locator, so it handles messages synchronously. With sender routing, the same `dispatch()` call sends matching messages to a transport; `CommandWorker` consumes them. There is no framework `dispatch_async()` or `handle()` method on the bus.
 
-final class CreateItemHandler
-{
-    public function __construct(
-        private ItemRepositoryInterface $repository,
-    ) {}
+## Handlers
 
-    public function __invoke(CreateItem $command): Item { /* ... */ }
-}
+[`ConventionHandlersLocator`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/ConventionHandlersLocator.php) resolves a command class to a handler service named `{Command}Handler`. [`AttributeHandlersLocator`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/AttributeHandlersLocator.php) binds handlers marked with `#[AsCommandHandler(command: ...)]`; it can fall back to a convention locator when no attribute matches. Both locators are marked `@api`. The host must register handler services in its container.
 
-$bus->dispatch(new CreateItem(...));
-```
+A command carries data; its handler performs the work when the bus invokes it. `CommandInterface` does not require a command class to be `final` or `readonly`, although immutable commands simplify queued execution.
 
-`dispatch()` is the **only** call — there is no `dispatch_async()` and no `handle()`. Whether the command runs inline or gets routed to a transport (drained later by `Bus/Command/CommandWorker`) is decided by middleware/routing configuration, not by which method the caller invokes.
+## Queued payloads
 
-### Dispatch API — design history
+[`CommandSerializer`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/CommandSerializer.php) calls `toPayload()` and encodes that array as JSON; deserialization calls the command's `fromPayload()`. Commands should return values that survive this round trip. Changing the payload shape of messages already waiting in a transport requires a rollout plan; the interface does not version payloads automatically.
 
-Three sources describe this API across the project's history; only the current code is normative:
+The payload methods use **camelCase** (`toPayload()`/`fromPayload()`), matching both the interface and the current FW-008 text. Older material that spells them `to_payload()`/`from_payload()` predates this contract.
 
-| Source | Sync call | Async call |
-|---|---|---|
-| `ADR-705` (legacy, normative) | `$bus->dispatch($command)` | `$bus->dispatch_async($command)` |
-| `ref-705` (legacy, contradicted the ADR) | `command_bus::handle($command)` (static facade) | `command_bus::dispatch_async($command)` |
-| **`Bus/MessageBus.php` (current)** | **`dispatch($command)`** — one surface for both | same call; transport routing decides |
+## Periodic commands
 
-`MessageBus` extends Symfony Messenger's own `MessageBus` and adds no framework-specific `handle()` or `dispatch_async()` method.
+[`#[Schedule]`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Attribute/Schedule.php) declares `minute`, `hour`, `day`, `month` and `dayOfWeek`, plus `disabled` and `exclusive`. `ScheduleReader` discovers annotated commands and omits disabled ones. `CronFieldMatcher` treats `R` as a wildcard when matching; a host adapter may assign its own random schedule. `ScheduleRunner` invokes matching commands, but it does not enforce `exclusive`: a host that needs non-overlap must provide locking. Scheduled commands must be constructible without arguments: the runner dispatches each due command as `new $class()` and carries no per-invocation payload.
 
-## Handler resolution
+## Transports, workers and retry
 
-| Locator | Resolves via | Use when |
-|---|---|---|
-| `ConventionHandlersLocator` | Naming convention: `{Command}` → `{Command}Handler` | The handler class name is directly derivable from the command class name. |
-| `AttributeHandlersLocator` | `#[AsCommandHandler(command: SomeCommand::class)]` on the handler class | The host's native naming doesn't fit the convention (e.g. a Moodle-style snake_case `*_command_handler` class), or the handler's `__invoke()` has no typed parameter to infer the message type from. |
+[`TransportInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Contract/TransportInterface.php) is the MIDDAG-scoped alias of Symfony Messenger's transport contract. The framework ships `@api` transport pieces under [`Bus/Transport`](https://github.com/middag-io/middag-php-framework/tree/main/src/Bus/Transport): `InMemoryTransport` (an in-process queue drained later in the same process), `MiddagDoctrineTransport` with `DoctrineTransportFactory` (Symfony's Doctrine transport behind the MIDDAG interface), and `TransportLocator` (a PSR-11 map from a transport alias such as `async` to its transport). [`CommandWorker`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/CommandWorker.php) drains transports; each `drain()` call makes one pass and returns, so it can run from a long-lived process or a cron tick.
 
-Both locators are `@api`-relevant extension points — a project picks whichever fits its naming, they are not alternatives to choose between once and discard.
+The framework also defines the retry seam, all `@api` under [`Bus/Retry`](https://github.com/middag-io/middag-php-framework/tree/main/src/Bus/Retry): `RetryPolicyInterface` with the default `MultiplierRetryPolicy` (exponential backoff with a cap and optional jitter), `AttemptableInterface` (an item's attempts, ceiling and next eligible time), `AttemptStoreInterface` (the persistence boundary for those items) and `AttemptStamp` (binds a received envelope to its stored item). When an envelope carries `AttemptStamp` and the worker is constructed with both a retry policy and an attempt store, a handler failure is classified by the policy and recorded through the store. Without them, the worker logs and rejects the failed message.
 
-## Declarative scheduling
+### Worker stop conditions and liveness
 
-A `schedule` is a periodic trigger for a command, declared with an attribute:
+`CommandWorker::drain()` honours an optional [`WorkerLimits`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/WorkerLimits.php) (`@api`): a message count, a time limit in seconds and a memory limit in bytes, each nullable (unlimited); `WorkerLimits::fromCliOptions()` parses `--limit`, `--time-limit` and `--memory-limit`. A bound [`WorkerHeartbeatInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Bus/Command/WorkerHeartbeatInterface.php) (`@api`) receives `beat()` once per loop cycle so a supervisor can tell a hung worker from an idle one. The framework ships no heartbeat implementation, because recording one always touches a host resource.
 
-```php
-#[Schedule(minute: '0', hour: '4')]
-final readonly class CleanLogsCommand extends Command { /* ... */ }
-```
+### The durable transport is for standalone hosts
 
-| Field | Notes |
-|---|---|
-| `minute`, `hour`, `day`, `month`, `weekday` | Standard cron notation. |
-| `'R'` (any field) | Accepted for hosts implementing random scheduling (the Moodle `db/tasks.php` pattern). |
-| `$exclusive` | Host-neutral "do not run concurrently" hint; the adapter maps it onto its own locking primitive. |
+`DoctrineTransportFactory` lives in this OSS package because it is thin plumbing with no MIDDAG know-how: it hands Symfony's Doctrine bridge a DBAL connection and the `CommandSerializer` (decision A2, cited in `src/Bus/Transport/DoctrineTransportFactory.php:35`). `doctrine/dbal` and `symfony/doctrine-messenger` are `suggest` dependencies, never `require`; `DoctrineTransportFactory::missingReason()` lets a host degrade with a warning instead of a fatal. On PostgreSQL the factory uses `LISTEN/NOTIFY`; other engines poll at roughly one second. `auto_setup` stays on, so the transport creates its `messenger_messages` table on first use. That table is a pipe, not a job ledger: a row exists only while its message is in flight.
 
-A host adapter converts the attribute into its own native scheduling primitive (Moodle's task-definition array, WordPress's `wp_schedule_event` payload). The reading/matching/running side of the DSL is implemented by `Bus/Schedule/CronFieldMatcher.php`, `Bus/Schedule/ScheduleReader.php`, and `Bus/Schedule/ScheduleRunner.php`.
+The transport is meant for a standalone PHP host, wired through [`StandaloneKernel`](./standalone-runtime). Under Moodle or WordPress it would open a second database connection, create a table outside `install.xml`/`dbDelta` (invisible to backup, restore and uninstall) and ignore the host's table prefix. The framework cannot know which host it runs on, so refusing the transport on those hosts is the host side's job.
 
-## Job aggregate (core-owned, not shipped in this framework)
+## Dispatch API history
 
-This framework's OSS surface is transport-agnostic: `Bus/MessageBus`, `Bus/Transport/InMemoryTransport` (the OSS default transport), and `Bus/Command/CommandWorker`. Governed job observability — retry, correlation, dedup, full lifecycle persistence — is `middag-io/core` territory (see `architecture.md`, Pillar 3). The table below documents that core-owned aggregate for whoever implements or maintains that layer.
+The legacy decision (vault ADR-705, 2026-03-29) specified two methods, `dispatch()` for sync and `dispatch_async()` for async, while its reference companion described a static `command_bus::handle()`/`dispatch_async()` facade. Neither shipped. The code converged on one `dispatch()` call, with routing deciding sync or async, and on camelCase `toPayload()`/`fromPayload()` instead of PHP `serialize()` or a generic JSON encoding of the object.
 
-**Lifecycle:** `pending` → `started` → `completed`, or `failed` (recorded as a `job_attempt`) → retried → back to `pending` with `attempts` incremented → `failed` permanently at max attempts.
+## Boundary of governed jobs
 
-| Field | Purpose |
-|---|---|
-| `uuid` | Job identity. |
-| `extension`, `jobtype` | What kind of work this is and who owns it. |
-| `status` | Current lifecycle state. |
-| `priority` | Scheduling weight among pending jobs. |
-| `payload` | The command's serialized `to_payload()` output. |
-| `attempts`, `maxattempts` | Retry counter and ceiling. |
-| `correlationid` | Ties related jobs together across a business transaction. |
-| `dedupkey` | Prevents duplicate enqueue of equivalent work. |
-| `groupkey` | Groups jobs that must serialize relative to each other. |
-| `transport` | Which transport the job was routed through. |
+This package ships no `AttemptStoreInterface` implementation, and its bundled transports do not attach `AttemptStamp`. The persisted store, retry history, correlation and job lifecycle belong to the host side, for example `middag-php-core` and its host adapters. A command dispatched through this framework is therefore not automatically a persisted job aggregate, and this page does not define job fields, states or database behavior for the OSS bus.
 
-`job_attempt` is an immutable satellite record written once per attempt.
-
-## Serialization
-
-Commands serialize via a framework-defined `CommandInterface::to_payload()` / `from_payload()` pair — **never** a generic `serialize()`/`json_encode()`. This keeps a queued payload's shape independent of PHP's own serialization format. Incompatible schema changes to an already-queued command still require explicit rollout coordination; no automatic payload-versioning mechanism exists.
-
-## Anti-patterns
-
-| Anti-pattern | Why it's wrong |
-|---|---|
-| Logic in the handler's constructor instead of `__invoke()` | Constructor runs at resolution time, not dispatch time — breaks the handler's single point of execution. |
-| A mutable command class | Commands should be `final readonly`; mutability invites state to change between dispatch and handling. |
-| Serializing objects directly inside `to_payload()` instead of primitive/array data | Defeats the point of a dedicated payload contract — reintroduces PHP-serialization coupling through the back door. |
-| A handler reaching for a host's raw data-access global instead of an injected repository | Violates the persistence boundary — see [FW-013](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-013-repository-persistence-boundary.md). |
-| Calling `dispatch()` on an async-routed message without testing the `from_payload(to_payload())` round trip | The only way to catch a payload that doesn't survive serialization before it reaches production. |
-| A job with no `maxattempts` set | An infinite retry loop waiting to happen. |
+Verified against `middag-php-framework/main@c9daec5fa289116487aa842f4de1dfa0fa8e2f2a` on 2026-11-04. Recheck the code and the installed version when implementing a transport, attempt store or handler locator.

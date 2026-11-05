@@ -1,10 +1,12 @@
 ---
-title: 'framework — WordPress-Style Shortcode Processing (Legacy Detail)'
+title: 'framework — WordPress-Style Shortcode Processing (Historical)'
 ---
 
-# WordPress-Style Shortcode Processing — Legacy Detail
+# WordPress-Style Shortcode Processing (Historical)
 
-Historical only — **none of the mechanism below ships in `middag-io/framework` today**. The macro-parsing engine did not carry over into the standalone OSS package; only the sanitize-by-default / `#[TrustedOutput]`-opt-out safety posture it originated survives, generalised as a framework attribute. This page preserves the legacy design in case a host adapter (Moodle, WordPress) ever wants to rebuild an equivalent text-macro feature over its own content-authoring model. Backs [FW-009](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-009-shortcode-processing.md).
+> **Historical page.** Nothing on this page describes current framework behaviour. It is kept for provenance (legacy vault ADR-704, 2026-04-04) and for any host adapter that rebuilds a text-macro feature over its own content model. The current, normative piece is `#[TrustedOutput]`, described under [What survives today](#what-survives-today).
+
+Historical only — **none of the mechanism below ships in `middag-io/framework` today**. The macro-parsing engine did not carry over into the standalone OSS package; only the sanitize-by-default / `#[TrustedOutput]`-opt-out safety posture it originated survives, generalised as a framework attribute. This page preserves the legacy design in case a host adapter (Moodle, WordPress) ever wants to rebuild an equivalent text-macro feature over its own content-authoring model. Backs [FW-009](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-009-shortcode-processing.md).
 
 ## Interface shape (legacy)
 
@@ -38,7 +40,7 @@ interface shortcode_manager_interface {
 
 ## Failure handling
 
-Aligned with the reactive-model rule ([FW-007](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-007-signal-hook-reactive-model.md)): a step's failure accompanies the caller only when that step composes the contract the caller was promised.
+Aligned with the reactive-model rule ([FW-007](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-007-signal-hook-reactive-model.md)): a step's failure accompanies the caller only when that step composes the contract the caller was promised.
 
 | Situation | Behavior | Why |
 |---|---|---|
@@ -56,4 +58,4 @@ Aligned with the reactive-model rule ([FW-007](https://github.com/middag-io/midd
 
 ## What survives today
 
-None of the parsing/registration mechanism above ships in this framework. What generalised and does ship: `Shared/Attribute/TrustedOutput.php` (`#[TrustedOutput]`) — the same sanitize-by-default / explicit-opt-out posture, decoupled from shortcode handlers specifically and available to any renderer in the ecosystem.
+None of the parsing/registration mechanism above ships in this framework; `src/` contains no shortcode engine. What generalised and does ship: [`#[TrustedOutput]`](https://github.com/middag-io/middag-php-framework/blob/main/src/Shared/Attribute/TrustedOutput.php) — the same sanitize-by-default / explicit-opt-out posture, decoupled from shortcode handlers. Output is sanitized by default; a renderer that must emit trusted markup declares the marker, the adapters honour it, and the declaring author takes on the XSS responsibility for that output.

@@ -4,28 +4,84 @@ title: 'framework — Bridge Contracts (Adapter Ports)'
 
 # Bridge Contracts (Adapter Ports)
 
-The interfaces a host adapter (Moodle, WordPress, or a future host) implements to plug into `middag-io/framework`. Every contract ships an OSS default in the framework itself, so the framework runs standalone with no adapter installed at all — an adapter only ever *overrides* the default. See [Architecture](../explanation/architecture) for how these ports fit into the four-pillar ecosystem.
+The interfaces a host adapter (Moodle, WordPress, or a future host) implements to plug into `middag-io/framework`. Backs [FW-015](https://github.com/middag-io/middag-php-framework/tree/main/docs/decisions) (hosts are adapters of the framework's ports) and [FW-014](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-014-segregated-controller-role-interfaces.md) (controller roles). See [Architecture](../explanation/architecture) for how these ports fit into the ecosystem.
 
-An adapter never imports core: core governance runs first, and the adapter is only ever handed an opaque envelope to deliver to the host.
+## Rules every port follows
+
+- **A host enters only through an adapter.** Only adapter packages call host APIs; the framework calls none (enforced by `composer check:portability`, see [Composer Portability Audit](./portability-audit-historical)).
+- **Every port has an OSS default or is optional.** The framework runs standalone with no adapter installed; an adapter only overrides a default. The standalone runtime is described in [Standalone Runtime](./standalone-runtime).
+- **The consumer owns the composition root.** The product (or a standalone app) chooses the bootstrap, the adapter and the bindings. The OSS libraries ship no composition root of their own.
+- **No product identity in the libraries.** Component name, asset version and base path reach the adapter at runtime through `HostComponentContextInterface`; defaults are neutral.
+- **Adapters never import proprietary code.** Governed concerns live in proprietary packages downstream, which build on the same ports; an adapter is only ever handed what it must deliver to the host.
 
 ## Contract table
 
-| Contract | Home (concern) + OSS default | Moodle | WordPress |
-|---|---|---|---|
-| `BootstrapInterface` | `Kernel/Contract/` | `MoodleBootstrap` | `WordPressBootstrap` |
-| `ConfigResolverInterface` | `Kernel/Contract/` — default `EnvConfigResolver` | `MoodleConfigResolver` | `WpConfigResolver` |
-| `HostEventBridgeInterface` *(experimental)* | `Kernel/Contract/` — generic sync bridge, no default; the core Signal layer is used in practice | — | — |
-| `HostComponentContextInterface` | `Kernel/Contract/` — neutral component identity (`componentName`/`assetVersion`/`basePath`); registered once via `Kernel/HostContext::set()`, read via `::get()` (returns null when unset) | `MoodleHostContext` | `WpComponentContext` |
-| `ConnectionAdapterInterface` | `Database/Contract/` — default `PdoConnectionAdapter` | `MoodleConnectionAdapter` | `WpdbConnectionAdapter` |
-| `UserContextResolverInterface` | `Bus/Contract/` — default `NullUserContextResolver` | `MoodleUserContext` | `WpUserContext` |
-| `MaintenanceGateInterface` | `Kernel/Contract/` — default `NullMaintenanceGate` | `$CFG->upgraderunning` | `wp_is_maintenance_mode()` |
-| `FormRendererInterface` | `middag-io/ui` — framework provides `InertiaRenderer` | `MformRenderer` | `InertiaFormRenderer` |
-| `TranslatorInterface` | `Translation/Contract/` — default `FallbackTranslator` | `MoodleTranslator` | `WpTranslator` |
-| `MailerInterface` | `Mail/Contract/` — default `NullMailer` (discards) | `MailerAdapter` (`email_to_user`) | `WpMailer` (`wp_mail`) |
-| `FilesystemInterface` | `Filesystem/Contract/` — default `LocalFilesystem` | `MoodleFilesystem` (moodledata) | `WpFilesystem` (uploads) |
-| `PasswordHasherInterface` | `Security/Contract/` — default `NativePasswordHasher` | delegates to the host hasher | delegates to the host hasher |
+Adapter class names verified against `middag-php-moodle/main@6aae04d` and `middag-php-wordpress/main@bc1bc59` on 2026-11-04. "—" means the adapter does not implement the port and the OSS default (or the consumer's own binding) applies.
 
-`Mailer`, `Filesystem` and `PasswordHasher` are infra ports with a working OSS default — they run standalone out of the box. An adapter only overrides them to talk to the host's own protected storage or credential store.
+| Contract | Home + OSS default | Moodle | WordPress |
+|---|---|---|---|
+| `BootstrapInterface` | `Kernel/Contract/` — a standalone app writes its own | `MoodleBootstrap` | `WpBootstrap` |
+| `ConfigResolverInterface` | `Kernel/Contract/` — `EnvConfigResolver` | `MoodleConfigResolver` | `WpConfigResolver` |
+| `HostComponentContextInterface` | `Kernel/Contract/` — neutral component identity (`componentName`/`assetVersion`/`basePath`); optional process-wide slot `Kernel/HostContext` | `MoodleHostContext` | `WpComponentContext` (injected, never through `HostContext`; see below) |
+| `MaintenanceGateInterface` | `Kernel/Contract/` — `NullMaintenanceGate` | `MoodleMaintenanceGate` (`$CFG->upgraderunning`, `during_initial_install()`) | `WpMaintenanceGate` (`wp_is_maintenance_mode()`) |
+| `HookManagerInterface` | `Kernel/Contract/` — `HookManager`, bound by the consumer | — (`MoodleHostEventBridge` consumes the bound manager) | — (host events go to native WordPress hooks) |
+| `HostEventBridgeInterface` | `Kernel/Contract/` — `@api`, no default | `MoodleHostEventBridge` (delegates to `HookManager`) | `WpHostEventBridge` (native `do_action`, `middag/` prefix) |
+| `ConnectionAdapterInterface` | `Database/Contract/` — `PdoConnectionAdapter` | `MoodleConnectionAdapter` | `WpdbConnectionAdapter` |
+| `SqlDialectInterface` | `Database/Contract/` — `StandardSqlDialect`, `MysqlSqlDialect`, `PrefixingSqlDialect` | `MoodleSqlDialect` | `WpdbSqlDialect` |
+| `SchemaBuilderAdapterInterface` | `Database/Contract/` — `DbalSchemaBuilderAdapter`, `MysqlSchemaBuilderAdapter`, `SqliteSchemaBuilderAdapter` | `XmldbSchemaAdapter` | — (WordPress owns its schema through `dbDelta()`) |
+| `VersionTrackerInterface` | `Database/Contract/` — `MysqlVersionTracker` | `VersionTracker` | `VersionTracker` |
+| `TransactionManagerInterface` | `Database/Contract/` — no default | `TransactionManager` | — |
+| `UserContextResolverInterface` | `Bus/Contract/` — `NullUserContextResolver`; `SessionUserContextResolver` for session-based standalone apps | `MoodleUserContext` | `WpUserContext` |
+| `FormRendererInterface` | `middag-io/ui` — framework provides `InertiaRenderer` | `MformRenderer` | — (framework `InertiaRenderer`) |
+| `TranslatorInterface` | `Translation/Contract/` — `FallbackTranslator` | `MoodleTranslator` | `WpTranslator` |
+| `MailerInterface` | `Mail/Contract/` — `NullMailer` (discards) | `MoodleMailer` (`email_to_user`) | `WpMailer` (`wp_mail`) |
+| `FilesystemInterface` | `Filesystem/Contract/` — `LocalFilesystem`; `FlysystemFilesystem` with `league/flysystem` | `MoodledataFilesystem` | `WpUploadsFilesystem` |
+| `PasswordHasherInterface` | `Security/Contract/` — `NativePasswordHasher` | — | — |
+| `ActorResolverInterface`, `OriginResolverInterface` | `Logging/Contract/` — `NullActorResolver`, `NullOriginResolver` | `MoodleActorResolver`, `MoodleOriginResolver` | — |
+| `ErrorReporterInterface`, `ProfileCollectorInterface` | `Observability/Contract/` — `NullErrorReporter`, `ProfileCollector` | — | — |
+
+Logging and observability ports are documented in [Logging & observability](./logging-and-observability); database ports in [Database Schema & Migrations](./database-schema-and-migrations).
+
+## Host identity in a shared process
+
+`HostContext::set()` is a single process-wide slot that static adapter helpers outside the DI graph read through `HostContext::get()` (null when unset). It models one active host component per process, which holds for Moodle (one plugin boots per request). It does not hold for WordPress, where several plugins built on the WordPress adapter share one PHP process: each would overwrite the slot and the last write would win. WordPress consumers therefore never read `HostContext`; each plugin injects its `WpComponentContext` through its own container.
+
+## Transactions — the Moodle mapping
+
+`TransactionManagerInterface` (`Database/Contract/`, `@api`) has two boundaries; the one-aggregate-per-transaction policy they serve is the framework's ([FW-013](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-013-repository-persistence-boundary.md)). The Moodle adapter's `Database\TransactionManager` (`@internal`, bind it through the interface) maps them onto Moodle's delegated transactions:
+
+| Framework boundary                       | Moodle implementation                                                                                                                                                                                                                                       |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `executeAtomic(callable $operation)`     | `DbSupport::startDelegatedTransaction()`, run the operation, `allow_commit()`. On any `Throwable`: roll back and re-throw the original. A non-`Exception` `Throwable` is wrapped in a `moodle_exception` for `rollback()`, which only accepts exceptions; an exception thrown by `rollback()` itself is suppressed so the original surfaces |
+| `executeGraceful(callable $operation)`   | Same start and commit. On failure it rolls back, then checks `$DB->is_transaction_started()`: if the outermost transaction has fully unwound, it **returns** the `Throwable`; if a transaction is still open (a nested boundary Moodle dooms), it re-throws, honoring Moodle's cascading rollback |
+
+Rules that apply on Moodle as on every host:
+
+- One aggregate per transaction. Each aggregate commits on its own; coordination between aggregates goes through signals or events with eventual consistency, never a shared transaction.
+- The only exception is a case where Moodle's own platform semantics force atomicity across the boundary, and it must be documented in code next to the call, with its justification.
+- No automated check inspects call sites for cross-aggregate repository use inside the callable yet; the rule is enforced in review.
+
+The WordPress adapter does not implement this port.
+
+## Controller roles
+
+`ControllerInterface` is the union of three host-neutral role interfaces, so a host composes only the roles its dispatch model runs:
+
+| Role interface (`Http/Contract/`) | Members |
+|---|---|
+| `ContainerAwareInterface` | `setContainer()` |
+| `RequestHandlingInterface` | `setRequest()`, `preHandle()`, `handle()` |
+| `AuthorizationAwareInterface` | `setRequireLogin()`, `setRequireCapabilities()` |
+
+`interface ControllerInterface extends ContainerAwareInterface, RequestHandlingInterface, AuthorizationAwareInterface {}` — the full six-method surface is unchanged for existing implementers. Smaller opt-in seams sit alongside: `CapabilityRequirementAwareInterface`, `PublicRouteAwareInterface`, `AuthenticatorInterface`.
+
+| Package | Page/kernel controller base | REST/API base |
+|---|---|---|
+| framework | `AbstractController` (implements `ControllerInterface`) | `AbstractApiController extends AbstractController` |
+| `middag-php-moodle` | `AbstractController implements MoodleControllerInterface` (which extends `CapabilityRequirementAwareInterface` and `ControllerInterface`) | `AbstractApiController extends AbstractController` |
+| `middag-php-wordpress` | `AbstractWpController extends` the framework `AbstractController` | `AbstractWpRestController implements RestControllerInterface` — the WordPress REST registration model (`register_rest_route` with a `permission_callback` per endpoint) has no single `handle()` cycle, so it shares no inheritance chain with the kernel controllers |
+
+The framework grows no WordPress-REST-shaped surface; the REST contract stays in the adapter.
 
 ## Mail — the port and its value objects
 
@@ -38,7 +94,7 @@ The `Mail/` concern deliberately does not depend on `symfony/mailer`: the framew
 
 ## Observability — error reporting and profiling ports
 
-`Observability/` holds two ports that, unlike the bridge contracts above, an adapter is **not required to implement** — any tier (adapter, core, product, or a standalone consumer) can bind an implementation, and the OSS ships a working default either way.
+`Observability/` holds two ports that an adapter is **not required to implement** — any layer (adapter, downstream package, product, or a standalone consumer) can bind an implementation, and the OSS ships a working default either way.
 
 - **`Observability/Contract/ErrorReporterInterface`** — `report(Throwable $throwable, array $context = []): void`, the seam for shipping errors to an external tracker so kernel and domain code never depend on a vendor SDK directly. Implementations must **never throw** — error reporting is best-effort telemetry, not something that should ever break the request it's reporting on. OSS implementations: `NullErrorReporter` (the default, discards) and `SentryErrorReporter` — usable once the consumer installs `sentry/sentry` (a composer `suggest`, never a framework dependency). The host initialises the SDK itself; without an initialised SDK, Sentry's own capture functions are a no-op, so binding `SentryErrorReporter` without a DSN configured is harmless.
-- **`Observability/Contract/ProfileCollectorInterface`** — the sink for runtime profiling events: `record(category, label, context, durationMs)`, `events()`, `reset()`. Categories are free-form strings (`bus`, `hook`, `query`, …). The OSS implementation `ProfileCollector` holds events in-memory for the lifetime of the request, plus a concrete-only `byCategory()` convenience method that isn't part of the contract itself. Three consumers are already wired in-tree: `Bus/Middleware/ProfilingMiddleware` records every dispatched message under `bus` (timed in a `finally` block, so a failed dispatch still shows up), `Kernel/Manager/HookManager` records fired filters/actions under `hook` (opt-in, via `setProfileCollector()`), and `Http/FatalErrorHandler` records shutdown fatals under `fatal`; adapter-side query loggers record under `query`. Bind one collector instance and inject it everywhere to get a single timeline a dev profiler or debug bar can read back.
+- **`Observability/Contract/ProfileCollectorInterface`** — the sink for runtime profiling events: `record(category, label, context, durationMs)`, `events()`, `reset()`. Categories are free-form strings (`bus`, `hook`, `query`, …). The OSS implementation `ProfileCollector` holds events in-memory for the lifetime of the request, plus a concrete-only `byCategory()` convenience method that isn't part of the contract itself. Three consumers are already wired in-tree: `Bus/Middleware/ProfilingMiddleware` records every dispatched message under `bus` (timed in a `finally` block, so a failed dispatch still shows up), `Kernel/Manager/HookManager` records fired filters/actions under `hook` (opt-in, via `setProfileCollector()`), and `Http/FatalErrorHandler` records shutdown fatals under `fatal`. No shipped adapter records under `query` today. Bind one collector instance and inject it everywhere to get a single timeline a dev profiler or debug bar can read back.

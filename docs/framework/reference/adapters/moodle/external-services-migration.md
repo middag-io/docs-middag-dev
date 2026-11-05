@@ -1,47 +1,64 @@
 ---
-title: 'moodle — External Services Migration & Mobile API'
+title: 'Moodle Adapter — External Services & Mobile API'
 ---
 
-# External Services Migration & Mobile API
+# External Services & Mobile API
 
-Reference for the Moodle adapter's External Functions integration (`db/services.php`, `{slug}_external` classes) in `middag-io/moodle`. Backs [MDL-007](https://github.com/middag-io/moodle/blob/docs/docs/decisions/MDL-007-external-services-mobile-api.md).
+Reference for exposing Moodle External Functions (`db/services.php`) through `middag-io/moodle`. Verified against `middag-php-moodle` `main@6aae04d` on 2026-11-04.
 
-## Legacy migration status
+## The flow
 
-A population of externals predates the generated, typed-definition convention and has not fully migrated. This is live roadmap-relevant debt, not historical trivia.
+1. An extension declares its functions with `getServiceDefinitions()`, returning `Definition\ServiceDefinition` objects (`name`, `classname`, `type`, `method`, `description`, `ajax`, `services`, `capabilities`, `min_moodle`, `max_moodle`). Named service groups use `Definition\WebServiceDefinition` (`getWebServiceDefinitions()`).
+2. The static generator writes `db/services.php`, pointing each function's `classname` at the extension's external class. The file is generated, never edited by hand (see [Static Generation](./statics-generation)).
+3. Moodle resolves and invokes that class directly. There is no indirection through a plugin-root `external.php`.
 
-| Extension | Status |
-|---|---|
-| `core` | New-style (migrated) |
-| `helpdesk` | Legacy |
-| `trilha` | Legacy |
-| `studyplan` | Legacy |
+External classes extend `WebService\AbstractExternal` (`@api`), which extends Moodle's `core_external\external_api` and marks the extension point. The function name Moodle sees is `{plugin_name}_{name}` (`ServiceDefinition::getQualifiedName()`); `methodname` defaults to `name` when `method` is null.
 
-**Legacy shape:** the external class lives at `classes/extensions/{slug}/legacy/classes/external.php`, declared manually in `legacy/db/services.php`, sometimes under an older namespace convention (`mtool_*`), entirely outside the `build_statics` generation pipeline.
+`capabilities` is advisory metadata in `db/services.php`; the external method still enforces access itself.
 
-## Migrating an extension from legacy to new-style
-
-| Step | Action |
-|---:|---|
-| 1 | Move the external class out of `legacy/`. |
-| 2 | Rename the namespace to the current convention. |
-| 3 | Declare the function via `get_service_definitions()` using the typed `service` definition. |
-| 4 | Remove `legacy/db/services.php`. |
-| 5 | Regenerate `db/services.php` via the CLI. |
-| 6 | Preserve the public function name `local_middag_{name}` so existing clients do not break. |
-
-The last step is the one migration mistake with real blast radius: renaming the public function name breaks any client (including the official mobile app) already calling it.
+A plugin-root `external.php`, where a consumer keeps one, exists only because some plugin layouts expect it. It never orchestrates or routes external functions.
 
 ## Mobile API
 
-Including `MOODLE_OFFICIAL_MOBILE_SERVICE` in a service definition's `services` array exposes that function to Moodle's official mobile app.
+Including `MOODLE_OFFICIAL_MOBILE_SERVICE` in a definition's `services` array publishes the function in Moodle's official mobile app service.
 
 ## Anti-patterns
 
-| Anti-pattern | Why it matters |
-|---|---|
-| Editing `db/services.php` by hand | The generation pipeline overwrites it on the next run — manual edits are silently lost. |
-| Business logic living inside the external class instead of delegating to a service/command | The external class is a boundary adapter, not a place for domain logic. |
-| Adding a new external under `legacy/` | `legacy/` is migration debt, not a place to grow — new externals must use the typed-definition convention from the start. |
-| Forgetting `self::validate_parameters()` | A security vulnerability, not just a style issue. |
-| Using `type: 'read'` for an operation that mutates state | Moodle permits a `read`-typed call without a sesskey — any mutation must be declared `write`. |
+| Anti-pattern                                                          | Why it matters                                                                       |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Editing `db/services.php` by hand                                     | The generator overwrites it on the next run; manual edits are lost                   |
+| Business logic in the external class                                  | The external class is a boundary adapter; delegate to a service or command           |
+| Using `external.php` as a dispatcher                                  | It is plugin-API scaffolding, not a router                                           |
+| Forgetting `self::validate_parameters()`                              | A security defect, not a style issue                                                 |
+| `type: 'read'` for an operation that changes state                    | Moodle lets a `read` call through without a sesskey; any mutation must be `write`    |
+| Renaming a published function                                         | Breaks every client already calling it, including the mobile app                     |
+
+## Consumer section: legacy migration (MIDDAG product)
+
+This section describes the MIDDAG Moodle plugin (`local_middag`), not the adapter. It is kept here as the worked migration example.
+
+Part of the product's externals predate the generated convention and are still being migrated per extension:
+
+| Extension   | Status                  |
+| ----------- | ----------------------- |
+| `core`      | New style (migrated)    |
+| `helpdesk`  | Legacy                  |
+| `trilha`    | Legacy                  |
+| `studyplan` | Legacy                  |
+
+Legacy shape: the external class lives at `classes/extensions/{slug}/legacy/classes/external.php`, is declared by hand in `legacy/db/services.php`, sometimes under an older namespace (`mtool_*`), outside the generation pipeline. The new-style class is a dedicated `{slug}_external` at `classes/extensions/{slug}/{slug}_external.php`.
+
+| Step | Action                                                                                         |
+| ---: | ---------------------------------------------------------------------------------------------- |
+|    1 | Move the external class out of `legacy/`                                                       |
+|    2 | Rename the namespace to the current convention                                                 |
+|    3 | Declare the function through `getServiceDefinitions()` with a `ServiceDefinition`              |
+|    4 | Remove `legacy/db/services.php`                                                                |
+|    5 | Regenerate `db/services.php`                                                                   |
+|    6 | Keep the public function name (`local_middag_{name}`) so existing clients do not break         |
+
+Step 6 is the one mistake with real blast radius. Adding a new external under `legacy/` is not allowed: `legacy/` is migration debt, not a place to grow.
+
+---
+
+Decision records: MDL-007 and MDL-016 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

@@ -4,7 +4,7 @@ title: 'framework — Attribute Routing & Auth Model Reference'
 
 # Attribute Routing & Auth Model
 
-Reference for `middag-io/framework`'s `#[Route]`/`#[Auth]` attribute model: controller shapes, the parameter resolver chain, the auth pipeline, and CSRF. Backs [FW-002](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-002-attribute-routing-controller-auth-model.md).
+Reference for `middag-io/framework`'s `#[Route]`/`#[Auth]` attribute model: controller shapes, the parameter resolver chain, the auth pipeline, and CSRF. Backs [FW-002](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-002-attribute-routing-controller-auth-model.md). Provenance: legacy vault ADR-801 (routing and controller model, 2026-04-04) and ADR-301 (auth contracts, 2026-03-29), merged into one mechanism.
 
 ## Attribute usage
 
@@ -26,7 +26,7 @@ public function ping(): JsonResponse { ... }
 |---|---|---|
 | Server-rendered page | `Http/Controller/AbstractController.php`, composed with a host-adapter template renderer | The host template engine (Mustache, Blade, ...) is adapter-side composition, not a separate framework base class — the framework itself is host-neutral |
 | JSON API | `Http/Controller/AbstractApiController.php` | Forces every response to JSON (`isJson()` hardwired `true`); wraps payloads in a `{success, data, ...}` envelope, errors in `{success: false, message, error_code, debug?}` |
-| Inertia SPA | `Http/Controller/AbstractController.php` + `InertiaAdapter::render()` | See [FW-006](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-006-inertia-spa-bridge.md) |
+| Inertia SPA | `Http/Controller/AbstractController.php` + `InertiaAdapter::render()` | See [FW-006](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-006-inertia-spa-bridge.md) |
 
 ## Parameter resolver chain
 
@@ -48,16 +48,24 @@ Fixed order, first resolver that can resolve a given parameter wins. Built per-r
 
 Symfony's `RequestContext` doesn't natively support multiple base URLs per route. `RouteLoader` (`Http/Routing/RouteLoader.php`) scans `#[Route]` attributes into a plain `RouteCollection`; it is explicitly designed for extension — "platform-specific route loaders extend this with adapter-specific base URL resolution." Resolving a multi-base-URL scheme for a specific host (e.g. producing a Moodle-native URL) is host-adapter territory, not a framework contract.
 
-## Auth pipeline — order and gate behavior
+## Request pipeline — order and gate behavior
 
-Fixed stage order per request, run before the action executes:
+`HttpKernel::handle()` runs these stages for a controller action, in this order, before any action code executes:
 
-1. Route match.
-2. Auth flags applied from `#[Auth]` (`setRequireLogin()`, and — only when `capabilities`/`requirements` are non-empty — `setRequireCapabilities()` / `setRequireCapabilityRequirements()`).
-3. `applyPlatformAuth()` — a no-op hook in the framework; adapters (Moodle, WordPress) override it to read their own platform-specific attributes (e.g. `#[Sesskey]`, `#[Nonce]`) and apply additional flags.
-4. `preHandle()`.
-5. Middleware.
-6. The action.
+1. Route match against the pre-built `RouteCollection`.
+2. Auth flags from `#[Auth]` (`HttpKernel::applyRouteAuth()`): `setRequireLogin()`, then `setRequireCapabilities()` when `capabilities` is non-empty, then `setRequireCapabilityRequirements()` when `requirements` is non-empty and the controller implements `CapabilityRequirementAwareInterface`.
+3. `applyPlatformAuth()` — a no-op in the framework; adapters (Moodle, WordPress) override it to read their own platform-specific attributes (e.g. `#[Sesskey]`, `#[Nonce]`) and apply additional flags. A route marked `#[Auth(login: false)]` returns before this step: the controller is told to skip its own auth pass (`PublicRouteAwareInterface::disableAuthentication()`, when implemented) and `applyPlatformAuth()` is not called.
+4. The OSS login gate (`guardAuthenticatedAccess()`, below).
+5. `preHandle()`.
+6. Parameter resolution through the resolver chain above.
+7. Route middleware: registrar-declared middleware from the route defaults (outermost), then class-level `#[Middleware]`, then method-level `#[Middleware]`.
+8. The action.
+
+Closure controllers skip stages 2 to 6: they have no class or method to reflect, so only the registrar-declared middleware chain wraps them.
+
+**Unresolvable middleware fails closed.** Each middleware id must be bound in the container or name an existing class implementing `RouteMiddlewareInterface`. Anything else throws a `RuntimeException` before the action runs, which the kernel maps to a 500; a malformed middleware route default throws `InvalidArgumentException`. A misdeclared chain never results in the action running unprotected.
+
+**`#[Auth]` overrides, `#[Middleware]` stacks.** Both attributes are read from the method and the class, with opposite merge rules. `#[Auth]` is an override: a method-level attribute replaces the class-level one, so the most specific requirement is authoritative. `#[Middleware]` stacks: class-level and method-level entries accumulate (class outermost, method innermost, each in declaration order), and an id named by more than one source runs once, at its outermost position.
 
 **The login gate is OSS-enforced, conditionally.** When `#[Auth(login: true)]` applies and an `AuthenticatorInterface` implementation is bound in the container, an unauthenticated request is denied:
 
@@ -97,6 +105,8 @@ When no `AuthenticatorInterface` is bound, the gate is inert (returns `null`/all
 - Checking a capability inside a template/view instead of passing a pre-computed boolean prop.
 - Swallowing `MiddagAuthorizationException` silently instead of letting it propagate to the kernel's exception mapping.
 
-## Boot-time cost
+## Route collection and boot-time cost
 
-Attribute scanning happens once at boot and is cached — cost is bounded to boot time, not per-request time; the shared `RouteCollection` grows linearly with the number of registered controllers (acceptable given the cache).
+`RouteLoader` scans `#[Route]` attributes off controllers into a `RouteCollection`, but the OSS `HttpKernel` only receives a pre-built collection: the host assembles routes (a standalone app lists them; the adapters ship their own loaders). Scanning is a boot-time cost that a host can cache, not a per-request cost; the collection grows linearly with the number of registered controllers.
+
+The host-adapter bridge contracts that resolve user, session and capability data (`UserContextResolverInterface` and siblings) are listed in [Bridge Contracts](./bridge-contracts).

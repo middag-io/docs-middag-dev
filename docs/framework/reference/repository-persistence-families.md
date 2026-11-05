@@ -4,7 +4,7 @@ title: 'framework — Repository Persistence Families (Legacy Detail)'
 
 # Repository Persistence Families — Legacy Detail
 
-Historical only — **none of the concrete schema below ships in `middag-io/framework` today**. It documents the `moodle-local_middag` legacy plugin's five architectural persistence families, preserved for whoever implements or maintains the product-specific application of this pattern (`middag-io/core`'s Core Capabilities schema). What generalised and does ship in this OSS repo is the mechanism any of these families would be built on top of — a repository contract, a mapper, an immutable query builder, and an entity-type registry. Backs [FW-013](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-013-repository-persistence-boundary.md).
+Historical only — **none of the concrete schema below ships in `middag-io/framework` today**. It documents the `moodle-local_middag` legacy plugin's five architectural persistence families, preserved for whoever implements or maintains the product-specific application of this pattern (`middag-io/core`'s Core Capabilities schema). What generalised and does ship in this OSS repo is the mechanism any of these families would be built on top of — a repository contract, a mapper, an immutable query builder, and an entity-type registry. Backs [FW-013](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-013-repository-persistence-boundary.md).
 
 ## The five families (legacy, product-specific)
 
@@ -34,7 +34,7 @@ Extensions used only the first two families directly through a base class; the o
 
 ## Cache decoration (a separate, older legacy decision)
 
-A repository could be wrapped by a cache decorator combining request-level (in-memory) and a persistent cache layer, keyed as `{aggregate}_{id}` and invalidated on write. That mechanism comes from a different, earlier legacy decision (`ADR-303`) belonging to a Moodle-specific document, not this one — relevant here only because it depends on the same rule [FW-013](https://github.com/middag-io/middag-php-framework/blob/docs/docs/decisions/FW-013-repository-persistence-boundary.md) states: caching decorates a repository, it is never the repository's own responsibility.
+A repository could be wrapped by a cache decorator combining request-level (in-memory) and a persistent cache layer, keyed as `{aggregate}_{id}` and invalidated on write. That mechanism comes from a different, earlier legacy decision (`ADR-303`) belonging to a Moodle-specific document, not this one — relevant here only because it depends on the same rule [FW-013](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-013-repository-persistence-boundary.md) states: caching decorates a repository, it is never the repository's own responsibility.
 
 ## A citation error worth preserving
 

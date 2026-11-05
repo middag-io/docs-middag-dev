@@ -1,70 +1,55 @@
 ---
-title: 'moodle adapter — Config Schema Inventory & DSL Type Coverage'
+title: 'Moodle Adapter — Config Schema Inventory (Downstream)'
 ---
 
-# Config Schema Inventory & DSL Type Coverage
+# Config Schema Inventory
 
-Reference for the `{slug}_config` enum inventory (product-level scale) and the `setting_type` DSL implementation coverage in `middag-io/moodle`. Backs [MDL-012](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-012-config-schema-settings-support.md).
+> **Downstream.** The OSS adapter ships the settings DSL, the naming policy and typed access by `{slug}_config` enum; see [Settings & Config Keys](./settings-and-config-keys), which also holds the DSL type-coverage table. The schema contract and the per-extension key inventory below belong to a proprietary package and product downstream. Names verified against the downstream code on 2026-11-04.
 
-## Legacy config-key inventory (product-level, `local_middag`)
+## The schema contract
 
-This inventory belongs to the consumer product (`local_middag`'s own extensions), not to this OSS adapter — it is reproduced here as the historical scale the config-schema mechanism was built to support.
+Each extension with settings keeps one string-backed `{slug}_config` enum as the single source of truth for its keys. Downstream, that enum implements `ConfigSchemaInterface`, which makes type, default and static options queryable at any lifecycle phase without loading services:
 
-| Metric | Count |
-|---|---|
-| Extensions with a `{slug}_config` enum (of 12 product extensions total) | 10 |
-| Keys with storage | 60 |
-| `storedfile` keys | 3 |
-| `multiselect` keys | 1 |
-| Lazy keys (`is_lazy() === true`) | 6 |
+```php
+interface ConfigSchemaInterface {
+    public function type(): string;     // host-specific type id (for Moodle, a SettingType value); treat as opaque
+    public function default(): mixed;
+    public function options(): ?array;  // null = no options, or options that need services (lazy)
+    public function isLazy(): bool;     // true = options resolved at admin-page render time
+}
+```
+
+Rules:
+
+- A lazy setting returns `options() === null`; its real options are resolved only when the admin page renders, where services are available, never during `register()` or `compile()`.
+- The enum never resolves dynamic options itself; it only marks `isLazy()`. Resolution belongs to the settings DSL. This keeps the enum pure metadata, cheap to query at any phase.
+
+## Product key inventory (MIDDAG Moodle plugin)
+
+This inventory belongs to the consumer product (the `local_middag` extensions), reproduced as the scale the schema mechanism was built for (reconstruction of April 2026).
+
+| Metric                                                                 | Count |
+| ---------------------------------------------------------------------- | ----- |
+| Extensions with a `{slug}_config` enum (of 12 product extensions)      | 10    |
+| Keys with storage                                                      | 60    |
+| `storedfile` keys                                                      | 3     |
+| `multiselect` keys                                                     | 1     |
+| Lazy keys (`isLazy() === true`)                                        | 6     |
 
 Extensions covered: `core`, `ecommerce`, `videolibrary`, `automessage`, `bigquery`, `opengraph`, `cleaner`, `sentry`, `coursegroup`, `helpdesk`.
 
-- `core` has the largest enum, 15 keys — including `authprofilefield` (lazy, resolved via `user_support::get_options_for_user_fields()`) and `authsecretkey` (`password` type).
-- `bigquery` has the largest concentration of lazy options (4), related to data retention and mode selection.
-
-## DSL type coverage
-
-`setting_type` covers 22 variants total (19 with storage, plus 3 display-only: `heading`, `description`, `link`). The legacy plugin (`ref-312-01`, 2026-04-09) had only 8 implemented, with 14 reserved-but-unimplemented. This adapter has since closed that gap — verified against real code on 2026-07-17, `src/Settings/Type/` now contains all 22.
-
-| Setting type | Legacy (`ref-312-01`, 2026-04-09) | This adapter (verified 2026-07-17) |
-|---|---|---|
-| `text` | implemented | implemented |
-| `checkbox` | implemented | implemented |
-| `select` | implemented | implemented |
-| `password` | implemented | implemented |
-| `textarea` | implemented | implemented |
-| `heading` | implemented | implemented |
-| `description` | implemented | implemented |
-| `link` | implemented | implemented |
-| `autocomplete` | reserved, unimplemented | implemented — `Autocomplete.php` |
-| `encrypted_password` | reserved, unimplemented | implemented — `EncryptedPassword.php` |
-| `htmleditor` | reserved, unimplemented | implemented — `Htmleditor.php` |
-| `colourpicker` | reserved, unimplemented | implemented — `Colourpicker.php` |
-| `duration` | reserved, unimplemented | implemented — `Duration.php` |
-| `time` | reserved, unimplemented | implemented — `Time.php` |
-| `multicheckbox` | reserved, unimplemented | implemented — `Multicheckbox.php` |
-| `multiselect` | reserved, unimplemented | implemented — `Multiselect.php` |
-| `storedfile` | reserved, unimplemented | implemented — `Storedfile.php` |
-| `filepath` | reserved, unimplemented | implemented — `Filepath.php` |
-| `directory` | reserved, unimplemented | implemented — `Directory.php` |
-| `executable` | reserved, unimplemented | implemented — `Executable.php` |
-| `iplist` | reserved, unimplemented | implemented — `Iplist.php` |
-| `portlist` | reserved, unimplemented | implemented — `Portlist.php` |
-| **Total** | **8 / 22** | **22 / 22** |
-
-This closes the gap the legacy ADR/REF pair documented as open — a genuine forward-progress finding, not a contradiction to flag as debt.
+- `core` has the largest enum, 15 keys, including `authprofilefield` (lazy, options from the user-field list) and `authsecretkey` (`password` type).
+- `bigquery` has the most lazy options (4), for data retention and mode selection.
 
 ## Anti-patterns
 
-| Anti-pattern | Why it's wrong |
-|---|---|
-| Using `get_config()` directly | Bypasses the typed schema — reads should go through `config_support`/`settings_support`. |
-| Putting resolution logic in the `{slug}_config` enum | The enum must stay pure metadata; resolution logic belongs to the DSL/services layer. |
-| Creating a config key with no matching enum case | Produces a "ghost" key that never appears in the schema. |
-| Registering lazy options during `register()` | Services are not available at that phase (boot) — see the routing/lifecycle note below. |
+| Anti-pattern                                         | Why it is wrong                                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `get_config()` directly                              | Bypasses the typed schema; read through `SettingsSupport` / `ConfigSupport`          |
+| Resolution logic inside the `{slug}_config` enum     | The enum must stay pure metadata                                                     |
+| A config key with no matching enum case              | A "ghost" key that never appears in the schema                                       |
+| Resolving lazy options during `register()`           | Services are not available at that phase                                             |
 
-## Related
+---
 
-- [MDL-011 — Admin Settings: Typed DSL Is the Only Interface](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-011-admin-settings-declaration-lifecycle.md) — the settings declaration/registration lifecycle this schema plugs into; the boot-phase restriction on registering lazy options comes from that same lifecycle.
-- [MDL-003 — Support Layer Pattern](https://github.com/middag-io/middag-php-moodle/blob/docs/docs/decisions/MDL-003-support-layer-pattern.md) — `settings_support` (the runtime API backed by this schema) is one of the `*_support` classes this pattern governs.
+Decision records: MDL-011 and MDL-012 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

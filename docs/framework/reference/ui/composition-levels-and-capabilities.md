@@ -1,50 +1,47 @@
 ---
-title: 'ui — Composition Levels, Block Catalog & Capabilities'
+title: 'Page composition contract'
 ---
 
-# Composition Levels, Block Catalog & Capabilities
+# Page composition contract
 
-Reference for how a page contract (`middag-io/ui`) is composed and what the block system supports. Backs [UI-002](https://github.com/middag-io/ui/blob/docs/docs/decisions/UI-002-page-contract-composition-model.md).
+The [`middag-php-ui` page contract](https://github.com/middag-io/middag-php-ui/blob/main/src/Page/PageContract.php) carries the server's page description to a client renderer. [UI-002](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-002-page-contract-composition-model.md) records the choice of one versioned contract that every composition level emits. The envelope, schemas and fragments are specified in [UI wire contract](./wire-contract). This reference describes the verified PHP surface; product and host adapters decide how to render and expose it.
 
-## Composition levels
+## Contract shape
 
-The same wire contract serves every level — only how much of it you write by hand changes.
+`PageContract` serializes a version, a shell, page metadata, and a layout. It can also include resources, notifications, and entity route patterns. The layout contains named regions; each region holds typed block descriptors. [`BlockDescriptor`](https://github.com/middag-io/middag-php-ui/blob/main/src/Block/BlockDescriptor.php) serializes a `type`, `key`, and `data`, with optional presentation, actions, polling, deferral, and remembered state.
 
-| Level | API | Use | Controller | Frontend |
-|---|---|---|---|---|
-| L1 | `page_builder::crud(Entity::class)` | Standard CRUD, minimal config | `page_builder` | Renders via registries |
-| L2 | `page_builder::crud(...)->without(...)` | CRUD with adjustments | `page_builder` + overrides | Renders via registries |
-| L3 | `page_builder::page('key')->region(...)` | Custom pages composed from blocks | `page_builder` + custom blocks | Registries + custom components |
-| L4 | `inertia::render('Page', $props)` | Fully dedicated React page | `inertia::render()` | Purpose-built React page |
+| Level | Verified PHP entry point | Scope |
+| --- | --- | --- |
+| L1 — convention | `PageBuilder::crud(Entity::class)` returning `CrudBuilder` | Generate a standard CRUD page from an entity. |
+| L2 — configured convention | The same `CrudBuilder`, with explicit configuration | Adjust the generated page while keeping the contract. |
+| L3 — composed page | `PageBuilder::page('key')` and its `region()` method | Assemble a page from named regions and block descriptors. |
+| L4 — dedicated frontend | No separate L4 builder in `middag-php-ui` | A consuming product may render a dedicated React page; its adapter owns that integration. |
 
-A single screen may mix standard and custom blocks in one composition — the contract does not distinguish origin.
+For L3, the current builder can produce a contract with:
 
-### `page_builder`
+```php
+use Middag\Ui\Page\PageBuilder;
 
-Convenience layer producing a standard `page_contract` — the frontend consumes the same contract whether a builder generated it or it was assembled by hand. L1 conventions (naming, entity introspection) derive form fields, table columns, actions, routes, and permissions automatically; each convention accepts an explicit override.
+$page = PageBuilder::page('segments.index')
+    ->title('Segments')
+    ->layout('stack')
+    ->build();
+```
 
-## Block catalog
+`region()` accepts block descriptors or a callback using `RegionBuilder`. `PageBuilder::build()` returns `PageContract`. The PHP contract does not by itself guarantee that a particular host or React renderer supports every block type.
 
-| Block | Role | Notes |
-|---|---|---|
-| `dense_table` | Server-side sort/filter/paginate abstraction | Fluent API (columns, data source, pagination, sort, filters, actions); React side renders via TanStack Table v8, dispatching through Inertia partial reloads. |
-| `form_panel` | Bridges the form field DSL to the page contract | CRUD pages generated via `page_builder` automatically produce a `stack` layout with a `form_panel` in the content region. Client side: `@inertiajs/react`'s `useForm()`, React Hook Form + Zod for client-side validation, ReUI/shadcn form fields. |
+## Optional capabilities in the PHP contract
 
-Extensions register custom block types by implementing `block_type_interface` (PHP) and registering the matching React component in the client-side `blockRegistry`. Standard blocks live in `base/blocks/`; custom blocks live per-extension.
+These are serialized data contracts; the active React and host versions determine their runtime behavior.
 
-### Reserved layouts
+| Capability | Value object | What the contract carries |
+| --- | --- | --- |
+| Polling | [`PollConfig`](https://github.com/middag-io/middag-php-ui/blob/main/src/Region/PollConfig.php) | A refresh `endpoint` and `intervalMs` for a block or inspector, an optional `stopAfterMs`, and `pauseWhenHidden` (default true). |
+| Confirmation dialogs | [`Confirmation`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/Confirmation.php) | The `title`, `message`, optional confirm and cancel labels, and a `variant` of a guarded action. `CrudBuilder` attaches a `danger` confirmation to its `delete` row and bulk actions. |
+| Action state | [`Action`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/Action.php) | An `intent`, an optional `icon`, an opaque `capability` token, and `disabled` and `loading` flags. There is no per-row visibility condition: a row action applies to every row, and the server omits or disables it when it does not apply. |
+| Notifications (flash and toast) | [`Notification`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/ValueObject/Notification.php) | A `level` (`NotificationLevel`: `success`, `info`, `warning`, `error`), a `message`, an optional `title`, `dismissible` (default true), an optional `timeout` and an optional follow-up `Action`. `PageContract`, `Fragment` (including a `notifications` fragment) and `ActionResult` carry them. |
+| Column cell variants | [`ColumnVariant`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/Enum/ColumnVariant.php) | The cell component for a `dense_table` column: `text`, `status`, `badge`, `boolean`, `timestamp`, `link`, `rich_status`, `html`, `link_group`, `annotated`, `progress`. `rich_status` reads a `{label, appearance}` value, so the colour does not depend on translated text; `annotated` and `progress` read their own structured values. A null variant leaves the client on `text`. |
 
-`wizard` (steps/content/actions — multi-step forms, onboarding flows) and `canvas` (toolbar/canvas/inspector — visual builder UIs) are reserved in both the TypeScript types and the PHP value objects, but no React component implements them yet — the reservation avoids a breaking schema change whenever they ship.
+`variant` and `format` (`ValueFormat`: how a scalar is formatted) are separate: a column that needs a coloured pill declares the variant, because `format: badge` alone leaves the cell as text. Consult the [React package documentation](https://github.com/middag-io/middag-react/tree/main/docs) for rendering and client APIs.
 
-## Capabilities
-
-| Capability | Mechanism |
-|---|---|
-| Polling | Blocks declare `block.meta.polling` (`interval`, `enabled`); the server stays the source of truth, refresh cycles run through `router.reload({ only: ['contract'] })` (Inertia-native — no SSE/WebSockets). Client hook: `usePolling()`. |
-| Conditional row actions | `visible_when` / `disabled_when` / `loading_when` / `disabled_reason_field`, using the same `FormCondition` model as the form DSL. Complex logic evaluates server-side as derived (`_`-prefixed) fields; the client only evaluates simple conditions via a shared `evaluateCondition()`. |
-| Confirmation dialogs | `ActionConfirmation` (title/message with `{field}`-style interpolation, intent, confirm/cancel labels, `waitForPolling`, `waitingMessage`) shared between row actions and page actions via a generic `ConfirmationDialog` component. |
-| Toast notifications | Two channels converge on one renderer (Sonner): a server flash channel (`flash.toast` via Inertia, rendered by `FlashProvider`) and an imperative client hook (`useToast()`). |
-| Rich column variants | `rich_status` (colored badge, preferred for new work), `html` (`dangerouslySetInnerHTML` with sanitization — discouraged for new development), `link_group` (conditional icon-button group). |
-| Page actions with side effects | `page_action` supports in-place POST/PUT/DELETE without navigation (`router[method]()` with `preserveState: true`), button-level loading state, reuses `ActionConfirmation`. Superseded the earlier inline `ActionButton`, keeping backward compatibility for `requiresConfirmation`. |
-
-An admin-configurable persistence mode for L3 dashboards (DB-backed layout editing, reusing the same block infrastructure) is deferred to a future milestone.
+Verified against `middag-php-ui/main@8602bb179816ed2c51c633855535a985792abb72` on 2026-11-04. The old `REF-UI-002-01` and previous versions of this page included method names and feature claims that were not verified against this source; they are not used as current API evidence here.

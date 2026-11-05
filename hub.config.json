@@ -3,6 +3,10 @@
     "middag-react": {
       "label": "MIDDAG React",
       "channels": ["latest", "0.30.x", "0.20.x"]
+    },
+    "infra-terraform": {
+      "label": "AWS Access (Launch Stack)",
+      "channels": ["latest"]
     }
   }
 }

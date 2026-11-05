@@ -4,5 +4,6 @@ title: 'Reference — UI'
 
 # Reference — UI
 
-- [Composition Levels & Capabilities](./composition-levels-and-capabilities)
-- [Design System & Licensing](./design-system-catalog)
+- [Page Composition Contract](./composition-levels-and-capabilities)
+- [UI Stack & Design System](./design-system-catalog)
+- [UI Wire Contract](./wire-contract)

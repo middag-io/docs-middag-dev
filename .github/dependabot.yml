@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Pins of third-party actions in the workflows. Majors come as separate PRs;
+  # minors and patches are grouped. A version is offered only after 7 days.
+  - package-ecosystem: github-actions
+    directories:
+      - /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore
+      include: scope

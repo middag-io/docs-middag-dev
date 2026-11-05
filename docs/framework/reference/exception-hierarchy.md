@@ -4,7 +4,7 @@ title: 'framework — Exception Hierarchy: Status Codes, Layer Matrix & Anti-Pat
 
 # Exception Hierarchy: Status Codes, Layer Matrix & Anti-Patterns
 
-Reference for the typed exception hierarchy in `middag-io/framework` — the status-code table, per-layer throw restrictions and anti-patterns to avoid. Backs [FW-010](https://github.com/middag-io/framework/blob/docs/docs/decisions/FW-010-typed-exception-hierarchy.md).
+Reference for the typed exception hierarchy in `middag-io/framework` — the status-code table, per-layer throw restrictions and anti-patterns to avoid. Backs [FW-010](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-010-typed-exception-hierarchy.md). Provenance: legacy vault ADR-706 (2026-04-05).
 
 ## Class hierarchy and status codes
 
@@ -22,17 +22,35 @@ Reference for the typed exception hierarchy in `middag-io/framework` — the sta
 
 All nine classes live in `Exception/`, imported directly by `throw`/`catch` — no facade. `MiddagDomainException` and `MiddagInfrastructureException` are the two branch nodes: `MiddagValidationException`/`MiddagNotFoundException` hang off the domain branch, `MiddagPersistenceException` off the infrastructure branch — a shallow, two-level tree under the single `MiddagException` root. Any class without its own override inherits the root's 500.
 
+## How the kernel maps a throwable
+
+`HttpKernel` catches every throwable from routing and the action, unwraps Symfony Messenger's wrapper exceptions (so a command handler's own exception surfaces), and maps it:
+
+| Throwable | Response |
+|---|---|
+| `MiddagValidationException` | 422 with the field error map, or a flash-and-redirect for browser visits — see [Form Lifecycle & Validation](./form-lifecycle-and-validation) |
+| any other `MiddagException` | its own `getStatusCode()` |
+| Symfony `ResourceNotFoundException` | 404 |
+| Symfony `MethodNotAllowedException` | 405 |
+| anything else | 500 |
+
+Rendering goes through `ExceptionRendererInterface`: one passed to the kernel, else one bound in the container (adapters use this to theme error pages), else `DefaultExceptionRenderer`, which shows the developer page (`DebugExceptionRenderer`) only when the kernel runs with debug on.
+
 ## Layer usage matrix
+
+Which layer may throw which type. This is a code-review convention, not a static-analysis rule: nothing in the framework or its CI enforces it today.
 
 | Layer | Allowed to throw |
 |---|---|
-| `framework/domain/` | `MiddagDomainException`, `MiddagValidationException` |
-| `framework/infrastructure/` | `MiddagInfrastructureException`, `MiddagPersistenceException` |
-| `framework/moodle/` (host boundary) | `MiddagInfrastructureException` (wraps host failures) |
-| `framework/kernel/` | `MiddagLifecycleViolationException`, `MiddagAuthenticationException`, `MiddagAuthorizationException` |
-| `classes/extensions/` | `MiddagDomainException`, `MiddagValidationException`, `MiddagAuthorizationException` — never infrastructure directly |
+| Domain | `MiddagDomainException`, `MiddagValidationException`, `MiddagNotFoundException` |
+| Infrastructure (persistence, external I/O) | `MiddagInfrastructureException`, `MiddagPersistenceException` |
+| Host boundary (adapters) | `MiddagInfrastructureException`, wrapping the host failure |
+| Kernel / HTTP | `MiddagLifecycleViolationException`, `MiddagAuthenticationException`, `MiddagAuthorizationException` |
+| Extensions | `MiddagDomainException`, `MiddagValidationException`, `MiddagAuthorizationException` — never infrastructure types directly; they delegate to the service that coordinates that concern |
 
-`MiddagAuthenticationException` is reserved exclusively for the HTTP layer (the API controller boundary) — domain/service code must never throw it directly.
+`MiddagAuthenticationException` is reserved exclusively for the HTTP layer (the API controller boundary) — domain/service code must never throw it directly. Any native exception (a database driver exception, for example) is wrapped into the matching framework exception before it crosses a layer boundary.
+
+**Known drift.** The Moodle adapter's own exceptions do not descend from `MiddagException`: in `middag-php-moodle`, `MoodleAdapterException` extends `\RuntimeException`, `MoodleConfigurationException` and `MoodleTransportException` extend `\LogicException`, and `MoodleVersionException` extends `\InvalidArgumentException` (`src/Exception/`). The kernel maps them to a 500 like any foreign throwable.
 
 ## Wrapping a native exception at a boundary crossing
 

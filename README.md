@@ -1,8 +1,16 @@
 # docs-middag-dev
 
 MIDDAG's unified documentation hub. A [VitePress](https://vitepress.dev) static
-site that aggregates the documentation of MIDDAG libraries **at build time** and
+site that serves developer documentation for MIDDAG libraries and product integrations. It aggregates eligible documentation **at build time** and
 publishes it to Cloudflare Pages at **<https://docs.middag.dev>**.
+
+Product documentation keeps its own source. Third-party API and integration
+guides belong to `docs-middag-for-moodle/dev/` for MIDDAG for Moodle and
+`docs-middag-account/dev/` for MIDDAG Account. Each tree will be aggregated
+here only after its publication channel opens. Their `public/` trees are for
+`docs-middag-io`; `internal/` specifications and decision records are not
+published in either hub. The library content below describes the hub's current
+implementation and ownership under ADR-020.
 
 This repository serves **two content layers**. Following **ADR-020 (docs-middag-dev Direct Content Ownership for the Nuclear Family, narrowing ADR-016)**, it authors and owns the Diataxis documentation of the OSS nuclear family (the MIDDAG Framework and its host adapters, plus `middag-php-ui`) directly in `docs/<axis>/`. Following **ADR-016 (Build-Time Documentation Aggregation via Edge Storage)**, each library that keeps its own doc-site publishes a versioned documentation payload to the MIDDAG docs proxy (a Cloudflare Worker in front of an R2 bucket); at build time this hub pulls those payloads, injects them into the VitePress source tree, and compiles a single static site.
 
