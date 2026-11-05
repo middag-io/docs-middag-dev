@@ -63,7 +63,7 @@ The contracts do not choose a renderer, but MIDDAG ships one first-party client,
 - **Why it moved off Vue.** The earlier client was Vue 3 + Inertia + PrimeVue + Pinia, chosen to align with Moodle core, which uses Vue internally. ReUI's copy-paste distribution needs React at runtime, and no Vue design system of comparable maturity existed.
 - **Rejected alternatives.** Atlaskit, because its license limits use to products that interoperate with Atlassian software; Forge UI, because its renderer only runs inside the Forge sandbox.
 - **What stayed.** Inertia stayed the transport; only the client target changed (`@inertiajs/vue3` to `@inertiajs/react`).
-- **No coexistence layer.** There is no Vue/React bridge. Migration is incremental, per extension, and existing Vue routes keep working until they are rewritten.
+- **No coexistence layer.** There is no Vue/React bridge, and Vue is no longer built or shipped. Migration is incremental, per extension: screens not yet rewritten keep their legacy runtime until they move to React.
 - **Trade-offs accepted.** The client diverges from Moodle core's internal Vue usage; the product ships as an embedded app with its own UI identity rather than sharing components with Moodle core. The existing Vue frontend has to be rewritten in full, which the per-extension migration spreads out instead of a big-bang cutover. One stack removes the cost of parallel build, test and onboarding paths.
 - **Where host styling goes.** Host theme bridging (for example Moodle color tokens to Tailwind tokens) belongs to the host adapter, not to the client or the contracts.
 

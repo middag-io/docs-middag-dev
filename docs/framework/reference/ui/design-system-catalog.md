@@ -4,11 +4,12 @@ title: 'UI stack and design system'
 
 # UI stack and design system
 
-[UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) records why the UI contracts are a separate, zero-dependency PHP package that describes UI and never renders it. The first-party client that renders those contracts is React + TypeScript over Inertia, with ReUI (shadcn/ui, Radix UI and Tailwind CSS, MIT, copy-paste distribution) as the design system foundation. The PHP package [`middag-php-ui`](https://github.com/middag-io/middag-php-ui) owns transport-neutral page and block contracts; [`@middag-io/react`](https://github.com/middag-io/middag-react) owns the React renderer and components. A Moodle or WordPress adapter connects those pieces to its host.
+[UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) records why the UI contracts are a separate, zero-dependency PHP package that describes UI and never renders it. [UI-003](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-003-first-party-client-stack.md) records that the first-party client that renders those contracts is React + TypeScript over Inertia, with ReUI (shadcn/ui, Radix UI and Tailwind CSS, MIT, copy-paste distribution) as the design system foundation. The PHP package [`middag-php-ui`](https://github.com/middag-io/middag-php-ui) owns transport-neutral page and block contracts; [`@middag-io/react`](https://github.com/middag-io/middag-react) owns the React renderer and components. A Moodle or WordPress adapter connects those pieces to its host.
 
 | Concern | Current source |
 | --- | --- |
 | Package boundary decision | [UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) |
+| First-party client decision | [UI-003](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-003-first-party-client-stack.md) |
 | PHP page and block contracts | [`middag-php-ui/src`](https://github.com/middag-io/middag-php-ui/tree/main/src) |
 | React components and renderer | [`middag-react/src`](https://github.com/middag-io/middag-react/tree/main/src) |
 | React setup and supported components | [`middag-react/docs`](https://github.com/middag-io/middag-react/tree/main/docs) |
