@@ -56,6 +56,8 @@ The JSON schemas emitted under `schema/` (`page-contract.json`, `fragment.json`)
 
 ## Why the first-party client is React and ReUI
 
+[UI-003](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-003-first-party-client-stack.md) records this decision; [UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) keeps the wire renderer-neutral.
+
 The contracts do not choose a renderer, but MIDDAG ships one first-party client, `@middag-io/react`. It is React + TypeScript over `@inertiajs/react`, with ReUI (shadcn/ui, Radix UI and Tailwind CSS, MIT, copy-paste distribution) as the design system foundation. The [design system catalog](../../reference/ui/design-system-catalog) lists the current package and versions.
 
 - **Why it moved off Vue.** The earlier client was Vue 3 + Inertia + PrimeVue + Pinia, chosen to align with Moodle core, which uses Vue internally. ReUI's copy-paste distribution needs React at runtime, and no Vue design system of comparable maturity existed.
