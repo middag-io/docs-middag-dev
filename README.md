@@ -73,6 +73,30 @@ docs-middag-dev/
 └─ package.json
 ```
 
+## Own-authored content tree
+
+The fixed layer (ADR-020) is split by **product axis first**, then by Diataxis type. This repository hosts two parallel mini-documentations, each with its own full Diataxis cycle, so the product axis is the top level and the adapter or concern is a subfolder under each Diataxis type. That keeps one `adapters/moodle/` per type instead of four empty copies per concern. It is a scoped exception: single knowledge bases keep the Diataxis type as their primary axis.
+
+```
+docs/
+├── framework/          # MIDDAG Framework (OSS) + middag-php-ui
+│   ├── tutorials/      # each type: adapters/{moodle,wordpress,standalone}/ and ui/
+│   ├── how-to/
+│   ├── reference/
+│   └── explanation/
+└── core/               # middag-php-core and its adapters (proprietary; paused)
+    ├── tutorials/      # each type: adapters/{moodle,wordpress}/
+    ├── how-to/
+    ├── reference/
+    └── explanation/
+```
+
+- **`framework/`**: `middag-php-framework`, its host adapters (`moodle`, `wordpress`, `standalone`) and `middag-php-ui`. Ownership is full: each source repository's reference docs and loose docs move here, and the source repository keeps only `docs/decisions/`.
+- **`core/`**: `middag-php-core` and the same adapter pattern, product-scoped. Ownership is narrower: `docs/decisions/` and `docs/ref/` stay in the source repository, and only a curated Surface-API subset is authored here. The axis is paused until the product launches, so the folder does not exist yet.
+- **`ui/`** is a leaf under the Diataxis folders of `framework/`, not a third axis. On the site it gets its own sidebar entry, because `middag-php-ui` is an isolated library rather than a host adapter. Navigation (`docs/<axis>/nav.json`) and the physical path are decoupled on purpose.
+- **Not in this tree**: satellite libraries with their own doc site (for example `middag-react`) stay on the aggregated layer (ADR-016).
+- **ADRs are never in this tree.** Every library and product keeps its decision records in its own `docs/decisions/`.
+
 ## Local development
 
 **Prerequisites**
