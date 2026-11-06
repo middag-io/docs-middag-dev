@@ -146,7 +146,7 @@ function channelSidebar(repo: string, segment: string, header: string): DefaultT
 
 // ---------------------------------------------------------------------------
 // Own-authored content: docs this hub writes directly (ADR-020, which amends
-// ADR-016 — docs-middag-ops/internal/decisions/ADR-020-docs-middag-dev-diataxis-ownership.md)
+// ADR-016 — docs-middag-ops/decisions/ADR-020-docs-middag-dev-diataxis-ownership.md)
 // instead of aggregating from a library's `docs/`.
 // No version segment yet — add one if/when a 2.x line needs it. Walked
 // recursively so nested concern folders (adapters/moodle/, ui/) drill down
