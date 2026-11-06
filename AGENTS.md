@@ -29,7 +29,7 @@ Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject
 
 ## Inherited rules (pointers, do not copy)
 
-- ADR-020 (direct content ownership for the nuclear family; nav IA in `docs-middag-ops/internal/reference/docs-middag-dev-ia-tree.md`).
+- ADR-020 (direct content ownership for the nuclear family); the content tree is in the README, section "Own-authored content tree".
 - ADR-016 (build-time aggregation via edge storage) + the aggregator doctrine in `worker-ts-middag-docs-proxy`.
 - Sources of truth: where content lives and which document prevails follows an internal MIDDAG Policy, which is not part of this repository.
 - Norm and profile: the neutral norm in `docs-middag-standards` (Standards `MSR-NNN`, Practices `MPR-*`), values in `org-middag`, MIDDAG profile in `docs-middag-ops` (also via docs-MCP, alias `ops`). Cite the part (`MSR-NNN.Rn(x)`) or the profile key; do not copy the rule.
