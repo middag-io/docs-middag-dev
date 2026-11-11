@@ -52,6 +52,12 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
 
+      # Unit tests and an end-to-end prebuild run against a local fake proxy,
+      # including the publish guard that refuses decisions/, internal/, adr/
+      # and madr/ paths (docs-middag-ops#66).
+      - name: Test
+        run: npm test
+
       # docs:prebuild pulls library docs from the PUBLIC docs proxy anonymously,
       # then VitePress builds into docs/.vitepress/dist — no DOCS_PROXY_TOKEN needed.
       - name: Build

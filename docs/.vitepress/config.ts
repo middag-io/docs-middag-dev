@@ -2,6 +2,7 @@ import { defineConfig, type DefaultTheme } from 'vitepress'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { assertTreePublishable } from '../../scripts/lib/publish-guard.mjs'
 
 // ADR-016 §4 — the hub's presentation layer is meant to come from
 // @middag-io/docs-theme. That package is still scaffolding (it currently
@@ -34,6 +35,13 @@ import { fileURLToPath } from 'node:url'
 
 const DOCS_DIR = resolve(fileURLToPath(new URL('.', import.meta.url)), '..')
 const INJECTED_DIR = join(DOCS_DIR, 'injected')
+
+// Publish guard (docs-middag-ops#66): every file VitePress would compile —
+// own-authored axes, public/ and the injected/ tree — is refused if any path
+// segment is decisions/, internal/, adr/ or madr/ (case-insensitive). Runs on
+// every config load, so `docs:dev:nofetch` and a bare `vitepress build` are
+// covered too; the prebuild step already checks remote sources per channel.
+assertTreePublishable(DOCS_DIR, { source: 'docs/ (local tree)', skip: ['.vitepress'] })
 
 // Root-level pages surface in this order; anything unlisted falls after, alpha.
 const ROOT_ORDER = ['getting-started', 'authentication', 'cli']

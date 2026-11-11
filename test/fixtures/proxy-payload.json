@@ -1,0 +1,11 @@
+{
+  "lib-clean": {
+    "docs/1.0.0/index.md": "# Clean library\n\nSee [guide](/guides/usage).\n",
+    "docs/1.0.0/guides/usage.md": "# Usage\n",
+    "docs/1.0.0/reference/adr-style-guide.md": "# Not a decision record: 'adr' is only a filename prefix\n"
+  },
+  "lib-leaky": {
+    "docs/1.0.0/index.md": "# Leaky library\n",
+    "docs/1.0.0/decisions/0001-use-postgres.md": "# ADR 0001: use Postgres\n"
+  }
+}

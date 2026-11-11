@@ -20,18 +20,24 @@
  * Publishing is intentional by design: a version appears ONLY when added to a
  * channel here — that deliberate edit is the operational publish step.
  *
+ * Internal decision records are refused: before a channel is downloaded, every
+ * key and destination path goes through scripts/lib/publish-guard.mjs; a path
+ * under decisions/, internal/, adr/ or madr/ fails the build (docs-middag-ops#66).
+ *
  * Auth: the private proxy needs a bearer token in DOCS_PROXY_TOKEN (a Cloudflare
  * Access service token). The public deployment ignores it. Override the host
- * with DOCS_PROXY_BASE_URL when testing.
+ * with DOCS_PROXY_BASE_URL when testing; DOCS_HUB_CONFIG and DOCS_INJECTED_DIR
+ * override the allowlist file and the output tree (used by the tests).
  */
 import { DocsProxyClient } from '@middag-io/docs-proxy-client'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { assertChannelPublishable } from './lib/publish-guard.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const HUB_CONFIG = resolve(ROOT, 'hub.config.json')
-const INJECTED_DIR = resolve(ROOT, 'docs', 'injected')
+const HUB_CONFIG = resolve(process.env.DOCS_HUB_CONFIG ?? resolve(ROOT, 'hub.config.json'))
+const INJECTED_DIR = resolve(process.env.DOCS_INJECTED_DIR ?? resolve(ROOT, 'docs', 'injected'))
 
 const BASE_URL = process.env.DOCS_PROXY_BASE_URL ?? 'https://docs-proxy.middag.dev'
 const TOKEN = process.env.DOCS_PROXY_TOKEN // undefined => anonymous (public proxy)
@@ -107,15 +113,17 @@ function rewriteLinks(markdown, repo, segment) {
 }
 
 /** Download one channel's docs into docs/injected/{repo}/{segment}/. */
-async function downloadChannel(repo, version, segment, keys) {
-  const outDir = join(INJECTED_DIR, repo, segment)
-  await mkdir(outDir, { recursive: true })
-
+async function downloadChannel(repo, selector, version, segment, keys) {
   const prefix = `${KIND}/${version}/`
   const files = keys.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length))
   if (files.length === 0) {
     throw new Error(`${repo}@${version}: no ${KIND} files under ${prefix}`)
   }
+  // Refuse the whole channel before writing anything (docs-middag-ops#66).
+  assertChannelPublishable({ repo, selector, version, segment, files })
+
+  const outDir = join(INJECTED_DIR, repo, segment)
+  await mkdir(outDir, { recursive: true })
 
   let count = 0
   for (const file of files) {
@@ -171,7 +179,7 @@ async function main() {
         continue
       }
       console.log(`[inject] ${repo} ${selector} -> ${version} (/${repo}/${segment}/)`)
-      const count = await downloadChannel(repo, version, segment, keys)
+      const count = await downloadChannel(repo, selector, version, segment, keys)
       resolved.push({ selector, segment, version })
       console.log(`[inject]   wrote ${count} file(s)`)
     }

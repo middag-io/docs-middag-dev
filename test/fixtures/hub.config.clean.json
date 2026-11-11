@@ -1,0 +1,5 @@
+{
+  "repos": {
+    "lib-clean": { "label": "Clean", "channels": ["latest"] }
+  }
+}
