@@ -1,0 +1,6 @@
+{
+  "repos": {
+    "lib-clean": { "label": "Clean", "channels": ["latest"] },
+    "lib-leaky": { "label": "Leaky", "channels": ["latest"] }
+  }
+}
