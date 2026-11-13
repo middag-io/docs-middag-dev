@@ -39,6 +39,10 @@
       {
         "file": "explanation/bootstrap-lifecycle",
         "label": "Bootstrap Lifecycle"
+      },
+      {
+        "file": "explanation/identifiers-and-visual-ids",
+        "label": "Identifiers & Visual Ids"
       }
     ],
     "ui": [
