@@ -4,13 +4,13 @@ title: 'Generate PHP Reference Docs'
 
 # Generate PHP Reference Docs
 
-How a PHP repository of the MIDDAG ecosystem (a `middag-php-*` library, or a Docker stack with its own namespace) generates, stores and publishes its reference documentation: class signatures, method parameters, return types and inheritance trees. The decision behind it is ADR-015 of the MIDDAG operations documentation.
+How a PHP library of the MIDDAG ecosystem generates and publishes its reference documentation: class signatures, method parameters, return types and inheritance trees. The decision behind it is ADR-015 of the MIDDAG operations documentation; what this hub publishes is in [Documentation publication](/libraries/reference/publication#generated-api-reference).
 
 ## Tooling
 
-| Language | Standard tool                        | Notes                                                    |
-| -------- | ------------------------------------ | -------------------------------------------------------- |
-| PHP      | [phpDocumentor](https://phpdoc.org/) | Doctum and Sami are not supported.                       |
+| Language | Standard tool                        | Notes                                                              |
+| -------- | ------------------------------------ | ------------------------------------------------------------------ |
+| PHP      | [phpDocumentor](https://phpdoc.org/) | Doctum and Sami are not supported.                                 |
 | JS/TS    | TypeDoc                              | Parallel standard for JavaScript and TypeScript; not covered here. |
 
 ## 1. Set up phpDocumentor in the repository
@@ -19,7 +19,7 @@ How a PHP repository of the MIDDAG ecosystem (a `middag-php-*` library, or a Doc
 2. Create the configuration at `phpdoc.dist.xml`, at the repository root.
 3. Add a `make reference` (or `composer reference`) target that runs phpDocumentor with that configuration.
 
-## 2. Generate the docs
+## 2. Generate the docs locally
 
 ```bash
 make reference
@@ -27,25 +27,23 @@ make reference
 composer reference
 ```
 
-The output is HTML under `docs/reference/`, with a stable index at `index.html`.
+A local run is for checking the output only. The output is never committed: keep the output directory in `.gitignore`.
 
-## 3. Decide whether to commit
+## 3. Publish on each release
 
-The generated output is committed to the source repository, so the reference stays navigable from any checkout. Commit it only when the public API changed; an internal refactor does not produce churn in `docs/reference/`. A repository that publishes `xref` artifacts to the documentation storage instead of committing them follows the storage contract of the docs proxy ([`worker-ts-middag-docs-proxy`](https://github.com/middag-io/worker-ts-middag-docs-proxy)).
+CI/CD generates the reference on each release, from the released tag, and publishes it as a versioned docs payload through the docs proxy ([`worker-ts-middag-docs-proxy`](https://github.com/middag-io/worker-ts-middag-docs-proxy)):
 
-## 4. Choose the publish target
+| Library | Bucket                | Reaches this hub                                                    |
+| ------- | --------------------- | ------------------------------------------------------------------- |
+| OSS     | `middag-docs-public`  | Yes: the `@api` surface.                                            |
+| Internal | `middag-docs-private` | Only the types the hub publishes for that library; see [Documentation publication](/libraries/reference/publication). |
 
-| Repository type             | Publish target                                          |
-| --------------------------- | ------------------------------------------------------- |
-| Internal infrastructure     | `docs/reference/` in the repository only; no site.      |
-| Consumer-facing PHP library | A docs site of its own (for example `docs.{product}.middag.io`). |
-| Customer-facing platform    | The customer-facing docs domain of the project.         |
+- There is no reference site per library: this hub aggregates the public payloads.
+- The organization meta repository `github-private` never hosts generated reference content.
 
-The organization meta repository `github-private` never hosts generated reference content.
+## 4. Until the shared pipeline component ships
 
-## 5. Until the reusable workflow ships
-
-No reusable pipeline component builds the reference yet. One is planned in `middag-io/actions` or `middag-io/actions-private`, and waits for the first repository that opts in. Until then, run phpDocumentor by hand (steps 1 and 2) or copy a per-repository workflow from an existing consumer.
+No shared pipeline component builds and publishes the reference yet. One is planned in `middag-io/actions` and waits for the first library that opts in. Until then, no library publishes generated reference.
 
 ## Out of scope
 
