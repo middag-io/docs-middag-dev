@@ -6,8 +6,6 @@ title: 'wordpress adapter — Routing Surfaces'
 
 Reference for how `middag-io/wordpress` routes requests into a consumer plugin. Backs [WP-001](https://github.com/middag-io/middag-php-wordpress/blob/main/docs/decisions/WP-001-page-controller-base-and-rest-divergence.md) (WordPress HTTP integration). The controller classes behind these surfaces are in [Controller Bases](./controller-bases).
 
-Verified against `middag-php-wordpress/main@bc1bc59` on 2026-11-04, except the capability rule of `WpRestKernel::authorize()` step 5, which is the target rule and is not implemented on that commit (see [the REST capability rule](#rest)).
-
 ## The three surfaces
 
 Every surface is namespaced by the component name from the injected `HostComponentContextInterface` (`WpComponentContext`), never by a brand literal, so two plugins in one request never share a REST root, a menu slug or a query var. `tests/Architecture/RoutingBrandLiteralTest.php` fails the build if a routing source contains the literal `middag`.
@@ -41,11 +39,9 @@ WordPress models REST as registration: one `register_rest_route()` call per rout
 2. The effective `#[Auth]` is the method-level attribute, else the class-level one, else `new Auth()` — so an action with no attribute **requires login** (secure default).
 3. `login: false` passes.
 4. Otherwise the injected `RequestAuthenticatorInterface` resolves the user. A `WP_Error` is returned as is; no user gives `401 unauthorized`.
-5. Target rule ([`middag-php-wordpress#69`](https://github.com/middag-io/middag-php-wordpress/issues/69)): every capability the `#[Auth]` lists must pass `user_can()` for the resolved user, otherwise `403 forbidden`. The check runs against the user the authenticator resolved (a token user included), not against the session user, so it uses `user_can($user, $cap)` and never `current_user_can()`. When `instanceId` is greater than zero, it is passed as the object id, so meta capabilities work. Capability `requirements` resolve to WordPress capabilities and are checked the same way. An `#[Auth]` with no capability and no requirement means login only.
+5. Every capability the `#[Auth]` lists must pass `user_can()` for the resolved user, otherwise `403 forbidden`. The check runs against the user the authenticator resolved (a token user included), not against the session user, so it uses `user_can($user, $cap)` and never `current_user_can()`. When `instanceId` is greater than zero, it is passed as the object id, so meta capabilities work. Capability `requirements` resolve to WordPress capabilities and are checked the same way. An `#[Auth]` with no capability and no requirement means login only.
 
-Current behaviour, until the target rule lands: when the `#[Auth]` lists any capability, `WpRestKernel::authorize()` requires the authenticator's `isAdmin()` (the `administrator` role) instead of checking the listed capabilities, and `AbstractWpRestController` applies the same `isAdmin()` gate.
-
-With the target rule, the REST surface and the admin-page surface (`AbstractWpController::setRequireCapabilities()`) share the same capability semantics: every listed capability is required, with the object id when one is given. They differ in the user checked: the admin pages check the session user (`current_user_can()`), REST checks the resolved user (`user_can()`). The change that lands the target rule must carry tests for a non-administrator who holds the capability (allowed), an administrator without it (denied) and a meta capability with an object id. That change passes a security review before merge, and the WordPress adapter decision record is amended to match.
+The REST surface and the admin-page surface (`AbstractWpController::setRequireCapabilities()`) share the same capability semantics: every listed capability is required, with the object id when one is given. They differ in the user checked: the admin pages check the session user (`current_user_can()`), REST checks the resolved user (`user_can()`). A capability is never reduced to a role check: a non-administrator who holds the capability passes, and an administrator without it is denied.
 
 `WpRestKernel::handle()`:
 
@@ -59,7 +55,7 @@ The REST surface shares the framework's declarative attributes (`#[Route]`, `#[A
 
 ### Authentication seam
 
-- `Http/Contract/RequestAuthenticatorInterface` has two methods: `resolveUser(WP_REST_Request): WP_User|WP_Error|null` (`WP_Error` when a presented credential was rejected, `null` when the request is anonymous) and `isAdmin(WP_REST_Request): bool`. `isAdmin()` backs the current REST capability gate; the target rule of step 5 no longer uses it for capability checks.
+- `Http/Contract/RequestAuthenticatorInterface` has two methods: `resolveUser(WP_REST_Request): WP_User|WP_Error|null` (`WP_Error` when a presented credential was rejected, `null` when the request is anonymous) and `isAdmin(WP_REST_Request): bool`. `isAdmin()` backs `AbstractWpRestController::adminPermissionCheck()` only; no capability check uses it.
 - `Http/Auth/WpSessionAuthenticator` is the default: the current WordPress session (cookie auth) only; `isAdmin()` checks the `administrator` role.
 - A consumer that accepts bearer tokens composes an authenticator that tries the token and falls back to the session one, then injects it into `WpRestKernel` and its REST controllers. The adapter carries no token logic (guard: `tests/Architecture/NoBundledTokenAuthTest.php`).
 

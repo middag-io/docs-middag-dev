@@ -6,10 +6,8 @@ title: 'Reference — WordPress Adapter'
 
 Reference for `middag-io/wordpress` (`middag-php-wordpress`), the OSS adapter that plugs a WordPress host into `middag-io/framework`. Backs [WP-003](https://github.com/middag-io/middag-php-wordpress/blob/main/docs/decisions/WP-003-wordpress-is-an-adapter-of-framework-ports.md) (WordPress is an adapter of the framework's ports), which applies [FW-015](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-015-hosts-are-adapters-of-framework-ports.md) to WordPress.
 
-Verified against `middag-php-wordpress/main@bc1bc59` on 2026-11-04.
-
-::: info Status: in progress
-This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. Some sections below are still being written and say so.
+::: info Status
+These pages state the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. The generated reference of the `@api` surface is still in progress ([Public surface](#public-surface)); everything else is complete.
 :::
 
 ## Who it is for
@@ -30,17 +28,23 @@ Developers of a WordPress plugin built on `middag-io/framework`, and developers 
 composer require middag-io/wordpress
 ```
 
+Declare one `^2.N` range, with the same `N`, for `middag-io/wordpress`, `middag-io/framework` and every other library of the family the plugin requires ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility)).
+
 The platform rules behind these values are in [Platform](/libraries/reference/platform) and [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#compatibility-matrix), which also states when a WordPress major leaves the range. Wiring the adapter into a plugin is in [Configuration & Identity](./configuration).
 
 ## Public surface
 
-- Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release.
-- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/API-STABILITY.md) in the repository lists the public surface.
+- Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release. Every type in `src/` carries exactly one of the two tags.
+- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/API-STABILITY.md) in the repository lists the public surface and points to [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#supported-surface) for the support rules.
+- The `@api` surface is what a consumer plugin codes against: the REST controller base and the `Http\Contract` interfaces, the `Domain\Post` and `Domain\User` repositories and meta helpers, the `Domain\Taxonomy`, `Domain\Media`, `Domain\Comment` and `Domain\WooCommerce` value objects, the adapter exceptions, the `Persistence` query builder, the `Settings` and `Definition` builders, the `@api` [Support layer](#support-layer) classes, the mail helpers, the cron registrar, the hook registrar with `Hook\Contract\HookInterface`, and the plugin-lifecycle registrar.
+- The composition-root concretes are `@api` too, because the consumer names them when it wires its container: `Database\WpdbConnectionAdapter`, `Database\WpdbSqlDialect`, `Config\WpConfigResolver`, `Bus\WpUserContext` and `Persistence\Query\WpdbConditionCompiler`, with the host-context, event-bridge and component-name seams. Type-hint the framework contract in your own code; name the concrete only to wire it. The concretes a consumer never names (`Translation\WpTranslator`, `Runtime\WpMaintenanceGate`, `Runtime\WpBootstrap`) are `@internal`.
+- To depend on an `@internal` type, open an issue to have it promoted to `@api`; promotion is an additive change for a family MINOR.
 - In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
 
 ## Changelog, decisions and help
 
-- [`CHANGELOG.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/CHANGELOG.md) records every release; [Releases](https://github.com/middag-io/middag-php-wordpress/releases) carry the tags.
+- [`CHANGELOG.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/CHANGELOG.md) records every release; [Releases](https://github.com/middag-io/middag-php-wordpress/releases) carry the tags. release-please cuts every release from Conventional Commits; there are no manual tags.
+- The adapter releases with the family: a family MINOR or MAJOR ships in every library at once, and a PATCH is free per library. What each kind of release may carry is in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility).
 - The decision records live in [`middag-php-wordpress/docs/decisions`](https://github.com/middag-io/middag-php-wordpress/tree/main/docs/decisions).
 - Questions and bugs: [issues of `middag-php-wordpress`](https://github.com/middag-io/middag-php-wordpress/issues). Security reports: [`SECURITY.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/SECURITY.md); do not open a public issue for a vulnerability.
 
@@ -63,8 +67,8 @@ Where WordPress already has the mechanism a port describes, the adapter maps the
 
 | Port | WordPress mechanism | Note |
 |---|---|---|
-| `HostEventBridgeInterface` | `do_action` / `add_action` | `WpHostEventBridge` turns `dispatch('quote.created', [$quote])` into `do_action('middag/quote.created', $quote)`. The prefix is a constructor argument (default `middag/`). The Moodle adapter delegates to the framework `HookManager` instead. |
-| `HookfileLoaderInterface` | `WP_CONTENT_DIR`, active theme, a filter | `WpHookfileLoader` loads `middag_hooks.php` from `WP_CONTENT_DIR`, then the active theme, then the paths returned by the `middag_hookfiles` filter (the filter name is a constructor argument; the file basename is fixed). Later sources override earlier ones. |
+| `HostEventBridgeInterface` | `do_action` / `add_action` | `WpHostEventBridge` turns `dispatch('quote.created', [$quote])` into `do_action('{prefix}quote.created', $quote)`. The prefix is a constructor argument with a [neutral default](./configuration#neutral-defaults). The Moodle adapter delegates to the framework `HookManager` instead. |
+| `HookfileLoaderInterface` | `WP_CONTENT_DIR`, active theme, a filter | `WpHookfileLoader` loads the hookfile from `WP_CONTENT_DIR`, then from the active theme, then from the paths returned by its filter. The file name and the filter name follow the [neutral defaults](./configuration#neutral-defaults). Later sources override earlier ones. |
 | `ConnectionAdapterInterface` | global `$wpdb` | See [Database](#database-wpdb). |
 | `MailerInterface` | `wp_mail` | `WpMailer`; `Mail/EmailSender` looks for templates under the component's `basePath()` (`templates/emails/`), then under the active theme. |
 | `FilesystemInterface` | uploads directory | `WpUploadsFilesystem`, delegating to the framework `LocalFilesystem` rooted at `wp_upload_dir()['basedir']`. |
