@@ -91,7 +91,7 @@ Default manifest:
 
 Bundles and the front end:
 
-- `Delivery\Enum\DeliveryMode`: `Cdn`, the browser loads each module from its signed URL (the default), or `Local`, the host stores the modules and serves them itself.
+- `Delivery\Enum\DeliveryMode`: `Cdn`, the browser loads each module from its signed URL (recommended), or `Local`, the host stores the modules and serves them itself.
 - `Delivery\BundleMaterializer::materialize(AuthorizedManifest)` downloads each entitled module for `Local` delivery and writes it only when its SHA-384 hash matches the integrity value of the manifest.
 - `Delivery\ManifestEndpointHandler::handle()` is a read-through over the stored manifest for the host route that serves it to the browser. It returns a `ManifestEndpointResult` whose `ManifestEndpointStatus` is `Ok`, `NotModified`, `NotFound` or `Gone`. The host route owns authentication, the request and response headers and the mapping of the status to HTTP.
 - `Delivery\ValueObject\LicensingSharedProps` is the bootstrap shape the host hands to its front end: built from a `StoredManifest` and the URL of the host route.
@@ -130,7 +130,7 @@ The library only verifies and reads. It composes no entitlement and never fails 
 - `me()`, `listSessions()`, `revokeSession()`, `listCredentials()` and `revokeCredential()` carry the service token of the administrative system (`Api\Admin\ValueObject\ServiceTokenCredentials`) and the person's access token from `PersonAccessTokenProviderInterface`.
 - `issueCredential($licenseId, $idempotencyKey)` returns an `IssuedCredential`. It is authenticated by a separate access token of the person alone, from `LicenseDerivedAccessTokenProviderInterface`, and sends no service token. The two providers have distinct types and never stand in for each other.
 - The host supplies the tokens; the library never signs a person in and never refreshes a token. `PersonAccessToken` and `LicenseDerivedAccessToken` are ready-made providers that wrap one token each, with redacted debug output.
-- A write takes an `Api\Admin\ValueObject\IdempotencyKey` the caller creates (`IdempotencyKey::generate()`) and keeps with the pending operation. A retry, after a timeout or a server error too, reuses the same key.
+- `issueCredential()` takes an `Api\Admin\ValueObject\IdempotencyKey` the caller creates (`IdempotencyKey::generate()`) and keeps with the pending operation. A retry, after a timeout or a server error too, reuses the same key.
 - `Api\Account\ValueObject\InstallChannel` holds the channel of an installation and the channels its license allows.
 
 ## SSO and remote support
