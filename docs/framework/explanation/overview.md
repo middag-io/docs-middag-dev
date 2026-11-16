@@ -121,7 +121,7 @@ The records live in the repository, in [`docs/decisions`](https://github.com/mid
 
 ## Open source and MIDDAG
 
-The framework, the Moodle and WordPress adapters, `middag-io/ui` and `middag-io/demo-standalone` are open source under Apache-2.0 — the generic plumbing, free, forever. Governed event delivery, async jobs with retry and audit, an EAV query engine, multi-tenancy and licensing live in MIDDAG's internal (proprietary, not free) libraries, built on top of this OSS and opt-in; product features live in the products. See [OSS and internal libraries](./architecture#oss-and-internal-libraries). The framework never imports the proprietary layer; the dependency only ever points downward.
+The framework, the Moodle and WordPress adapters, `middag-io/ui` and `middag-io/demo-standalone` are open source under Apache-2.0 — the generic plumbing, free, forever. Governed event delivery, async jobs with retry and audit, an EAV query engine and multi-tenancy live in MIDDAG's internal (proprietary, not free) libraries, built on top of this OSS and opt-in; product features live in the products. See [OSS and internal libraries](./architecture#oss-and-internal-libraries). The framework never imports the proprietary layer; the dependency only ever points downward.
 
 ## Licensing note
 
