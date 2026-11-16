@@ -19,7 +19,9 @@ The contract is the entire public surface: if a value can appear on the wire, it
 `middag-io/ui` sits at the bottom of the stack and defines only generic contracts. Rendering, host wiring, and HTTP transport all live downstream, never here:
 
 - **No contract produces HTML** (`render(): string`). Contracts produce **data / value objects** (e.g. `FormRendererInterface` → `RendererOutput`, not a string) — rendering is a product/host concern.
-- **No host knowledge.** No `mform`, `wpdb`, capability calls, column names, or plugin conventions.
+- **A markup body is opaque data.** `RendererOutput::html()` and `RenderTarget::Html` carry a body that a renderer downstream produced. No `ui` contract produces markup, so they are not an exception to the rule above.
+- **No host knowledge.** No `mform`, `wpdb`, capability calls, column names, or plugin conventions, in code, docblocks or schemas. The architecture test `tests/Architecture/HostVocabularyTest.php` scans `src/` and `schema/`, comments included, against a host deny list ([Guards](/libraries/reference/guards#no-host-in-ui)).
+- **Host values are opaque fields.** A value only a host understands travels as a neutral field that the adapter maps. A pending file upload is `FileValue::$uploadToken`, a string the host's upload endpoint issues; the adapter maps it to its own storage.
 - **Authorization is data, not a call.** Opaque authorization tokens (the `capability` field on `Action`/`NavigationNode`/`CrudBuilder`) are data the contract carries — resolving them by calling a host API is forbidden here; the adapter does that downstream.
 
 ## Concern-first layout

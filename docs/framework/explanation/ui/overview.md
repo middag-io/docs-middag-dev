@@ -11,7 +11,7 @@ Transport-agnostic PHP **contract builders** for contract-driven UI. Describe a 
 The builders carry no transport and no host knowledge: the same contract renders standalone, inside a Moodle plugin, or inside WordPress, by swapping the renderer downstream. See [Architecture](./architecture) for how the contract system is built and organized.
 
 ::: info Status: in progress
-This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. Some sections below are still being written and say so.
+This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. Two references are not published yet: the generated reference of the `@api` surface and the PHP-React correspondence map ([Public surface](#public-surface)).
 :::
 
 ## Who it is for
@@ -38,16 +38,19 @@ The platform rules behind these values are in [Platform](/libraries/reference/pl
 
 ## Public surface
 
-- Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release.
-- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md) in the repository lists the public surface.
+- Support covers the types tagged `@api` only. Every type in `src/` carries exactly one class-level tag, `@api` or `@internal`; a type with neither is `@internal`. An `@internal` type may change in any release.
+- The `@api` surface is the interfaces in each concern's `Contract/` sub-namespace (suffix `Interface`), the concern builders and the value objects they produce, and the cross-cutting types under `Shared/`.
+- The emitted JSON is a second, stronger contract. A PHP rename that leaves the JSON unchanged is not a wire break; a change to the JSON shape is, and follows the same versioning rules ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility)).
+- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md) in the repository lists the public surface and the rules for changing it.
 - The contract reference is on this hub: [Page Composition Contract](../../reference/ui/composition-levels-and-capabilities), [UI Wire Contract](../../reference/ui/wire-contract) and [UI Stack & Design System](../../reference/ui/design-system-catalog).
 - The JSON schemas the library emits (`schema/page-contract.json`, `schema/fragment.json`) are published artifacts of each release.
 - In progress: the generated reference of the `@api` surface ([Documentation publication](/libraries/reference/publication#generated-api-reference)) and the PHP-React correspondence map ([Documentation publication](/libraries/reference/publication#php-react-correspondence-map)) are not published yet.
 
 ## Changelog and releases
 
+- Releases are cut only by release-please from Conventional Commits; there are no manual tags.
 - [`CHANGELOG.md`](https://github.com/middag-io/middag-php-ui/blob/main/CHANGELOG.md) records every release.
-- [Releases](https://github.com/middag-io/middag-php-ui/releases) on GitHub carry the tags.
+- [Releases](https://github.com/middag-io/middag-php-ui/releases) on GitHub carry the tags, and [Packagist](https://packagist.org/packages/middag-io/ui) serves them to Composer.
 
 ## Decision records
 
