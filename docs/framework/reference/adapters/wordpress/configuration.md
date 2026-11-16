@@ -100,6 +100,8 @@ A default in the adapter must not name a product: a third-party consumer that co
 | Host event hook prefix (`WpHostEventBridge`) | `middaglib/` | constructor (`$hookPrefix`) |
 | Hookfile filter and file name (`WpHookfileLoader`) | `middaglib_hookfiles` / `middaglib_hooks.php` | constructor (`$filterName`, `$hookfileName`) |
 | Object Cache group prefix (`Support/CacheSupportPsr16`) | `middaglib_` | constructor (`$groupPrefix`) |
+| Diagnostics filter (`Diagnostics/DiagnosticsRegistry`) | `middaglib_diagnostics` | constructor (`$filterName`) |
+| WP-CLI command root (`Diagnostics/DoctorCommandRegistrar`) | `middaglib` (`wp middaglib doctor`) | constructor |
 
 `middaglib` is the library marker, not a product name. Each product, MIDDAG's included, passes its own values in its composition root.
 

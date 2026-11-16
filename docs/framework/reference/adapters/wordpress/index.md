@@ -22,7 +22,7 @@ Developers of a WordPress plugin built on `middag-io/framework`, and developers 
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, within the PHP versions the WordPress version supports; with the `json` extension   |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires (contracts and polyfills keep their own ranges)       |
 | Sibling libraries   | `middag-io/framework`, on the family MAJOR (`^2.0` on `2.x`); `middag-io/ui` comes with the framework         |
-| WordPress           | 7.0 and 7.1 (the latest major and the previous one)                                                           |
+| WordPress           | 7.0 and 7.1 (the latest major and the previous one); the CI runs the integration suite on each                |
 
 ```bash
 composer require middag-io/wordpress
@@ -34,7 +34,7 @@ The platform rules behind these values are in [Platform](/libraries/reference/pl
 
 - Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release. Every type in `src/` carries exactly one of the two tags.
 - [`API-STABILITY.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/API-STABILITY.md) in the repository lists the public surface and points to [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#supported-surface) for the support rules.
-- The `@api` surface is what a consumer plugin codes against: the REST controller base and the `Http\Contract` interfaces, the `Domain\Post` and `Domain\User` repositories and meta helpers, the `Domain\Taxonomy`, `Domain\Media`, `Domain\Comment` and `Domain\WooCommerce` value objects, the adapter exceptions, the `Persistence` query builder, the `Settings` and `Definition` builders, the `@api` [Support layer](#support-layer) classes, the mail helpers, the cron registrar, the hook registrar with `Hook\Contract\HookInterface`, and the plugin-lifecycle registrar.
+- The `@api` surface is what a consumer plugin codes against: the REST controller base and the `Http\Contract` interfaces, the `Domain\Post` and `Domain\User` repositories and meta helpers, the `Domain\Taxonomy`, `Domain\Media`, `Domain\Comment` and `Domain\WooCommerce` value objects, the adapter exceptions, the `Persistence` query builder, the `Settings` and `Definition` builders, the `@api` [Support layer](#support-layer) classes, the mail helpers, the cron registrar, the hook registrar with `Hook\Contract\HookInterface`, the plugin-lifecycle registrar, and the [boot diagnostics](#boot-diagnostics).
 - The composition-root concretes are `@api` too, because the consumer names them when it wires its container: `Database\WpdbConnectionAdapter`, `Database\WpdbSqlDialect`, `Config\WpConfigResolver`, `Bus\WpUserContext` and `Persistence\Query\WpdbConditionCompiler`, with the host-context, event-bridge and component-name seams. Type-hint the framework contract in your own code; name the concrete only to wire it. The concretes a consumer never names (`Translation\WpTranslator`, `Runtime\WpMaintenanceGate`, `Runtime\WpBootstrap`) are `@internal`.
 - To depend on an `@internal` type, open an issue to have it promoted to `@api`; promotion is an additive change for a family MINOR.
 - In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
@@ -142,6 +142,24 @@ Payments, webhooks and store integrations are not in this adapter.
 
 - **Schema.** The adapter ships no DDL adapter: WordPress owns its schema lifecycle through `dbDelta()`. `Persistence/VersionTracker` stores a schema version per library in a `wp_options` row written with `autoload = false`.
 - **Native content.** `Domain/Post/PostRepository`, `PostMetaRepository`, `Domain/User/UserRepository` and `UserMeta` cover `wp_posts`, `wp_postmeta` and users; `Persistence/QueryBuilder` builds `WP_Query`-backed reads over `wp_posts`.
+
+## Boot diagnostics
+
+`Diagnostics/` is a post-autoload self-check: it proves that the packages built on the adapter loaded and booted, and gives health checks and pipelines a WP-CLI command to gate on. A URL that answers 200 does not prove that a plugin booted.
+
+- **Registration.** `DiagnosticsRegistry` holds a WordPress filter name ([neutral default](./configuration#neutral-defaults) `middaglib_diagnostics`). `register(PackageProbe $probe)` adds the probe on that filter, so every plugin and theme that shares the filter name meets in one report, although each boots its own kernel. There is no static registry.
+- **`PackageProbe`.** A package name, its version, its kernel class, an optional entry class, an optional autoloader path and extra checks. It holds names only: declare it from the main plugin file, before the kernel boots, so a failed boot shows up as a failed check instead of a missing package.
+- **`BootReport`.** Per package, it checks that the entry class resolves (and from which file), which autoloader file the bootstrap chose when the package declares one, that the kernel booted (it reads `isBooted()` and never boots it) and that a version was declared, then runs the package's own checks. A check that throws becomes a failure and the next check still runs. An expected package that never registered, an entry on the filter that is not a probe, a duplicate name, or no package at all fail the report.
+- **Host-level checks.** `Contract\DiagnosticCheckInterface`, with `CallbackCheck` as a closure shorthand, adds a check with a `CheckScope` of `Boot` or `Render`. A render check covers what boot cannot see, for example that an admin page still emits the HTML shell and the core script bundles. Until a render check runs, the text and JSON output say that the report covers boot only.
+- **WP-CLI.** `DoctorCommandRegistrar` registers `wp <root> doctor` (neutral root `middaglib`; the consumer passes its own). The command takes `--expect=a,b`, `--strict` (warnings fail too) and `--format=text|json`, and exits `0` when healthy and `1` when broken. Outside WP-CLI, `register()` does nothing. Register the command from the main plugin file, so it exists when the kernel fails to boot.
+
+```php
+$registry = new DiagnosticsRegistry('acme_diagnostics');
+$registry->register(new PackageProbe('acme-shop', ACME_SHOP_VERSION, AcmeShopKernel::class));
+(new DoctorCommandRegistrar(new DoctorCommand($registry, ['acme-shop']), 'acme'))->register();
+```
+
+A health gate passes the full list of packages it expects: `wp acme doctor --expect=acme-shop,acme-quotes`. The list given to the constructor only applies when the package that registered the command loaded, so it cannot catch that package's own absence.
 
 ## Out of scope by design
 
