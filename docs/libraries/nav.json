@@ -31,5 +31,35 @@
         ]
       }
     ]
-  }
+  },
+  "companions": [
+    {
+      "name": "Licensing (internal)",
+      "groups": [
+        {
+          "label": "Licensing (internal)",
+          "order": 1,
+          "files": [
+            "reference/licensing/index",
+            "reference/licensing/public-api",
+            "reference/licensing/errors"
+          ],
+          "labels": [
+            {
+              "file": "reference/licensing/index",
+              "label": "Overview, Requirements & Install"
+            },
+            {
+              "file": "reference/licensing/public-api",
+              "label": "Public API"
+            },
+            {
+              "file": "reference/licensing/errors",
+              "label": "Errors"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
