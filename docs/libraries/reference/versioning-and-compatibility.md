@@ -91,7 +91,7 @@ Each family MAJOR publishes one matrix. The matrix is the support floor and ceil
 | PHP                      | 8.3, 8.4 and 8.5                                                                          |
 | Symfony                  | `^7.4 \|\| ^8.1`                                                                          |
 | Sibling libraries        | `^2.0` (each library requires its siblings on the family MAJOR)                          |
-| Moodle (`middag-io/moodle`) | 4.5 to 5.3, each on the PHP versions that Moodle version supports                     |
+| Moodle (`middag-io/moodle`) | 4.5 (PHP 8.3), 5.1, 5.2 and 5.3 (PHP 8.3 and 8.4) |
 | WordPress (`middag-io/wordpress`) | 6.5 and later, on the PHP versions that WordPress version supports              |
 | Database engines (`middag-io/moodle`) | PostgreSQL and MySQL, as supported by the Moodle version in range |
 
@@ -108,14 +108,24 @@ Rules:
 - Symfony 8.x requires PHP 8.4 or later, so PHP 8.3 always resolves Symfony 7.4. In every library that depends on Symfony, both ends of the Symfony range are tested; `ui` has no Symfony dependency, so its tests cover only the PHP range ([Platform](./platform)).
 - The host columns bind the adapters only. `middag-io/ui` and `middag-io/framework` run with no host.
 - A Moodle version caps the PHP versions available on that host (Moodle 4.5 runs up to PHP 8.3). The adapter supports the intersection, never more.
-- A host version enters or leaves the range in a family MINOR. A PHP or Symfony line leaves the range only in a family MAJOR.
+- A host version enters the range in a family MINOR. A host version leaves the range when its upstream security support ends; the next family MINOR records the removal. Moodle 5.0 is outside the `2.x` range for that reason.
+- A PHP or Symfony line leaves the range only in a family MAJOR.
 - The matrix is checked in each library's CI from `2.0.0`.
+
+::: warning Decision required at acceptance: Moodle 5.0 in the product range
+
+| Option | Effect |
+| --- | --- |
+| **A. `moodle-local_middag` drops Moodle 5.0 with the adapter (recommended)** | The product range stays within the adapter range, as the rule above requires. |
+| B. `moodle-local_middag` keeps Moodle 5.0 in its own range | The product supports a host version the adapter does not; an exception to the rule above, proven only by the product's own tests. |
+
+:::
 
 ::: warning Decision required at acceptance: the WordPress floor
 
 | Option                                                       | Effect                                                                                          |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| **A. WordPress 6.5 and later (recommended)**                 | Matches the floor both WordPress products declare in their plugin headers.                     |
+| **A. WordPress 6.5 and later (recommended)**                 | Matches the floor both WordPress products declare in their plugin headers. The `wp-plugin-middag` README still states 6.0 and is aligned separately. |
 | B. No WordPress floor in the matrix; each product states its own | The adapter carries no host statement, unlike the Moodle adapter.                          |
 
 :::
