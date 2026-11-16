@@ -30,7 +30,7 @@ The curated public surface of `middag-php-dev-tools`: the gates, the generators 
 
 - It scans the five public OSS libraries: `framework`, `ui`, `moodle`, `wordpress` and `demo-standalone`.
 - It scans the `src/` tree of each target. Every target must have that tree with at least one `.php` file.
-- It scans code and the type tags of docblocks. Type tags in docblocks are scanned; free-text comments are not. The scanned tags are `@var`, `@param`, `@return`, `@throws`, `@method`, `@property`, `@extends`, `@implements` and `@mixin`. A free-text comment may name a host or a product as an example. This is the oss-purity exception to the comment rule of [Guards](../guards#what-is-guarded).
+- It scans code and the type tags of docblocks. Type tags in docblocks are scanned; free-text comments are not. The scanned tags include `@var`, `@param`, `@return`, `@throws`, `@method`, `@property`, `@extends`, `@implements`, `@use` and `@mixin`, the bounds of `@template`, and the `@phpstan-` and `@psalm-` forms of these tags and of the type aliases. A free-text comment may name a host or a product as an example. This is the oss-purity exception to the comment rule of [Guards](../guards#what-is-guarded).
 - `--auto` scans each of the five libraries under `<root>/libs/middag-php-<name>`. It fails closed: a known library that is missing, a missing `src/` or a `src/` with no `.php` file exits `1`. There is no skip, so a partial checkout never passes.
 - The deny list lives only in `dev-tools`. It covers the proprietary namespaces and the product namespaces, and it matches them case-insensitively, as PHP resolves namespaces.
 - The purity job runs it in the CI of `dev-tools`, as [Guards](../guards#oss-purity) describes. No OSS library runs it or copies its deny list.
@@ -75,9 +75,9 @@ A Moodle product also includes `vendor/middag-io/dev-tools/src/Adapter/Moodle/PH
 
 `generate:statics --adapter=moodle` writes the Moodle `db/*.php` files, the event classes and the managed block of the language file from the definitions of a product. The `@api` writer is `Adapter\Moodle\Statics\StaticsWriter` (namespace root `Middag\DevTools`), built with the generated-file marker of the product.
 
-- **A whole generated file** (`db/<target>.php`, `classes/event/*.php`) is overwritten only when the file on disk carries the marker. The marker is a line comment placed before the first declaration of the file; the open tag, `declare`, `namespace`, the host guard line and a license docblock may come before it. A marker inside a docblock, a string or after the first declaration does not count.
+- **A whole generated file** (`db/<target>.php`, `classes/event/*.php`) is overwritten only when the file on disk carries the marker. The marker is a line comment placed before the first declaration of the file; the open tag, `declare`, `namespace`, the host guard line and any docblock, such as a license header, may come before it. A marker inside a docblock, a string or after the first declaration does not count.
 - **A file without the marker is refused.** The writer leaves it as it is, logs a warning and returns `WriteOutcome::RefusedUnmanaged`. A hand-written file is never overwritten.
-- **The language file** keeps every string outside the managed block byte for byte. A file whose begin and end block markers do not balance is refused the same way. A missing language file is created with the block.
+- **The language file** keeps every string outside the managed block byte for byte. A file whose begin and end block markers do not balance, or that holds a block written under another marker, is refused the same way. A missing language file is created with the block.
 - A file whose content already matches is not written, so its modification time and the version-control diff stay clean (`WriteOutcome::Unchanged`). A write returns `WriteOutcome::Written`.
 - A dry run reports the same refusals as a real run.
 - Content to write that does not carry the marker itself is a generator error and throws `InvalidArgumentException`.

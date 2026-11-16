@@ -31,7 +31,7 @@ The purity job runs in the CI of `middag-php-dev-tools`, the library that owns t
 
 - It checks out the five public OSS libraries (`framework`, `ui`, `moodle`, `wordpress` and `demo-standalone`) at their `main` and runs the purity command over each.
 - It fails closed. A library that is missing, a missing `src/` or a `src/` with no `.php` file fails the job; nothing is skipped.
-- Type tags in docblocks are scanned; free-text comments are not. The scanned tags are `@var`, `@param`, `@return`, `@throws`, `@method`, `@property`, `@extends`, `@implements` and `@mixin`.
+- Type tags in docblocks are scanned; free-text comments are not. The scanned tags include `@var`, `@param`, `@return`, `@throws`, `@method`, `@property`, `@extends`, `@implements`, `@use` and `@mixin`, with their `@phpstan-` and `@psalm-` forms ([Public surface of dev-tools](./dev-tools/public-api#gates-for-the-library-family)).
 - It runs on every pull request to `dev-tools`, on every push to its `main` and on a weekly schedule, so a change in an OSS library is caught even when `dev-tools` does not change.
 - The deny list covers every proprietary namespace, including product namespaces, in both the single- and the double-backslash forms of a fully qualified name.
 - The deny list lives only in `dev-tools`, which is private. No OSS library copies it into its own tests or scripts: a per-library copy would name proprietary namespaces in a public repository.
