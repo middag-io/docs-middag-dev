@@ -56,7 +56,7 @@ The libraries and the products that consume them have separate lifecycles and se
 - For the other internal libraries, the rule "no tag means `@internal`" applies; the public surface is what each library documents as public in its own repository.
 - Each library keeps an `API-STABILITY.md` that lists its public surface and points to this page for the support rules.
 - `middag-php-demo-standalone` is an example application, not a library. It has no public surface and keeps no `API-STABILITY.md`; nothing in it is meant to be imported by another package.
-- The Moodle native-router bridge of `middag-php-moodle` (`RouterBridgeSupport` and the routing placeholder it serves) is internal and not part of the supported surface. Promoting it is an additive change for a family MINOR.
+- In `middag-php-moodle`, `RouterBridgeSupport` (the native-router bridge) is `@api`; the routing placeholder `Http\Routing\MiddagProxy` stays `@internal`.
 
 ## Extension rule
 
