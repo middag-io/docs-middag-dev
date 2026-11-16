@@ -8,7 +8,7 @@ The version family of the MIDDAG PHP libraries: its members, its lifecycle, what
 
 ## The family
 
-The eight `middag-php-*` libraries form one version family. They live in separate repositories and share MAJOR.MINOR; PATCH is free per library and carries fixes only.
+The `middag-php-*` libraries form one version family. They live in separate repositories and share MAJOR.MINOR; PATCH is free per library and carries fixes only.
 
 | Library                      | Package                     | License     | Kind     |
 | ---------------------------- | --------------------------- | ----------- | -------- |
@@ -18,8 +18,7 @@ The eight `middag-php-*` libraries form one version family. They live in separat
 | `middag-php-wordpress`       | `middag-io/wordpress`       | Apache-2.0  | OSS      |
 | `middag-php-demo-standalone` | `middag-io/demo-standalone` | Apache-2.0  | OSS      |
 | `middag-php-core`            | `middag-io/core`            | proprietary | internal |
-| `middag-php-licensing`       | `middag-io/licensing`       | proprietary | internal |
-| `middag-php-dev-tools`       | `middag-io/dev-tools`       | proprietary | internal |
+| other internal libraries     | not listed here             | proprietary | internal |
 
 A consumer declares one `^2.N` range, with the same `N`, for every `middag-php-*` library it depends on: the same MAJOR and the same MINOR floor. For example, a product that needs features of the `2.3` family MINOR requires `middag-io/framework` `^2.3`, `middag-io/ui` `^2.3` and `middag-io/moodle` `^2.3`. MINOR upgrades inside that range do not break.
 
@@ -54,7 +53,7 @@ The libraries and the products that consume them have separate lifecycles and se
 ## Supported surface
 
 - Support covers the public surface only: classes, interfaces, enums, attributes and functions tagged `@api`. Anything untagged, or tagged `@internal`, is outside the promise and may change in any release.
-- For `middag-php-licensing` and `middag-php-dev-tools`, the rule "no tag means `@internal`" applies; the public surface is what each library documents as public.
+- For the other internal libraries, the rule "no tag means `@internal`" applies; the public surface is what each library documents as public in its own repository.
 - Each library keeps an `API-STABILITY.md` that lists its public surface and points to this page for the support rules.
 - `middag-php-demo-standalone` is an example application, not a library. It has no public surface and keeps no `API-STABILITY.md`; nothing in it is meant to be imported by another package.
 - The Moodle native-router bridge of `middag-php-moodle` (`RouterBridgeSupport` and the routing placeholder it serves) is internal and not part of the supported surface. Promoting it is an additive change for a family MINOR.

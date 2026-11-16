@@ -12,7 +12,7 @@ Search the diff for any of `use Moodle\`, `global $DB`, `add_action()`, `Illumin
 
 ## 2. Check for a `core` import
 
-Confirm no OSS library (`middag-php-framework`, `middag-php-ui`, or an adapter) imports `middag-io/core`, `middag-io/licensing`, or `middag-io/dev-tools`. If new code needs governed pub/sub, async jobs, EAV or multi-tenancy, that need itself is the signal the code is in the wrong repository — see [Architecture § The boundary invariant](../explanation/architecture#the-boundary-invariant).
+Confirm no OSS library (`middag-php-framework`, `middag-php-ui`, or an adapter) imports `middag-io/core` or any other internal library. If new code needs governed pub/sub, async jobs, EAV or multi-tenancy, that need itself is the signal the code is in the wrong repository — see [Architecture § The boundary invariant](../explanation/architecture#the-boundary-invariant).
 
 ## 3. Confirm `middag-php-ui` stays agnostic
 

@@ -24,7 +24,7 @@ short code nobody can look up.
   the **business number**. It is the name of the thing in a conversation with a customer, so it
   must be unique, sequential and never change.
 - A record referenced for **technical reasons** — support looking up a row, a log line, an audit
-  entry, a licensing install — gets the **visual id**. It needs no counter, no new column and no
+  entry, a site install — gets the **visual id**. It needs no counter, no new column and no
   coordination: it is derived from the key the row already has.
 
 When both apply, show both: the number for the person, the visual id for whoever has to find the

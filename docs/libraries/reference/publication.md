@@ -32,14 +32,13 @@ Both sites are hub proxies:
 | `middag-php-wordpress`       | this hub (consolidated)                                             | everything                                  | same                                                       |
 | `middag-php-demo-standalone` | this hub (consolidated)                                             | everything                                  | `README`, `CHANGELOG`, decision records, coverage ledger    |
 | `middag-php-core`            | its own repository                                                  | only the API products and extensions need   | full documentation and decision records                    |
-| `middag-php-licensing`       | its own repository                                                  | nothing                                     | full documentation and decision records                    |
-| `middag-php-dev-tools`       | its own repository                                                  | nothing                                     | full documentation and decision records                    |
+| other internal libraries     | their own repositories                                              | nothing                                     | full documentation and decision records                    |
 
 Rules:
 
 - `middag-php-demo-standalone` is an example application with no public surface, so it keeps no `API-STABILITY.md`.
 - The OSS libraries are documented once, here. Architecture, reference and guides of an OSS library are not kept in its repository: a page such as `docs/architecture.md` in an OSS repository is a short pointer to the matching page of this hub, never a second normative copy.
-- `middag-php-licensing` and `middag-php-dev-tools` are not published on this hub. Their documentation stays in their repositories.
+- The other internal libraries are not published on this hub. Their documentation stays in their repositories.
 - Of `middag-php-core`, this hub publishes one curated section with only the API that products and third-party extensions code against: those types, their contracts and their errors. Being tagged `@api` alone does not qualify a type. Internal design, internal operations and decision records stay in the repository.
 - `docs.middag.io` is the single site of every MIDDAG product, aggregated like this hub. A product keeps no site of its own; ADR-029 of the MIDDAG profile records the site.
 - The products follow the same split: product developer documentation (public API, integration) is published here when its channel opens; user and administrator guides go to `docs.middag.io`.
