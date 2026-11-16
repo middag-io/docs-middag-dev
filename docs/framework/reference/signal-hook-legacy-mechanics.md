@@ -88,7 +88,7 @@ A `moodle_event_bridge`-equivalent converted native host events into signals thr
 
 External plugins extended this via a `lib.php`-style hook: `{plugin}_extend_local_middag_moodle_signal_loader(array $dirs): array`.
 
-This entire bridge is host-adapter territory by construction: it translates a specific host's native events, so it cannot live in a host-agnostic framework. Today the split is: the framework ships the `@api` `HostEventBridgeInterface` for named events; the adapters implement it (`MoodleHostEventBridge` delegates to the framework `HookManager`, `WpHostEventBridge` maps onto native `do_action`/`add_action` under a `middag/` prefix); and the mapping of typed Moodle core events onto signals belongs to the downstream governed signal layer.
+This entire bridge is host-adapter territory by construction: it translates a specific host's native events, so it cannot live in a host-agnostic framework. Today the split is: the framework ships the `@api` `HostEventBridgeInterface` for named events; the adapters implement it (`MoodleHostEventBridge` delegates to the framework `HookManager`, `WpHostEventBridge` maps onto native `do_action`/`add_action` under a configurable prefix, default `middaglib/`); and the mapping of typed Moodle core events onto signals belongs to the downstream governed signal layer.
 
 ## Failure isolation matrix
 
