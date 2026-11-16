@@ -26,7 +26,7 @@ The internal libraries are not free open source. Their kind decides where their 
 ## Lifecycle
 
 - **`2.0.0` is the first supported release of every library in the family.** Support, as defined below, starts there.
-- **Releases before `2.0.0` are pre-stable and unsupported.** They carry no compatibility promise, no deprecation cycle, no security line and no maintenance branch. A breaking change ships in a MINOR, typed `feat:` or `refactor:` without `!`.
+- **Releases before `2.0.0` are pre-stable and unsupported.** They carry no compatibility promise, no deprecation cycle, no security line and no maintenance branch. A breaking change may ship in a MINOR.
 - **The cut to `2.0.0` is clean.** There is no upgrade path from a pre-stable release and no `UPGRADING` file before `2.0.0`. The `UPGRADING` file starts at `2.0.0` and states that stable support applies from that release on. The `CHANGELOG` continues across the cut.
 - **`2.0.0` ships when the libraries are stable enough to carry full support**: deprecation before removal, SemVer and the previous-MAJOR line. It has no fixed date.
 - `middag-php-demo-standalone` stays on `0.x` until the family cut and joins the family at `2.0.0`.
@@ -92,7 +92,7 @@ Each family MAJOR publishes one matrix. The matrix is the support floor and ceil
 | Sibling libraries        | `^2.0` (each library requires its siblings on the family MAJOR)                          |
 | Moodle (`middag-io/moodle`) | 4.5 to 5.3, each on the PHP versions that Moodle version supports                     |
 | WordPress (`middag-io/wordpress`) | 6.5 and later, on the PHP versions that WordPress version supports              |
-| Database engines         | PostgreSQL and MySQL, as supported by the host version in range                           |
+| Database engines (`middag-io/moodle`) | PostgreSQL and MySQL, as supported by the Moodle version in range |
 
 How the Symfony range resolves per PHP version:
 
@@ -119,7 +119,7 @@ Rules:
 
 :::
 
-::: warning Decision required at acceptance: database engines
+::: warning Decision required at acceptance: database engines of the Moodle adapter
 
 | Option                                                                 | Effect                                                                                                  |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |

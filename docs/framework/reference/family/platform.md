@@ -34,7 +34,7 @@ Each library's CI runs these jobs on every pull request and on `main`.
 | Job                  | PHP           | Pin             | Purpose                                                                                     |
 | -------------------- | ------------- | --------------- | ------------------------------------------------------------------------------------------- |
 | Library check        | 8.3, 8.4, 8.5 | kept (`8.3.0`)  | Lint, static analysis, code style, Rector dry run, audit and tests                          |
-| `highest`            | 8.5           | removed         | Installs the highest versions the range allows and runs the tests                           |
+| `highest`            | 8.4, 8.5      | removed         | Installs the highest versions the range allows and runs the tests                           |
 | Family window check  | —             | —               | Enforces the family commit-type rule of ADR-032                                            |
 
 The `highest` job:

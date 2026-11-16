@@ -10,7 +10,7 @@ Status: proposed. The automated checks that keep the OSS libraries free of propr
 
 | Rule                                                                                         | Applies to                                     | Guard                                                                  |
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- |
-| An OSS library never imports proprietary code (`middag-io/core`, `middag-io/licensing`, any product namespace) | `ui`, `framework`, `moodle`, `wordpress`, `demo-standalone` | the cross-repository OSS purity job, plus each library's architecture tests |
+| An OSS library never imports proprietary code (`middag-io/core`, `middag-io/licensing`, any product namespace) | `ui`, `framework`, `moodle`, `wordpress` | the cross-repository OSS purity job, plus each library's architecture tests |
 | `ui` has no runtime dependency other than PHP                                                | `ui`                                           | `ui` architecture test                                                 |
 | No host vocabulary in `ui` code, docblocks or schemas                                        | `ui` (`src/` and `schema/`)                    | `ui` host-vocabulary architecture test                                 |
 | No host namespace, global or function in the framework                                       | `framework`                                    | `composer check:portability` (dependency rules plus host-globals scan) |
@@ -41,7 +41,7 @@ The purity job runs in the CI of `middag-php-dev-tools`, the library that owns t
 | B. A job in the development environment of the products                                                 | Ties an OSS rule to a product environment.                                                 |
 | C. Only each library's architecture tests                                                                | Five copies of the deny list, which drift.                                                 |
 
-Sub-question: whether `demo-standalone` is a fifth checkout of the job. The recommendation is yes: it is public, Apache-2.0, and forbids proprietary imports by its own rule.
+Sub-question, with no recommendation: whether `demo-standalone` becomes a fifth checkout of the job. It is public and Apache-2.0, and its own architecture test already forbids proprietary imports.
 
 :::
 
