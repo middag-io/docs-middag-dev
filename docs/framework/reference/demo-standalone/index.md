@@ -26,11 +26,13 @@ Its place in the architecture is in [OSS and internal libraries](../../explanati
 - **Two persistence paradigms, one engine.** Active Record and Data Mapper over the same SQLite connection; the `/parity` page runs them side by side ([Active Record (Eloquent Compatibility)](../active-record-eloquent-compatibility), [Repository Persistence Families](../repository-persistence-families)).
 - **Forms, schema and logging:** a multi-step form wizard, descriptor-driven schema with forward-only migrations, and Monolog-backed logging.
 - **ui contracts:** the full page contract and a partial fragment as JSON, the payload a React client consumes ([UI Wire Contract](../ui/wire-contract)).
+- **ui builders in a real page:** the agents index is built with `CrudBuilder` (variant columns, row link, a metrics region, a panel row action, server search, sort and paging), and an agent is edited in the editable side panel. The ticket form is laid out in sections and groups, one section per wizard step.
+- **Capabilities and uploads:** two seeded logins, a supervisor holding `helpdesk:supervise` and a plain agent without it, prove the allowed and the denied paths. Ticket attachments make the `uploadToken` round trip and download as an attachment.
 
 The demo ships a React bundle built from `ui/`:
 
 - **What builds it:** Vite with `@vitejs/plugin-react`. `npm ci && npm run build:host` (`vite.config.custom.ts`) writes the app entry (`app.js`, `style.css` and hashed chunks) to `public/build`.
-- **What it uses:** React 19, the Inertia React client and the OSS renderer `@middag-io/react` (`^0.45.0`); `ui/src/app/register.ts` registers its shells, layouts and blocks plus the demo's own extensions.
+- **What it uses:** React 19, the Inertia React client and the OSS renderer `@middag-io/react` (`^0.45.4`, installed from the public npm registry with no token); `ui/src/app/register.ts` registers its shells, layouts and blocks plus the demo's own extensions.
 - **From source:** `composer serve` runs the PHP built-in server on `public/`, so it serves `/build/app.js` and `/build/style.css` once the bundle is built.
 - **The Docker image** builds the bundle in a Node stage and copies it into `public/build`, so a bare `docker run` serves the complete, styled application.
 
@@ -40,8 +42,8 @@ The demo ships a React bundle built from `ui/`:
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, with the `pdo` and `pdo_sqlite` extensions                                       |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires; the `composer.lock` its Docker image ships resolves Symfony 7.4 |
-| Sibling libraries   | `middag-io/framework` `^1.20` and `middag-io/ui` `^1.8` (`composer.json`)                                  |
-| Renderer            | `@middag-io/react` `^0.45.0` (`ui/package.json`)                                                            |
+| Sibling libraries   | `middag-io/framework` `^1.20.4` and `middag-io/ui` `^1.10.1` (`composer.json`)                             |
+| Renderer            | `@middag-io/react` `^0.45.4` (`ui/package.json`), from the public npm registry                              |
 | Host                | none: no Moodle and no WordPress; the host ranges of the adapters do not apply                                                                                                        |
 | Database            | SQLite, in a file or in memory                                                                              |
 
