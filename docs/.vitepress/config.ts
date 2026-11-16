@@ -227,13 +227,18 @@ function ownedSidebarItems(
 type NavLeaf = { file: string; label: string }
 type NavGroup = { label: string; order?: number; files: string[]; labels?: NavLeaf[] }
 type NavSection = { items?: NavLeaf[]; ui?: NavLeaf[] }
+/** A named top-level sidebar section built from topic clusters. */
+type NavNamedSection = { name: string; groups: NavGroup[] }
 /**
  * Every field is optional except `label` (which itself defaults to the dir
  * name) — a repo only declares the sections it actually has. `core/` won't
- * need `tutorials`/`howTo` (Surface API is reference-only) but will likely
- * need 2 adapters (Moodle + WordPress, per ADR-020's Product axis) instead of
- * framework's 1 — hence `adapters` being a
- * named array rather than a single hardcoded `adaptersMoodleGroups` field.
+ * need `tutorials`/`howTo` (Surface API is reference-only).
+ *
+ * - `adapters`: host adapters only (Moodle, WordPress, …), one named section
+ *   each — a named array rather than a hardcoded per-host field.
+ * - `companions`: the axis's members that are not host adapters, such as a
+ *   UI library or an example application, one named section each, rendered
+ *   right after the adapters.
  */
 type OwnedNav = {
   label?: string
@@ -241,7 +246,8 @@ type OwnedNav = {
   howTo?: NavSection
   explanation?: NavSection
   reference?: { groups?: NavGroup[]; ui?: NavLeaf[] }
-  adapters?: { name: string; groups: NavGroup[] }[]
+  adapters?: NavNamedSection[]
+  companions?: NavNamedSection[]
 }
 
 function readNavJson(absDir: string): OwnedNav | null {
@@ -312,12 +318,13 @@ function curatedOwnedSidebar(urlBase: string, spec: OwnedNav): DefaultTheme.Side
   ]
   if (reference.length) sections.push({ text: 'Reference', items: reference })
 
-  // Each adapter (Moodle, WordPress, …) is its own top-level sibling
-  // section — mirrors laravel.com/docs keeping Eloquent ORM next to
-  // Database rather than nesting one inside the other.
-  for (const adapter of spec.adapters ?? []) {
-    const items = byOrder(adapter.groups).flatMap((g) => clusterLeaves(urlBase, g))
-    if (items.length) sections.push({ text: adapter.name, items })
+  // Each host adapter (Moodle, WordPress, …), then each companion (UI
+  // library, example application), is its own top-level sibling section —
+  // mirrors laravel.com/docs keeping Eloquent ORM next to Database rather
+  // than nesting one inside the other.
+  for (const section of [...(spec.adapters ?? []), ...(spec.companions ?? [])]) {
+    const items = byOrder(section.groups).flatMap((g) => clusterLeaves(urlBase, g))
+    if (items.length) sections.push({ text: section.name, items })
   }
 
   const explanation = sectionItems(spec.explanation)
