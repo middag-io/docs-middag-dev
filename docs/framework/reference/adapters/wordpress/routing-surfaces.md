@@ -41,7 +41,19 @@ WordPress models REST as registration: one `register_rest_route()` call per rout
 2. The effective `#[Auth]` is the method-level attribute, else the class-level one, else `new Auth()` — so an action with no attribute **requires login** (secure default).
 3. `login: false` passes.
 4. Otherwise the injected `RequestAuthenticatorInterface` resolves the user. A `WP_Error` is returned as is; no user gives `401 unauthorized`.
-5. If the `#[Auth]` lists any capability, the request must come from an administrator (`RequestAuthenticatorInterface::isAdmin()`), otherwise `403 forbidden`. The individual capability strings are not checked one by one on this surface.
+5. Every capability the `#[Auth]` lists must pass `user_can()` for the resolved user, otherwise `403 forbidden`. The check runs against the user the authenticator resolved (a token user included), not against the session user, so it uses `user_can($user, $cap)` and never `current_user_can()`. When `instanceId` is greater than zero, it is passed as the object id, so meta capabilities work. Capability `requirements` resolve to WordPress capabilities and are checked the same way. An `#[Auth]` with no capability and no requirement means login only.
+
+The REST surface and the admin-page surface (`AbstractWpController::setRequireCapabilities()`) apply the same semantics: every listed capability is required, with the object id when one is given. Tests cover a non-administrator who holds the capability (allowed), an administrator without it (denied) and a meta capability with an object id.
+
+::: warning Decision required at acceptance: capability semantics on REST
+
+| Option | Effect |
+| --- | --- |
+| **A. Every listed capability through `user_can()` on the resolved user, with the object id; `requirements` resolved the same way (recommended)** | Same rule as the admin pages and the Moodle adapter; a role check no longer stands in for a capability. Needs a security review before merge, and the WordPress adapter decision record is amended to match. |
+| B. Any one listed capability is enough | Differs from the admin pages and from the Moodle adapter. |
+| C. Keep the administrator-role check | A capability listed in `#[Auth]` is not what the surface checks. |
+
+:::
 
 `WpRestKernel::handle()`:
 
