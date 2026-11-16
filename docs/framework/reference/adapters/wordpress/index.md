@@ -28,8 +28,6 @@ Developers of a WordPress plugin built on `middag-io/framework`, and developers 
 composer require middag-io/wordpress
 ```
 
-Declare one `^2.N` range, with the same `N`, for `middag-io/wordpress`, `middag-io/framework` and every other library of the family the plugin requires ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility)).
-
 The platform rules behind these values are in [Platform](/libraries/reference/platform) and [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#compatibility-matrix), which also states when a WordPress major leaves the range. Wiring the adapter into a plugin is in [Configuration & Identity](./configuration).
 
 ## Public surface
