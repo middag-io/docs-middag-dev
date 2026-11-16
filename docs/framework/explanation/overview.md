@@ -38,13 +38,14 @@ A project that depends on more than one library of the family declares one `^2.N
 
 ### Dependencies
 
-Besides Symfony, the framework requires only PSR contracts (container, HTTP messages, factories, client, server handler and middleware, log, clock, simple cache), `monolog/monolog` `^3.0` and `nyholm/psr7` `^1.8`. It requires no host and no database driver.
+Besides Symfony and `middag-io/ui`, the framework requires only PSR contracts (container, HTTP messages, factories, client, server handler and middleware, log, clock, simple cache), `monolog/monolog` `^3.0` and `nyholm/psr7` `^1.8`. It requires no host and no database driver.
 
 Optional packages enable a default implementation or a transport. None is needed to run the framework.
 
 | Package                                                                    | Enables                                                                                     |
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `ext-curl`                                                                 | the recommended transport of Symfony HttpClient in production                               |
+| `illuminate/database` `^11.0 \|\| ^12.0` | a Laravel-style query builder behind the connection adapter port, wired by the application (no integration ships) |
 | `doctrine/dbal` `^4.0`                                                     | standalone schema and migrations through the DBAL schema builder                            |
 | `league/flysystem` `^3.0`                                                  | a filesystem port implementation over cloud or abstract storage                             |
 | `sentry/sentry` `^4.0`                                                     | a ready-to-bind error reporter                                                               |
@@ -76,9 +77,9 @@ The contract reference is on this hub, one page per topic:
 | `Kernel`, `Runtime`                                    | [Kernel Boot Lifecycle](../reference/kernel-boot-lifecycle), [Boot-Time Built-In Features](../reference/bootstrap-contracts), [Module Layout Convention](../reference/module-layout-convention), [Hooks — Public Surface & Naming](../reference/hooks-public-surface) |
 | `Exception`                                            | [Exception Hierarchy](../reference/exception-hierarchy)                                                                                                         |
 | `Logging`, `Observability`                             | [Logging & Observability](../reference/logging-and-observability)                                                                                               |
-| `Filesystem`, `Mail`, `Security`, `Translation`, `Shared` | [Adapter Port Catalog](../reference/bridge-contracts)                                                                                                       |
+| `Filesystem`, `Mail`, `Security`, `Translation` | [Adapter Port Catalog](../reference/bridge-contracts)                                                                                                       |
 
-The ports a host adapter implements, including the host-neutral seams (`HostComponentContextInterface`, `HostEventBridgeInterface`, `ComponentNameResolverInterface` and `SignalDispatcherInterface`), are in [Adapter Port Catalog](../reference/bridge-contracts).
+The ports a host adapter implements, including the neutral component identity `HostComponentContextInterface`, are in [Adapter Port Catalog](../reference/bridge-contracts). The reactive seams `HostEventBridgeInterface` and `SignalDispatcherInterface` are in [Hooks — Public Surface & Naming](../reference/hooks-public-surface).
 
 In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
 
