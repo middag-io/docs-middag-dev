@@ -7,7 +7,7 @@ title: 'Reference — Moodle Adapter'
 Implementation reference for `middag-io/moodle` ([middag-php-moodle](https://github.com/middag-io/middag-php-moodle)), the OSS adapter that plugs Moodle into the framework's ports. This page is the entry point of the adapter: what it is, what it needs, where its public surface is listed, then the reference pages grouped by topic (the sidebar uses the same clustering). Pages marked **downstream** document mechanisms that live in proprietary packages built on the adapter, not in the adapter itself.
 
 ::: info Status: in progress
-This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. Some sections below are still being written and say so.
+This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. One part is still being written: the generated reference of the `@api` surface (see [Public surface](#public-surface)).
 :::
 
 ## What it is and who it is for
@@ -32,20 +32,46 @@ This page states the `2.x` line of the library family. Support starts at `2.0.0`
 composer require middag-io/moodle
 ```
 
-The require pulls `middag-io/framework` and `middag-io/ui`. Moodle 4.5 runs up to PHP 8.3, so a plugin that ships its `vendor/` to a Moodle 4.5 site resolves it on PHP 8.3: a `vendor/` resolved on PHP 8.4 or later installs Symfony 8.x, which PHP 8.3 cannot run.
+The require pulls `middag-io/framework` and `middag-io/ui`. The adapter ships no container builder: the consumer plugin registers its own at boot with `Runtime\ContainerFactory::setBuilder()`, a closure that receives the `Runtime\Kernel` and the router and returns the compiled Symfony `ContainerBuilder`. When the kernel asks for the container and no builder is registered, `ContainerFactory` throws a `RuntimeException`. Moodle 4.5 runs up to PHP 8.3, so a plugin that ships its `vendor/` to a Moodle 4.5 site resolves it on PHP 8.3: a `vendor/` resolved on PHP 8.4 or later installs Symfony 8.x, which PHP 8.3 cannot run.
 
 The platform rules behind these values are in [Platform](/libraries/reference/platform) and [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#compatibility-matrix). Moodle bundles some namespaces that the adapter's dependency tree also uses: see [Shared-Namespace Dependencies](./shared-namespace-dependencies).
 
 ## Public surface
 
-- Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release.
-- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-moodle/blob/main/API-STABILITY.md) in the repository lists the public surface.
-- The native-router bridge (`RouterBridgeSupport` and the routing placeholder it serves) is internal and outside the supported surface ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility#supported-surface)).
-- The reference pages below describe the adapter's mechanisms. In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
+Support covers the types tagged `@api` only ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)). Every type in `src/` carries exactly one of `@api` or `@internal`; a type with neither is internal. [`API-STABILITY.md`](https://github.com/middag-io/middag-php-moodle/blob/main/API-STABILITY.md) in the repository lists the public surface type by type. All names below are relative to the `Middag\Moodle\` namespace.
+
+| Area                       | `@api` types                                                                                                                                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain model               | `Domain\*`: entities, DTOs and enums for courses, users, enrolments, groups, roles, contexts, grades, completion, calendar, messages, files, custom fields, tasks, events and backup                                                         |
+| Settings and definitions   | `Settings\*` (admin setting types and `Settings\SettingsResolver`) and `Definition\*` (the builders that statics generation turns into `db/*.php`, with their `Contract/` interface)                                                         |
+| Moodle API wrappers        | `Support\Moodle` (the façade) and the public `Support\*` wrappers, one per Moodle API: course, user, enrolment, capability, context, cache, config, file, grade, task, lock, session, URL, output and the others in the [API coverage](./api-coverage-inventory) |
+| Security and privacy       | `Security\Contract\*` (authentication, authorization, capability), the `Security` value objects, enums and the `Sesskey` attribute; `Privacy\Contract\*` and `Privacy\PrivacyProvider`                                                       |
+| HTTP, output and services  | `Http\Contract\MoodleControllerInterface`, `Http\Contract\RouterInterface`, `Output\Contract\ViewAdapterInterface`, `Output\MoodleView`, `Output\MoodleRenderer`, the `Output\Table` helpers and `WebService\AbstractExternal`              |
+| Exceptions                 | `Exception\MoodleAdapterException`, `Exception\MoodleConfigurationException`, `Exception\MoodleTransportException` and `Exception\MoodleVersionException`                                                                                                                                       |
+| Other host services        | `Mail\MoodleMailer`, `Filesystem\MoodledataFilesystem`, `Hook\AbstractExtendExtensions`, `Persistence\UpgradeHelper`, `Shared\Enum\TextFormat`, `Shared\Util\Debug` and `Shared\Util\Environment` |
+| Composition root           | The concretes a consumer names when it wires the kernel (next table)                                                                                                                                                                          |
+
+The composition-root concretes are public because a consumer must name them when it builds the container, not because their shape is a contract. Type your own code against the framework contract each one implements.
+
+| Concrete (`@api`)                                                                                 | Role at boot                                                                                     |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `Runtime\Kernel`, `Runtime\ContainerFactory`                                                      | Boot the kernel and register the container builder                                               |
+| `Runtime\MoodleHostContext`, `Runtime\MoodleComponentNameResolver`, `Runtime\Loader\FacadeLoader` | Host context, component-name resolution and the façade loader                                    |
+| `Config\ComponentContext`, `Settings\SettingsResolver`                                             | Plugin component and settings resolution                                                         |
+| `Bus\MoodleUserContext`, `Bus\MoodleHostEventBridge`, `Bus\MoodleAdhocTransport`                   | User context, host event bridge and the ad hoc task transport                                    |
+| `Logging\MoodleLogger`, `Logging\MoodleActorResolver`, `Logging\MoodleOriginResolver`              | Logging port                                                                                     |
+| `Translation\MoodleTranslator`                                                                     | Translation port                                                                                 |
+| `Database\Schema\XmldbSchemaAdapter`, `Persistence\VersionTracker`, `Persistence\Query\SqlGenerator` | Schema, version tracking and SQL generation                                                      |
+| `Http\Routing\PluginAwareUrlGenerator`                                                             | Named only to exclude it from autowiring; do not extend or type-hint it                          |
+
+What stays internal is the wiring a consumer never names: the database connection adapter and SQL dialect, the config resolver, the maintenance gate, the bootstrap, `Http\Routing\MoodleRouter` (depend on `Http\Contract\RouterInterface`) and the convention helpers in `Support` (`CrudConventionResolver`, `TaskDefinitionBuilder`, `DiBridgeSupport` and `RouterBridgeSupport`). The native-router bridge is outside the supported surface ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility#supported-surface)). The framework contracts the adapter implements are in the [Adapter Port Catalog](../../bridge-contracts).
+
+In progress: the generated reference of the `@api` surface, with signatures and docblocks, is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)). The reference pages below describe the adapter's mechanisms.
 
 ## Changelog, decisions and help
 
 - [`CHANGELOG.md`](https://github.com/middag-io/middag-php-moodle/blob/main/CHANGELOG.md) records every release; [Releases](https://github.com/middag-io/middag-php-moodle/releases) carry the tags.
+- release-please cuts every release from Conventional Commits; there are no manual tags. The adapter shares MAJOR.MINOR with the rest of the family: a family MINOR or MAJOR goes out in every library, and a PATCH carries fixes only ([Lifecycle](/libraries/reference/versioning-and-compatibility#lifecycle)).
 - The decision records behind these pages live in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
 - Questions and bugs: [issues of `middag-php-moodle`](https://github.com/middag-io/middag-php-moodle/issues). Security reports: [`SECURITY.md`](https://github.com/middag-io/middag-php-moodle/blob/main/SECURITY.md); do not open a public issue for a vulnerability.
 
