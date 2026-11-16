@@ -70,9 +70,8 @@ The repository [README](https://github.com/middag-io/middag-php-demo-standalone/
 
 ## Public surface
 
-The demo has no public PHP surface: it tags nothing `@api`, so everything under `src/` is `@internal` by the rule "no tag means `@internal`" ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)). Nothing in it is meant to be imported by another package and no reference is generated for it. What it documents is coverage, not API:
+The demo is an example application, not a library, and has no public surface ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)). Nothing in it is meant to be imported by another package, it keeps no `API-STABILITY.md` and no reference is generated for it. What it documents is coverage, not API:
 
-- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/API-STABILITY.md) states that the demo has no public surface and points to [Versioning and compatibility](/libraries/reference/versioning-and-compatibility) for the support rules.
 - [`COVERAGE.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/COVERAGE.md) maps each `@api` area of `framework` and `ui` to the demo artifact that exercises it and the test that proves it, and states the boundary with the internal libraries.
 - The surface the demo exercises is the public surface of its siblings: the [`API-STABILITY.md` of `framework`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md), the [`API-STABILITY.md` of `ui`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md) and the reference pages of this section.
 

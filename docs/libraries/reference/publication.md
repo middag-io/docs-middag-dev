@@ -30,13 +30,14 @@ Both sites are hub proxies:
 | `middag-php-framework`       | this hub (consolidated)                                             | everything                                  | same                                                       |
 | `middag-php-moodle`          | this hub (consolidated)                                             | everything                                  | same                                                       |
 | `middag-php-wordpress`       | this hub (consolidated)                                             | everything                                  | same                                                       |
-| `middag-php-demo-standalone` | this hub (consolidated)                                             | everything                                  | same, plus its coverage ledger                             |
+| `middag-php-demo-standalone` | this hub (consolidated)                                             | everything                                  | `README`, `CHANGELOG`, decision records, coverage ledger    |
 | `middag-php-core`            | its own repository                                                  | its public API only                         | full documentation and decision records                    |
 | `middag-php-licensing`       | its own repository                                                  | its public API only                         | full documentation and decision records                    |
 | `middag-php-dev-tools`       | its own repository                                                  | its public API only                         | full documentation and decision records                    |
 
 Rules:
 
+- `middag-php-demo-standalone` is an example application with no public surface, so it keeps no `API-STABILITY.md`.
 - The OSS libraries are documented once, here. Architecture, reference and guides of an OSS library are not kept in its repository: a page such as `docs/architecture.md` in an OSS repository is a short pointer to the matching page of this hub, never a second normative copy.
 - Each internal library has one curated public-API section on this hub, opened when its surface is written. The full documentation stays in its repository.
 - An internal library's public API on this hub is a curated surface: the `@api` types a consumer codes against, their contracts and their errors. Internal design, internal operations and decision records stay in the library's repository.
