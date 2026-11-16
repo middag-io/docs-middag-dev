@@ -48,7 +48,7 @@ Present on the concrete `HookManager` and deliberately absent from the interface
 
 | Source | Name produced | Where |
 | --- | --- | --- |
-| Named host event through the WordPress adapter | `middag/{event}`, e.g. `middag/quote.created` (the prefix is a constructor argument) | `WpHostEventBridge` in `middag-php-wordpress` |
+| Named host event through the WordPress adapter | `{prefix}{event}`, e.g. `middaglib/quote.created`; the prefix is a constructor argument, default `middaglib/` (see [neutral defaults](./adapters/wordpress/configuration#neutral-defaults)) | `WpHostEventBridge` in `middag-php-wordpress` |
 | Named host event through the Moodle adapter | the event name as given, on the framework `HookManager` | `MoodleHostEventBridge` in `middag-php-moodle` |
 | Aggregate signal bridged to hooks by the governed signal layer downstream | `middag/{aggregate}/{action}`, then `middag/{aggregate}/{action}/{type}` when the signal has a type (general fires before specific) | downstream proprietary signal layer |
 | Any other signal bridged to hooks downstream | the signal's FQCN with `\` replaced by `/` | downstream proprietary signal layer |

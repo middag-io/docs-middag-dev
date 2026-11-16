@@ -31,5 +31,55 @@
         ]
       }
     ]
-  }
+  },
+  "companions": [
+    {
+      "name": "Licensing (internal)",
+      "groups": [
+        {
+          "label": "Licensing (internal)",
+          "order": 1,
+          "files": [
+            "reference/licensing/index",
+            "reference/licensing/public-api",
+            "reference/licensing/errors"
+          ],
+          "labels": [
+            {
+              "file": "reference/licensing/index",
+              "label": "Overview, Requirements & Install"
+            },
+            {
+              "file": "reference/licensing/public-api",
+              "label": "Public API"
+            },
+            {
+              "file": "reference/licensing/errors",
+              "label": "Errors"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dev Tools (internal)",
+      "groups": [
+        {
+          "label": "Dev Tools (internal)",
+          "order": 2,
+          "files": ["reference/dev-tools/index", "reference/dev-tools/public-api"],
+          "labels": [
+            {
+              "file": "reference/dev-tools/index",
+              "label": "Overview, Requirements & Install"
+            },
+            {
+              "file": "reference/dev-tools/public-api",
+              "label": "Public Surface"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

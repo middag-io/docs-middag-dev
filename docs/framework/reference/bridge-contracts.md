@@ -25,7 +25,7 @@ Adapter class names verified against `middag-php-moodle/main@6aae04d` and `midda
 | `HostComponentContextInterface` | `Kernel/Contract/` — neutral component identity (`componentName`/`assetVersion`/`basePath`); optional process-wide slot `Kernel/HostContext` | `MoodleHostContext` | `WpComponentContext` (injected, never through `HostContext`; see below) |
 | `MaintenanceGateInterface` | `Kernel/Contract/` — `NullMaintenanceGate` | `MoodleMaintenanceGate` (`$CFG->upgraderunning`, `during_initial_install()`) | `WpMaintenanceGate` (`wp_is_maintenance_mode()`) |
 | `HookManagerInterface` | `Kernel/Contract/` — `HookManager`, bound by the consumer | — (`MoodleHostEventBridge` consumes the bound manager) | — (host events go to native WordPress hooks) |
-| `HostEventBridgeInterface` | `Kernel/Contract/` — `@api`, no default | `MoodleHostEventBridge` (delegates to `HookManager`) | `WpHostEventBridge` (native `do_action`, `middag/` prefix) |
+| `HostEventBridgeInterface` | `Kernel/Contract/` — `@api`, no default | `MoodleHostEventBridge` (delegates to `HookManager`) | `WpHostEventBridge` (native `do_action`, configurable prefix, default `middaglib/`; see [neutral defaults](./adapters/wordpress/configuration#neutral-defaults)) |
 | `ConnectionAdapterInterface` | `Database/Contract/` — `PdoConnectionAdapter` | `MoodleConnectionAdapter` | `WpdbConnectionAdapter` |
 | `SqlDialectInterface` | `Database/Contract/` — `StandardSqlDialect`, `MysqlSqlDialect`, `PrefixingSqlDialect` | `MoodleSqlDialect` | `WpdbSqlDialect` |
 | `SchemaBuilderAdapterInterface` | `Database/Contract/` — `DbalSchemaBuilderAdapter`, `MysqlSchemaBuilderAdapter`, `SqliteSchemaBuilderAdapter` | `XmldbSchemaAdapter` | — (WordPress owns its schema through `dbDelta()`) |

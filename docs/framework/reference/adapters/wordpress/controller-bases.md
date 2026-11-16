@@ -6,8 +6,6 @@ title: 'wordpress adapter — Controller Bases'
 
 Reference for the two controller bases in `middag-io/wordpress`. Backs [WP-001](https://github.com/middag-io/middag-php-wordpress/blob/main/docs/decisions/WP-001-page-controller-base-and-rest-divergence.md) (WordPress HTTP integration) and builds on [FW-014](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-014-segregated-controller-role-interfaces.md) (segregated controller role interfaces). The surfaces that dispatch to these controllers are in [Routing Surfaces](./routing-surfaces).
 
-Verified against `middag-php-wordpress/main@bc1bc59`, `middag-php-framework/main` and `middag-php-moodle/main` on 2026-11-04.
-
 ## Bases across the ecosystem
 
 | Layer | Page-controller base | REST/API base | REST ↔ page |

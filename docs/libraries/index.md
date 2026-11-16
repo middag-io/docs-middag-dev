@@ -15,3 +15,8 @@ The pages of this section apply to both kinds. They do not place the internal li
 - **[Platform](./reference/platform)**: the PHP and Symfony values every library declares, the floor rule and the CI recipe of each library.
 - **[Documentation publication](./reference/publication)**: where the documentation of each library and product lives.
 - **[Guards](./reference/guards)**: the automated checks that keep the OSS libraries free of proprietary code and of host code.
+
+Public API of the internal libraries:
+
+- **[middag-php-licensing](./reference/licensing/)**: the PHP client library of MIDDAG Licensing.
+- **[middag-php-dev-tools](./reference/dev-tools/)**: the build-time tooling of the family: its gates, generators and PHPStan rules.

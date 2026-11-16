@@ -19,7 +19,9 @@ The contract is the entire public surface: if a value can appear on the wire, it
 `middag-io/ui` sits at the bottom of the stack and defines only generic contracts. Rendering, host wiring, and HTTP transport all live downstream, never here:
 
 - **No contract produces HTML** (`render(): string`). Contracts produce **data / value objects** (e.g. `FormRendererInterface` → `RendererOutput`, not a string) — rendering is a product/host concern.
-- **No host knowledge.** No `mform`, `wpdb`, capability calls, column names, or plugin conventions.
+- **A markup body is opaque data.** `RendererOutput::html()` and `RenderTarget::Html` carry a body that a renderer downstream produced. No `ui` contract produces markup, so they are not an exception to the rule above.
+- **No host knowledge.** No `mform`, `wpdb`, capability calls, column names, or plugin conventions, in code, docblocks or schemas. The architecture test `tests/Architecture/HostVocabularyTest.php` scans `src/` and `schema/`, comments included, against a host deny list ([Guards](/libraries/reference/guards#no-host-in-ui)).
+- **Host values are opaque fields.** A value only a host understands travels as a neutral field that the adapter maps. A pending file upload is `FileValue::$uploadToken`, a string the host's upload endpoint issues; the adapter maps it to its own storage.
 - **Authorization is data, not a call.** Opaque authorization tokens (the `capability` field on `Action`/`NavigationNode`/`CrudBuilder`) are data the contract carries — resolving them by calling a host API is forbidden here; the adapter does that downstream.
 
 ## Concern-first layout
@@ -63,8 +65,8 @@ The contracts do not choose a renderer, but MIDDAG ships one first-party client,
 - **Why it moved off Vue.** The earlier client was Vue 3 + Inertia + PrimeVue + Pinia, chosen to align with Moodle core, which uses Vue internally. ReUI's copy-paste distribution needs React at runtime, and no Vue design system of comparable maturity existed.
 - **Rejected alternatives.** Atlaskit, because its license limits use to products that interoperate with Atlassian software; Forge UI, because its renderer only runs inside the Forge sandbox.
 - **What stayed.** Inertia stayed the transport; only the client target changed (`@inertiajs/vue3` to `@inertiajs/react`).
-- **No coexistence layer.** There is no Vue/React bridge, and Vue is no longer built or shipped. Migration is incremental, per extension: screens not yet rewritten keep their legacy runtime until they move to React.
-- **Trade-offs accepted.** The client diverges from Moodle core's internal Vue usage; the product ships as an embedded app with its own UI identity rather than sharing components with Moodle core. The existing Vue frontend has to be rewritten in full, which the per-extension migration spreads out instead of a big-bang cutover. One stack removes the cost of parallel build, test and onboarding paths.
+- **No coexistence layer.** There is no Vue/React bridge, and Vue is not built or shipped.
+- **Trade-offs accepted.** The client diverges from Moodle core's internal Vue usage; the product ships as an embedded app with its own UI identity rather than sharing components with Moodle core. One stack removes the cost of parallel build, test and onboarding paths.
 - **Where host styling goes.** Host theme bridging (for example Moodle color tokens to Tailwind tokens) belongs to the host adapter, not to the client or the contracts.
 
 ## Relationship to other packages

@@ -6,8 +6,6 @@ title: 'wordpress adapter — Configuration & Identity'
 
 Reference for how a WordPress plugin gives `middag-io/wordpress` its identity and configuration. Backs [WP-002](https://github.com/middag-io/middag-php-wordpress/blob/main/docs/decisions/WP-002-config-resolver-neutral-default-prefix.md) (injected per-plugin identity, neutral defaults, no mutable static state), which applies [FW-015](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-015-hosts-are-adapters-of-framework-ports.md) and [FW-016](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-016-statics-as-a-bounded-exception.md) to WordPress.
 
-Verified against `middag-php-wordpress/main@bc1bc59` on 2026-11-04.
-
 ## Why it is shaped this way
 
 Several WordPress plugins built on the adapter can run in one PHP process and one request. Anything process-wide — a static property, a single identity slot, a shared prefix — is shared by all of them, and the last writer wins. So the adapter keeps every piece of per-plugin state on instances that each plugin builds in its own container.
@@ -88,8 +86,6 @@ $builder->register(ConfigResolverInterface::class, WpConfigResolver::class)
     ->setPublic(true);
 ```
 
-**Upgrading from 1.12 or earlier.** Before 1.13.0 the defaults were `MIDDAG_` / `middag_`. A consumer that relied on them silently reads different keys after the upgrade (for example `MIDDAG_SMTP_HOST` is no longer read; `MIDDAGLIB_SMTP_HOST` is). Pass the old pair explicitly before upgrading.
-
 ## Neutral defaults
 
 A default in the adapter must not name a product: a third-party consumer that configures nothing must not inherit another vendor's names, and two unconfigured consumers should collide only on a marker that says "came from this library, not configured".
@@ -100,15 +96,12 @@ A default in the adapter must not name a product: a third-party consumer that co
 | Routing namespaces, menu slugs, query var, cron keys, nonce action, mount node | derived from `componentName()` | `WpComponentContext` |
 | Action Scheduler group (`ActionSchedulerDriver`, `JobScheduler::make()`) | empty | constructor / `make($group)` |
 | Schema version option (`Persistence/VersionTracker`) | none: the option name is required | constructor |
+| Text domain when no component is given (`WpTranslator`) | `middaglib` | constructor (`$defaultDomain`) |
+| Host event hook prefix (`WpHostEventBridge`) | `middaglib/` | constructor (`$hookPrefix`) |
+| Hookfile filter and file name (`WpHookfileLoader`) | `middaglib_hookfiles` / `middaglib_hooks.php` | constructor (`$filterName`, `$hookfileName`) |
+| Object Cache group prefix (`Support/CacheSupportPsr16`) | `middaglib_` | constructor (`$groupPrefix`) |
 
-Known exceptions that still default to the `middag` name (open drift, tracked in the adapter's decision record):
-
-| Default | Value | Override |
-|---|---|---|
-| Text domain when no component is given (`WpTranslator`) | `middag` | constructor |
-| Host event hook prefix (`WpHostEventBridge`) | `middag/` | constructor |
-| Hookfile filter (`WpHookfileLoader`) | `middag_hookfiles` | constructor |
-| Hookfile basename (`WpHookfileLoader`) | `middag_hooks.php` | none (class constant) |
+`middaglib` is the library marker, not a product name. Each product, MIDDAG's included, passes its own values in its composition root.
 
 ## No mutable static state
 
