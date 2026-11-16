@@ -27,7 +27,10 @@ Its place in the architecture is in [OSS and internal libraries](../../explanati
 - **Forms, schema and logging:** a multi-step form wizard, descriptor-driven schema with forward-only migrations, and Monolog-backed logging.
 - **ui contracts:** the full page contract and a partial fragment as JSON, the payload a React client consumes ([UI Wire Contract](../ui/wire-contract)).
 
-The demo ships no JavaScript bundle: the Inertia HTML shell embeds the page payload. Rendering the contract is a separate, downstream concern.
+What the demo proves is the server-side contract; how the client renders it depends on the run mode:
+
+- **From source**, no JavaScript bundle is built: the Inertia HTML shell embeds the page payload.
+- **The published image** bakes the React client from `ui/`, built on the OSS `@middag-io/react`, into `public/build`, so the image serves the complete, styled application.
 
 ## Requirements
 
@@ -56,19 +59,18 @@ composer serve              # http://localhost:8080
 composer test               # PHPUnit against the real stack, in-memory SQLite
 ```
 
-From the published image: every release publishes `middagtec/middag-demo-standalone` on Docker Hub for `linux/amd64` and `linux/arm64`, tagged with the release version and `latest`. The image serves the application and runs the worker; on first boot it creates and seeds a SQLite file under `/app/var`.
+From the published image: each release from `2.0.0` publishes `middagtec/middag-demo-standalone` on Docker Hub for `linux/amd64` and `linux/arm64`, tagged with the release version and `latest`. The image runs PHP 8.4. Each container either serves the application or runs the worker. The `serve` container creates and seeds a SQLite file under `/app/var` on first boot; the `worker` container waits for that file and never creates it, so run both with the same `/app/var` volume.
 
 ```bash
-docker run --rm -p 8080:8080 middagtec/middag-demo-standalone:latest          # serve
-docker run --rm middagtec/middag-demo-standalone:latest worker                # worker
-docker run --rm -p 8080:8080 -v "$PWD/var:/app/var" middagtec/middag-demo-standalone:latest   # keep the database
+docker run --rm -p 8080:8080 -v "$PWD/var:/app/var" middagtec/middag-demo-standalone:latest          # serve
+docker run --rm -v "$PWD/var:/app/var" middagtec/middag-demo-standalone:latest worker                 # worker
 ```
 
 The repository [README](https://github.com/middag-io/middag-php-demo-standalone/blob/main/README.md) lists the full route map, the console commands and the seeded login. [`DOCKER.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/DOCKER.md) builds the image locally and runs it with Docker Compose.
 
 ## Public surface
 
-The demo has no public PHP surface: it has no `@api` tag, and everything under `src/` is `@internal`. The rule "no tag means `@internal`" applies to it ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)), so nothing in it is meant to be imported by another package and no reference is generated for it. What it documents is coverage, not API:
+The demo has no public PHP surface: it tags nothing `@api`, so everything under `src/` is `@internal` by the rule "no tag means `@internal`" ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)). Nothing in it is meant to be imported by another package and no reference is generated for it. What it documents is coverage, not API:
 
 - [`API-STABILITY.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/API-STABILITY.md) states that the demo has no public surface and points to [Versioning and compatibility](/libraries/reference/versioning-and-compatibility) for the support rules.
 - [`COVERAGE.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/COVERAGE.md) maps each `@api` area of `framework` and `ui` to the demo artifact that exercises it and the test that proves it, and states the boundary with the internal libraries.
