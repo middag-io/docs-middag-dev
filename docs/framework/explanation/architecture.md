@@ -29,13 +29,13 @@ Five design promises run through everything below: the domain is absolute (plain
 The ecosystem is **Hexagonal (Ports & Adapters)**, arranged in four rings. Dependency only ever points downward.
 
 ```
-┌─ Pillar 4 — Composition Root (Product) ── moodle-local_middag / wp-plugin-middag ──┐
+┌─ Pillar 4 — Composition Root (Product) ── the products (see the table below) ──────┐
 │  Aggregate Roots, vertical slices, the business. Wires everyone in composer.json.  │
 └───────────────┬───────────────────────────────────┬──────────────────────────────┘
                 │ imports                            │ imports
         ┌───────▼────────┐                  ┌────────▼─────────┐
         │ Pillar 3 — CORE │                  │ Pillar 2 — ADAPTERS│
-        │ (proprietary)  │                  │ (OSS)            │
+        │ (internal)     │                  │ (OSS)            │
         │ Signal/outbox, │                  │ middag-php-moodle│
         │ Job, EAV,      │                  │ middag-php-      │
         │ multi-tenant   │                  │ wordpress        │
@@ -53,10 +53,39 @@ The ecosystem is **Hexagonal (Ports & Adapters)**, arranged in four rings. Depen
 
 | Pillar | Repositories | What it is | Dependency rule |
 |--------|--------------------------------------------------------|------------|-----------------|
-| **1. OSS Foundation** | `middag-php-framework`, `middag-php-ui` | The **Ports**: contracts, DI, HTTP, query, forms, bus, hooks. | `framework` wraps Symfony/PSR/Monolog (not zero-dep — see below). `ui` is pure PHP (`require: php` only). |
+| **1. OSS Foundation** | `middag-php-framework`, `middag-php-ui`; with them, outside the rings, `middag-php-demo-standalone` | The **Ports**: contracts, DI, HTTP, query, forms, bus, hooks. The demo is the pillar's runnable example application and proof harness. | `framework` wraps Symfony/PSR/Monolog (not zero-dep — see below). `ui` is pure PHP (`require: php` only). The demo depends on `framework` and `ui`; nothing depends on the demo. |
 | **2. OSS Adapters** | `middag-php-moodle`, `middag-php-wordpress` | The **Adapters**: implement the bridge contracts by talking to `$DB`/`$wpdb`. | Depend on `middag-php-framework` (and `middag-php-ui`) + the platform. Never import proprietary code — they stay OSS. |
-| **3. CORE (proprietary)** | `middag-php-core`, `middag-php-licensing`, `middag-php-dev-tools` | The business engine: governed Signal + outbox, async Job, EAV, multi-tenant (`core`); license lifecycle in the separate `licensing` leaf; build tooling (`dev-tools`). | `core` requires `middag-php-framework`, `middag-php-ui` and `middag-php-licensing`, and never requires the adapters at runtime — it runs on WP and Moodle by programming against the Pillar 1 interfaces. `licensing` is a leaf with no MIDDAG runtime dependency (it does not depend on the framework). `dev-tools` is build-time only (`require-dev` in consumers) and requires only the framework at runtime. |
-| **4. Composition Root** | `moodle-local_middag`, `wp-plugin-middag-account` | The real modular monolith: Aggregate Roots, vertical slices. | The only pillar that wires everything: imports framework + core + a specific adapter. |
+| **3. CORE (internal, proprietary)** | `middag-php-core`, `middag-php-licensing`, `middag-php-dev-tools` | The business engine: governed Signal + outbox, async Job, EAV, multi-tenant (`core`); license lifecycle in the separate `licensing` leaf; build tooling (`dev-tools`). Not free open source. | `core` requires `middag-php-framework`, `middag-php-ui` and `middag-php-licensing`. It does not require the adapters: its host layer under `src/Adapter/<Host>/` uses them, `core` declares both in `suggest`, and the product installs the adapter for its host. Everything outside that host layer programs against the Pillar 1 interfaces. `licensing` is a leaf with no MIDDAG runtime dependency (it does not depend on the framework). `dev-tools` is build-time only (`require-dev` in consumers) and requires only the framework at runtime. |
+| **4. Composition Root** | `moodle-local_middag`, `wp-plugin-middag`, `wp-plugin-middag-account` | The real modular monolith: Aggregate Roots, vertical slices. | The only pillar that wires everything: imports framework + core + a specific adapter. |
+
+### OSS and internal libraries
+
+The pillars carry two kinds of library, and the difference is a rule, not a label.
+
+- **OSS (Apache-2.0):** `middag-php-ui`, `middag-php-framework`, `middag-php-moodle`, `middag-php-wordpress` and `middag-php-demo-standalone`. Free to use, documented in full on this hub.
+- **Internal (proprietary):** `middag-php-core`, `middag-php-licensing` and `middag-php-dev-tools`. They are not free open source. Their full documentation lives in their own repositories; this hub publishes only their public API ([Documentation publication](../reference/family/publication)).
+- **Product features are not in the OSS libraries.** Governed event delivery, async jobs with audit, EAV, multi-tenancy, licensing and every product feature live in the internal libraries or in the products. An OSS library ships the generic seam (a contract, an OSS default), never the product behavior behind it.
+- The libraries share one version family and one lifecycle, separate from the products' ([Versioning and compatibility](../reference/family/versioning-and-compatibility)).
+- This hub is the normative architecture of the OSS libraries. A `docs/architecture.md` (or similar) in an OSS repository is a pointer to this page, not a second copy.
+
+::: warning Decision required at acceptance: how core declares the adapters
+
+| Option                                                                                         | Effect                                                                                                         |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **A. Both adapters in `suggest`, with the reason "required by `src/Adapter/<Host>/` on that host" (recommended)** | The Composer metadata says what the host layer needs; the product still installs and pins the adapter. |
+| A + `conflict` ranges for adapter MINORs core does not support                                  | Composer refuses an unsupported adapter MINOR; one more range to keep current per family MINOR.               |
+| B. No declaration (adapters in `require-dev` only)                                              | Nothing in the package tells a product which adapter the host layer needs.                                    |
+
+:::
+
+::: warning Decision required at acceptance: the place and scope of the demo
+
+| Option                                                                                                        | Effect                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **A. With Pillar 1, outside the dependency rings, as a complete example application (recommended)**           | Every `@api` area of `ui` and `framework` (kernel, routes, forms, bus, page contract, Inertia) is exercised by the demo and pinned by a test, with end-to-end tests on the critical flows; its coverage ledger maps each area. The adapters are out of its scope: the demo runs with no host. |
+| B. As its own pillar                                                                                          | A fifth ring that nothing depends on, which the dependency rule does not need.                                 |
+
+:::
 
 ### The boundary invariant
 
@@ -73,7 +102,7 @@ Because the adapters are independent OSS libraries written against the same cont
 
 Pillar 1 is not zero-dependency across the board — only `middag-php-ui` is:
 
-- **`middag-php-ui` — pure PHP.** `composer.json require` is `php: ^8.2`, nothing else. Grepping `Moodle|wpdb|PDO|Database\\|CommandBus|Illuminate|Symfony\\` in its `src/` returns empty — it is the one truly zero-dependency pillar.
+- **`middag-php-ui` — pure PHP.** `composer.json require` is `php: ^8.3`, nothing else. Grepping `Moodle|wpdb|PDO|Database\\|CommandBus|Illuminate|Symfony\\` in its `src/` returns empty — it is the one truly zero-dependency pillar.
 - **`middag-php-framework` — wraps Symfony.** It does not reinvent DI, routing or validation: it wraps **Symfony** (`dependency-injection`, `http-foundation`, `http-kernel`, `routing`, `messenger`, `validator`, `serializer`, `cache`, `uid`, `clock`, `http-client`), **PSR** (3 log, 7/15/17/18 HTTP, 11 container, 16 simple cache, 20 clock), **Monolog** and `nyholm/psr7` under one coherent, Symfony-like API. It requires `middag-php-ui` as well. `illuminate/database`, `doctrine/dbal`, `symfony/doctrine-messenger`, `league/flysystem` and `sentry/sentry` appear only as composer `suggest` entries, never as a `require`.
 - **Vendor types stay inside.** At its public boundaries the framework exposes PSR-15/PSR-7 and its own types. Where a consumer would otherwise import a vendor type, the framework publishes its own name and reuses the vendor machinery behind it: `#[Lazy]` (shadows Symfony DI's), `MiddagDoctrineTransport` (an empty `final` subclass of Symfony's `DoctrineTransport`), `TransportInterface`/`MessageBusInterface` (empty extensions of Symfony Messenger's), `#[LogChannel]` (instead of Monolog's `#[WithMonologChannel]`). The full list and the deliberate exceptions are in [PSR-15 Bridge & Middleware](../reference/psr15-bridge-and-middleware).
 
