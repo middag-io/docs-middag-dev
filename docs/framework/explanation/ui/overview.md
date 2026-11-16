@@ -10,6 +10,61 @@ Transport-agnostic PHP **contract builders** for contract-driven UI. Describe a 
 
 The builders carry no transport and no host knowledge: the same contract renders standalone, inside a Moodle plugin, or inside WordPress, by swapping the renderer downstream. See [Architecture](./architecture) for how the contract system is built and organized.
 
+::: info Status: in progress
+This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. Some sections below are still being written and say so.
+:::
+
+## Who it is for
+
+- Developers of `middag-io/framework`, the host adapters and any renderer that consumes the page contract.
+- Developers who build pages for a MIDDAG-based product and want them to render on any host.
+- Authors of a client, such as `@middag-io/react`, that codegens against the published JSON schemas.
+
+## Requirements and install
+
+| Item                | Value                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Package             | `middag-io/ui` ([middag-php-ui](https://github.com/middag-io/middag-php-ui)), Apache-2.0    |
+| PHP                 | `^8.3`: 8.3, 8.4 and 8.5                                                                    |
+| Symfony             | none: `ui` depends on no Symfony component                                                  |
+| Sibling libraries   | none: `ui` is the bottom of the stack and requires no other library                         |
+| Host                | none: `ui` runs with no host                                                                |
+
+```bash
+composer require middag-io/ui
+```
+
+The platform rules behind these values are in [Platform](/libraries/reference/platform) and [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#compatibility-matrix). A first page is built in [Getting Started](../../tutorials/ui/getting-started).
+
+## Public surface
+
+- Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release.
+- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md) in the repository lists the public surface.
+- The contract reference is on this hub: [Page Composition Contract](../../reference/ui/composition-levels-and-capabilities), [UI Wire Contract](../../reference/ui/wire-contract) and [UI Stack & Design System](../../reference/ui/design-system-catalog).
+- The JSON schemas the library emits (`schema/page-contract.json`, `schema/fragment.json`) are published artifacts of each release.
+- In progress: the generated reference of the `@api` surface ([Documentation publication](/libraries/reference/publication#generated-api-reference)) and the PHP-React correspondence map ([Documentation publication](/libraries/reference/publication#php-react-correspondence-map)) are not published yet.
+
+## Changelog and releases
+
+- [`CHANGELOG.md`](https://github.com/middag-io/middag-php-ui/blob/main/CHANGELOG.md) records every release.
+- [Releases](https://github.com/middag-io/middag-php-ui/releases) on GitHub carry the tags.
+
+## Decision records
+
+The records live in the repository, in [`docs/decisions`](https://github.com/middag-io/middag-php-ui/tree/main/docs/decisions). This hub explains the design they record; it does not host them.
+
+| Id     | Decision                                                                            |
+| ------ | ----------------------------------------------------------------------------------- |
+| [UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) | UI contracts are a separate zero-dependency package at the bottom of the stack      |
+| [UI-002](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-002-page-contract-composition-model.md) | A versioned data contract, published as schema                                      |
+| [UI-003](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-003-first-party-client-stack.md) | The first-party UI client is React + TypeScript + Inertia + ReUI                    |
+
+## Help
+
+- Questions and bugs: [issues of `middag-php-ui`](https://github.com/middag-io/middag-php-ui/issues).
+- Security reports: [`SECURITY.md`](https://github.com/middag-io/middag-php-ui/blob/main/SECURITY.md). Do not open a public issue for a vulnerability.
+- Contributions: [`CONTRIBUTING.md`](https://github.com/middag-io/middag-php-ui/blob/main/CONTRIBUTING.md).
+
 ## Open source and MIDDAG
 
 `middag-io/ui`, `middag-io/framework`, the Moodle and WordPress adapters and `middag-io/demo-standalone` are open source under Apache-2.0 — the generic plumbing, free, forever. The governed domain infrastructure built on top lives in MIDDAG's internal (proprietary, not free) libraries, opt-in; product features live in the products. See [OSS and internal libraries](../architecture#oss-and-internal-libraries). This library has zero dependencies and never points at the internal libraries.

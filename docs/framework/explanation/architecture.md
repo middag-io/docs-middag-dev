@@ -134,7 +134,7 @@ These are intentionally unresolved at the OSS layer: the seam exists, but the re
 | Multi-plugin collision (same host, different versions) | Per-instance state, with the bounded statics listed below | Product (PHP-Scoper/Mozart at build) |
 | No built-in rate limiting | `#[Middleware]` (+ composer `suggest symfony/rate-limiter`) | Adapter/Product/Core |
 | Input sanitisation not centralised (validation only) | `AbstractFormRequest::rules()` / `#[ValidatedDto]` | Controller/Adapter |
-| Host namespaces kept out of the framework | `composer check:portability` (deptrac + host-globals scan) in the framework's CI | Framework — see [Composer Portability Audit](../reference/portability-audit-historical) |
+| Host namespaces kept out of the framework; the domain layers of the tiers above are not linted here | `composer check:portability` (deptrac for host namespaces + `bin/portability-scan.php` for host globals) in the framework's CI | Framework for the host boundary — see [Composer Portability Audit](../reference/portability-audit-historical); Product/Core for their own domain layers |
 | Forward-only migrations (no `down()`) | `MigrationRunner::onUpgrade()` — see [Database Schema & Migrations](../reference/database-schema-and-migrations) | Adapter (xmldb/dbDelta) |
 | No service-locator guard (Facades are service locators) | Discipline + `composer check` | PR convention / dev-tools PHPStan rule |
 | Outbox (post-commit) + governed job records | `SignalDispatcherInterface`/`MessageBusInterface`, retry/attempt seams | **Core**, by design |
@@ -143,14 +143,17 @@ These are intentionally unresolved at the OSS layer: the seam exists, but the re
 
 The framework keeps state per instance, with one bounded exception: static facades and composition-root statics, which exist because some callers run outside the DI graph (host callbacks, static adapter helpers, attribute-driven entry points). Every one of them has a reset or swap seam for tests and long-running workers.
 
-| Static state | Where | Reset / override seam |
-|---|---|---|
-| Facade container and resolved instances | `Kernel/Facade/AbstractFacade` | `setFacadeContainer()`, `swap()`, `reset()` |
-| Active host component context | `Kernel/HostContext` | `set()`, `reset()`; `get()` returns null when unset |
-| Inertia shared props, URL generator, asset version, bootstrap HTML and app id | `Http/Inertia/InertiaManager`, `InertiaAdapter`, `InertiaVersionManager`, `InertiaFactory` | `InertiaManager::flush()`, the setters. Shared props are request-scoped (written by `ShareFlashMiddleware` and `VerifyCsrfMiddleware`), so a long-running worker must flush them between requests |
-| Active Record connection and cast resolvers | `Persistence/Model` | `setConnectionResolver()`, `setConnection()`, `setCastResolver()` |
-| Debug logger and config reader | `Shared/Util/Debug` | `setRuntime()`, `resetRuntime()` |
-| Reflection cache | `Http/Resolver/MethodParameterResolver` | pure cache of reflection results |
+| Static state | Where | Lifetime | Reset / override seam |
+|---|---|---|---|
+| Facade container and resolved instances | `Kernel/Facade/AbstractFacade` | boot | `setFacadeContainer()`, `swap()`, `reset()` |
+| Active host component context | `Kernel/HostContext` | boot (one slot per process) | `set()`, `reset()`; `get()` returns null when unset |
+| Inertia URL generator, asset version, bootstrap HTML and app id | `Http/Inertia/InertiaAdapter`, `InertiaVersionManager`, `InertiaFactory` | boot | the setters |
+| Inertia shared props | `Http/Inertia/InertiaManager::$shared` | request (written by `ShareFlashMiddleware` and `VerifyCsrfMiddleware`) | `InertiaManager::flush()`; a long-running worker must call it between requests |
+| Active Record connection and cast resolvers, cast instances | `Persistence/Model` | boot | `setConnectionResolver()`, `setConnection()`, `setCastResolver()` (clears the cast instances) |
+| Debug logger and config reader | `Shared/Util/Debug` | boot | `setRuntime()`, `resetRuntime()` |
+| Reflection cache | `Http/Resolver/MethodParameterResolver` | process | pure cache of immutable reflection results |
+
+Nothing resets these slots automatically: a test or a long-running worker calls the seam itself.
 
 `HostContext` is a single slot per process. That is safe when one host component boots per request (Moodle); it is not safe when several components share a process (several WordPress plugins built on the WordPress adapter), so WordPress consumers never read `HostContext` and inject `WpComponentContext` through their own container instead. Everything else — `HookManager`, the container, the bus, loggers, repositories — is per instance.
 

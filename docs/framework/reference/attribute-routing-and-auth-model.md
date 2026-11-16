@@ -67,6 +67,16 @@ Closure controllers skip stages 2 to 6: they have no class or method to reflect,
 
 **`#[Auth]` overrides, `#[Middleware]` stacks.** Both attributes are read from the method and the class, with opposite merge rules. `#[Auth]` is an override: a method-level attribute replaces the class-level one, so the most specific requirement is authoritative. `#[Middleware]` stacks: class-level and method-level entries accumulate (class outermost, method innermost, each in declaration order), and an id named by more than one source runs once, at its outermost position.
 
+**Route defaults: the registrar's two keys.** A route registrar (a host adapter, or a fluent route facade downstream) declares middleware on the Symfony route defaults under two keys, both plain `list<string>` of middleware ids: `_middleware` (`RouteMiddlewareStack::MIDDLEWARE_DEFAULT`) and `_without_middleware` (`RouteMiddlewareStack::WITHOUT_MIDDLEWARE_DEFAULT`). `RouteMiddlewareStack` reads both and appends the attribute chain inside them. The broader declaration scope wraps the narrower one, so a group declared at registration runs outermost:
+
+```
+route defaults → class #[Middleware] → method #[Middleware] → action
+```
+
+- An id named by more than one source runs once, at its first (outermost) position.
+- `_without_middleware` is subtracted from the whole merged list. It removes an id inherited from an enclosing group and an id contributed by a `#[Middleware]` attribute alike. A registrar therefore records the exclusion list next to the inclusion list instead of pre-subtracting it: the attribute half of the chain is not visible at registration time.
+- A route that declares neither key gets an empty registrar chain; only its attributes apply.
+
 **The login gate is OSS-enforced, conditionally.** When `#[Auth(login: true)]` applies and an `AuthenticatorInterface` implementation is bound in the container, an unauthenticated request is denied:
 
 | Request kind | Failure response |

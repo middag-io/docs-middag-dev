@@ -8,6 +8,42 @@ Reference for `middag-io/wordpress` (`middag-php-wordpress`), the OSS adapter th
 
 Verified against `middag-php-wordpress/main@bc1bc59` on 2026-11-04.
 
+::: info Status: in progress
+This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. Some sections below are still being written and say so.
+:::
+
+## Who it is for
+
+Developers of a WordPress plugin built on `middag-io/framework`, and developers who maintain the adapter itself. The adapter is a library: the consumer's plugin is the composition root ([What the adapter is](#what-the-adapter-is)).
+
+## Requirements and install
+
+| Item                | Value                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Package             | `middag-io/wordpress` ([middag-php-wordpress](https://github.com/middag-io/middag-php-wordpress)), Apache-2.0 |
+| PHP                 | `^8.3`: 8.3, 8.4 and 8.5, within the PHP versions the WordPress version supports; with the `json` extension   |
+| Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires (contracts and polyfills keep their own ranges)       |
+| Sibling libraries   | `middag-io/framework`, on the family MAJOR (`^2.0` on `2.x`); `middag-io/ui` comes with the framework         |
+| WordPress           | 7.0 and 7.1 (the latest major and the previous one)                                                           |
+
+```bash
+composer require middag-io/wordpress
+```
+
+The platform rules behind these values are in [Platform](/libraries/reference/platform) and [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#compatibility-matrix), which also states when a WordPress major leaves the range. Wiring the adapter into a plugin is in [Configuration & Identity](./configuration).
+
+## Public surface
+
+- Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release.
+- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/API-STABILITY.md) in the repository lists the public surface.
+- In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
+
+## Changelog, decisions and help
+
+- [`CHANGELOG.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/CHANGELOG.md) records every release; [Releases](https://github.com/middag-io/middag-php-wordpress/releases) carry the tags.
+- The decision records live in [`middag-php-wordpress/docs/decisions`](https://github.com/middag-io/middag-php-wordpress/tree/main/docs/decisions).
+- Questions and bugs: [issues of `middag-php-wordpress`](https://github.com/middag-io/middag-php-wordpress/issues). Security reports: [`SECURITY.md`](https://github.com/middag-io/middag-php-wordpress/blob/main/SECURITY.md); do not open a public issue for a vulnerability.
+
 ## Pages
 
 - [Routing Surfaces](./routing-surfaces) — the REST, admin and public rewrite surfaces, and how each one dispatches.
