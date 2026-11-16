@@ -11,7 +11,7 @@ A platform-agnostic PHP framework for building business domains that do not depe
 See [Architecture](./architecture) for the four pillars, the OSS × proprietary boundary, the concern-first 3-tier layout, the bridge contracts, and the Active-Record / Eloquent compatibility matrix. See [Bootstrap](./bootstrap-lifecycle) for the boot phases, what the kernel provides at boot, and the bridge contracts an adapter implements.
 
 ::: info Status: in progress
-This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. Some sections below are still being written and say so.
+This page states the `2.x` line of the library family. Support starts at `2.0.0`; earlier releases are pre-stable and unsupported. One part is still in progress: the generated reference of the `@api` surface, marked below.
 :::
 
 ## Who it is for
@@ -34,19 +34,61 @@ This page states the `2.x` line of the library family. Support starts at `2.0.0`
 composer require middag-io/framework
 ```
 
+The libraries of the family share MAJOR.MINOR ([The family](/libraries/reference/versioning-and-compatibility#the-family)). A project that requires more than one of them should declare the same `^2.N` range for each; a MINOR upgrade inside that range never breaks.
+
+### Dependencies
+
+Besides Symfony and `middag-io/ui`, the framework requires only PSR contracts (container, HTTP messages, factories, client, server handler and middleware, log, clock, simple cache), `monolog/monolog` `^3.0` and `nyholm/psr7` `^1.8`. It requires no host and no database driver.
+
+Optional packages enable a default implementation or a transport. None is needed to run the framework.
+
+| Package                                                                    | Enables                                                                                     |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `ext-curl`                                                                 | the recommended transport of Symfony HttpClient in production                               |
+| `illuminate/database` `^11.0 \|\| ^12.0` | a Laravel-style query builder behind the connection adapter port, wired by the application (no integration ships) |
+| `doctrine/dbal` `^4.0`                                                     | standalone schema and migrations through the DBAL schema builder                            |
+| `league/flysystem` `^3.0`                                                  | a filesystem port implementation over cloud or abstract storage                             |
+| `sentry/sentry` `^4.0`                                                     | a ready-to-bind error reporter                                                               |
+| `symfony/doctrine-messenger`, `symfony/redis-messenger`, `symfony/amqp-messenger` | async transports for the command worker (database outbox, Redis, AMQP)               |
+| `symfony/console`, `symfony/lock`, `symfony/scheduler`                     | a CLI for the command worker and schedule runner, single-run locking, Messenger scheduling |
+| `symfony/mailer`, `symfony/rate-limiter`                                   | a standalone mail transport behind the mailer port, throttling of endpoints and workers     |
+| `middag-io/moodle`, `middag-io/wordpress`                                  | the host adapters                                                                            |
+
+Optional Symfony components follow the same `^7.4 || ^8.1` range, and the host adapters the family MAJOR. Their wiring is in [Standalone Runtime](../reference/standalone-runtime) and [Dispatch, Handlers & Scheduling](../reference/command-bus).
+
 The platform rules behind these values are in [Platform](/libraries/reference/platform) and [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#compatibility-matrix). A first controller is built in [Getting Started](../tutorials/getting-started); a host-free setup is in [Standalone Runtime](../reference/standalone-runtime).
 
 ## Public surface
 
-- Support covers the types tagged `@api` only. Anything untagged, or tagged `@internal`, may change in any release.
-- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md) in the repository lists the public surface.
-- The contract reference is on this hub, grouped by topic in [Reference](../reference/). The ports a host adapter implements are in [Adapter Port Catalog](../reference/bridge-contracts).
-- In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
+- Support covers the types tagged `@api` only, under the rules of [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#supported-surface). A type tagged `@internal`, or with no tag, is an implementation detail and may change in any release.
+- Every type of the framework carries its stability tag at class level. The `@api` surface is the interfaces in the `Contract/` sub-namespace of each concern, plus the exported `@api` classes: value objects, default implementations, base classes, attributes, enums and exceptions.
+- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md) in the repository lists the public surface and the types other libraries of the family consume.
+- Depend only on `@api` types. When a behavior is reachable only through an `@internal` type, open an issue to have it promoted; a promotion is an additive change for a family MINOR.
+- The framework ships no MIDDAG domain base classes and no MIDDAG domain helpers. Entity and value-object bases, formatting helpers and validators of the MIDDAG domain belong to the internal library `middag-io/core`; for entities, the framework exposes only the generic `EntityInterface` contract. The generic DTO base and utilities in `Shared` are outside this exclusion.
+
+The contract reference is on this hub, one page per topic:
+
+| Concern (`Middag\Framework\…`)                       | Reference                                                                                                                                                       |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Http`                                                 | [Routing & Auth Attributes](../reference/attribute-routing-and-auth-model), [PSR-15 Bridge & Middleware](../reference/psr15-bridge-and-middleware), [Rendering Mode Selection](../reference/rendering-mode-selection), [Inertia Protocol](../reference/inertia-protocol) |
+| `Form`                                                 | [Form Lifecycle & Validation](../reference/form-lifecycle-and-validation), [Form Field Catalog](../reference/form-field-catalog-and-anti-corruption)                                         |
+| `Persistence`, `Database`                              | [Database Schema & Migrations](../reference/database-schema-and-migrations), [Active Record (Eloquent Compatibility)](../reference/active-record-eloquent-compatibility)                      |
+| `Bus`                                                  | [Dispatch, Handlers & Scheduling](../reference/command-bus)                                                            |
+| `Kernel`, `Runtime`                                    | [Kernel Boot Lifecycle](../reference/kernel-boot-lifecycle), [Boot-Time Built-In Features](../reference/bootstrap-contracts), [Module Layout Convention](../reference/module-layout-convention), [Hooks — Public Surface & Naming](../reference/hooks-public-surface) |
+| `Exception`                                            | [Exception Hierarchy](../reference/exception-hierarchy)                                                                                                         |
+| `Logging`, `Observability`                             | [Logging & Observability](../reference/logging-and-observability)                                                                                               |
+| `Filesystem`, `Mail`, `Security`, `Translation` | [Adapter Port Catalog](../reference/bridge-contracts)                                                                                                       |
+| `Shared`                                               | No curated page. The DTO contract and base, `#[TrustedOutput]`, `SyncResult`, `DebugMode`, `Operator` and the generic utilities (`Arr`, `Debug`, `Environment`, `Inflector`, `Typing`, `Uuid`) are covered by the generated `@api` reference, in progress |
+
+The ports a host adapter implements, including the neutral component identity `HostComponentContextInterface`, are in [Adapter Port Catalog](../reference/bridge-contracts). The reactive seams `HostEventBridgeInterface` and `SignalDispatcherInterface` are in [Hooks — Public Surface & Naming](../reference/hooks-public-surface). The boot-failure seam `ComponentNameResolverInterface` is in [Bootstrap](./bootstrap-lifecycle).
+
+In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
 
 ## Changelog and releases
 
 - [`CHANGELOG.md`](https://github.com/middag-io/middag-php-framework/blob/main/CHANGELOG.md) records every release.
-- [Releases](https://github.com/middag-io/middag-php-framework/releases) on GitHub carry the tags.
+- [Releases](https://github.com/middag-io/middag-php-framework/releases) on GitHub carry the tags, and [Packagist](https://packagist.org/packages/middag-io/framework) serves the package.
+- Releases are cut only by release-please, from Conventional Commits; there are no manual tags. The framework shares MAJOR.MINOR with the rest of the family, so a family MINOR ships here even when the framework itself did not change. What each part of a version may carry is in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#lifecycle).
 
 ## Decision records
 

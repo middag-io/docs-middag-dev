@@ -21,6 +21,8 @@ The eight `middag-php-*` libraries form one version family. They live in separat
 | `middag-php-licensing`       | `middag-io/licensing`       | proprietary | internal |
 | `middag-php-dev-tools`       | `middag-io/dev-tools`       | proprietary | internal |
 
+A consumer declares one `^2.N` range, with the same `N`, for every `middag-php-*` library it depends on: the same MAJOR and the same MINOR floor. For example, a product that needs features of the `2.3` family MINOR requires `middag-io/framework` `^2.3`, `middag-io/ui` `^2.3` and `middag-io/moodle` `^2.3`. MINOR upgrades inside that range do not break.
+
 The internal libraries are not free open source. Their kind decides where their documentation lives ([Documentation publication](./publication)); it does not change their version or their support.
 
 ## Lifecycle
