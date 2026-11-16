@@ -49,13 +49,21 @@ Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib
 
 The root `composer.lock` of 5.2 and 5.3 locks the libraries above at the same versions (`firebase/php-jwt` v6.11.1, `monolog/monolog` 3.9.0, `psr/*` as in the table). It also locks Symfony packages that this adapter's dependency tree contains:
 
-| Package                         | 5.2     | 5.3     | In this adapter's tree through                                   |
-| ------------------------------- | ------- | ------- | ---------------------------------------------------------------- |
-| `symfony/deprecation-contracts` | v3.6.0  | v3.6.0  | `middag-io/framework` (direct) and every Symfony component       |
-| `symfony/service-contracts`     | —       | v3.7.3  | `symfony/dependency-injection`, `symfony/http-client`            |
-| `symfony/polyfill-mbstring`     | v1.33.0 | v1.38.2 | `symfony/http-foundation`                                        |
+| Package                            | 5.2     | 5.3     | In this adapter's tree through                                            |
+| ---------------------------------- | ------- | ------- | ------------------------------------------------------------------------- |
+| `symfony/deprecation-contracts`    | v3.6.0  | v3.6.0  | `middag-io/framework` (direct) and every Symfony component                |
+| `symfony/service-contracts`        | —       | v3.7.3  | `symfony/dependency-injection`, `symfony/http-client`                     |
+| `symfony/string`                   | —       | v7.4.15 | `symfony/property-info` (required by `middag-io/framework`)               |
+| `symfony/polyfill-ctype`           | v1.33.0 | v1.37.0 | `symfony/string`, `symfony/http-kernel`, `symfony/serializer`, `symfony/validator` |
+| `symfony/polyfill-intl-grapheme`   | —       | v1.41.0 | `symfony/string`                                                          |
+| `symfony/polyfill-intl-normalizer` | —       | v1.42.0 | `symfony/string`                                                          |
+| `symfony/polyfill-mbstring`        | v1.33.0 | v1.38.2 | `symfony/http-foundation`, `symfony/string`                               |
 
-`symfony/deprecation-contracts` is also vendored ([above](#global-function-trigger-deprecation)). The other two are neither vendored nor in the `core_component` map: they reach the request through a root `vendor/` installed by Composer, which `register_autoloader()` loads when its `autoload.php` exists.
+`symfony/deprecation-contracts` is also vendored ([above](#global-function-trigger-deprecation)). The others are neither vendored nor in the `core_component` map: they reach the request through a root `vendor/` installed by Composer, which `register_autoloader()` loads when its `autoload.php` exists.
+
+`symfony/string` is a component on the Symfony 7.x/8.x line, not a contract or a polyfill. `middag-io/framework` accepts `symfony/property-info` `^7.0 || ^8.0`, and every release of both majors requires `symfony/string` (8.x accepts `^7.4|^8.0`). `symfony/string` 8.x requires PHP 8.4. On PHP 8.4 or later, the adapter's tree can resolve `symfony/string` 8.x while a Moodle 5.3 root `vendor/` holds v7.4.15. Both copies then define classes in `Symfony\Component\String`, and which major loads depends on bootstrap order. Treat a Moodle 5.3 site with a root `vendor/` as a major-mismatch case for this namespace.
+
+The polyfills declare classes in `Symfony\Polyfill\*` and define global functions (`ctype_*`, `mb_*`, `grapheme_*`) behind `function_exists()` guards, which also skip the definitions when the PHP extension is loaded. As with `trigger_deprecation()`, the first copy loaded defines each function for the whole request; all copies are on the 1.x line.
 
 ## This adapter's shared-namespace packages
 
