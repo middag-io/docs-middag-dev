@@ -39,24 +39,15 @@ Rules:
 
 - The OSS libraries are documented once, here. Architecture, reference and guides of an OSS library are not kept in its repository: a page such as `docs/architecture.md` in an OSS repository is a short pointer to the matching page of this hub, never a second normative copy.
 - An internal library's public API on this hub is a curated surface: the `@api` types a consumer codes against, their contracts and their errors. Internal design, internal operations and decision records stay in the library's repository.
-- The product sites follow the same split: product developer documentation (public API, integration) is published here when its channel opens; user and administrator guides go to `docs.middag.io`.
+- `docs.middag.io` is the single site of every MIDDAG product, aggregated like this hub. A product keeps no site of its own; ADR-029 of the MIDDAG profile records the site.
+- The products follow the same split: product developer documentation (public API, integration) is published here when its channel opens; user and administrator guides go to `docs.middag.io`.
 
-::: warning Decision required at acceptance: the public API of the internal libraries on this hub
+::: warning Decision required at acceptance: the form of the internal libraries' public API on this hub
 
 | Option                                                                                         | Effect                                                                                                    |
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **A. One curated public-API section per internal library, opened when its surface is written (recommended)** | Opens the paused product/core section of this hub for the curated surface only; the full documentation stays in each repository. |
 | B. Each internal library publishes its public-API payload through the aggregation layer         | No consolidated section here; the payload is versioned by the library's own release.                      |
-| C. Keep the section paused; internal libraries publish nothing here until the products launch   | The hub documents the OSS libraries only for now.                                                         |
-
-:::
-
-::: warning Decision required at acceptance: the product site
-
-| Option                                                                         | Effect                                                                                    |
-| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| **A. `docs.middag.io` is the single product site, aggregated like this hub (recommended)** | Depends on the product-site decision record of the MIDDAG profile, still proposed; no content is committed by this design. |
-| B. Each product keeps its own site and `docs.middag.io` links to them          | No shared navigation or search across products.                                          |
 
 :::
 
