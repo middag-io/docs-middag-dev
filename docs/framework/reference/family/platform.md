@@ -14,7 +14,7 @@ Every library declares the same values.
 | -------------------------------- | -------------------------------------------------- | ---------------------------------------------- |
 | PHP requirement                  | `^8.3`                                             | `composer.json` `require.php`                  |
 | Platform pin                     | `8.3.0`                                            | `composer.json` `config.platform.php`          |
-| Symfony packages                 | `^7.4 \|\| ^8.1`                                   | every `symfony/*` entry in `require` and `require-dev` |
+| Symfony packages                 | `^7.4 \|\| ^8.1`                                   | every Symfony component (`symfony/*` on the 7.x/8.x release line) in `require` and `require-dev` |
 | Sibling libraries                | the family MAJOR (`^2.0` on `2.x`)                 | `require` / `require-dev`                      |
 | Rector target                    | `LevelSetList::UP_TO_PHP_83`                       | `rector.php`                                   |
 | PHPStan PHP version              | `80300`                                            | `phpVersion` in the PHPStan config             |
@@ -23,7 +23,8 @@ Every library declares the same values.
 Rules:
 
 - The pin equals the floor (`<floor>.0`). Composer resolves the lowest PHP of the range locally and in the pinned CI jobs, so a dependency that needs a newer PHP fails at install time, not in production.
-- No Symfony package is held to one major line. A constraint such as `^7.0` alone, or `^8.0` alone, is a platform defect.
+- No Symfony component is held to one major line. A constraint such as `^7.0` alone, or `^8.0` alone, is a platform defect.
+- The Symfony contracts (`symfony/*-contracts`) and polyfills (`symfony/polyfill-*`) are versioned on their own line, not on the 7.x/8.x line of the components. They keep their own ranges (for example `symfony/event-dispatcher-contracts` `^3.0`) and are outside the `^7.4 || ^8.1` rule.
 - The Rector and PHPStan targets equal the floor. A target above the floor would rewrite code into syntax the floor cannot parse.
 - A library raises its floor together with the family; no library goes alone.
 

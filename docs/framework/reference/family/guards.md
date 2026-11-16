@@ -16,7 +16,7 @@ Status: proposed. The automated checks that keep the OSS libraries free of propr
 | No host namespace, global or function in the framework                                       | `framework`                                    | `composer check:portability` (dependency rules plus host-globals scan) |
 | No host adapter directory inside the framework                                               | `framework`                                    | framework architecture test                                            |
 | Each adapter talks to one host only                                                          | `moodle`, `wordpress`                          | each adapter's architecture tests                                      |
-| The demo imports no host API and no proprietary code                                         | `demo-standalone`                              | demo architecture test                                                 |
+| The demo imports no host API and no proprietary code                                         | `demo-standalone`                              | demo architecture test (to be added)                                   |
 
 Rules:
 
@@ -41,7 +41,7 @@ The purity job runs in the CI of `middag-php-dev-tools`, the library that owns t
 | B. A job in the development environment of the products                                                 | Ties an OSS rule to a product environment.                                                 |
 | C. Only each library's architecture tests                                                                | Five copies of the deny list, which drift.                                                 |
 
-Sub-question, with no recommendation: whether `demo-standalone` becomes a fifth checkout of the job. It is public and Apache-2.0, and its own architecture test already forbids proprietary imports.
+Sub-question, with no recommendation: whether `demo-standalone` becomes a fifth checkout of the job. It is public and Apache-2.0. The demo architecture test in the table above is a guard this design adds: the demo has no `tests/Architecture/` suite yet, so the demo is not yet guarded against proprietary imports.
 
 :::
 
