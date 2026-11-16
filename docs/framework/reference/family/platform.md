@@ -47,6 +47,8 @@ The `highest` job:
 
 The library check and the `highest` job come from the shared PHP library check of `middag-io/actions`. The input that lets the reusable workflow drop the pin, and the switch that turns the Symfony assertion off for a library with no Symfony component, are part of that component, so every library gets the `highest` job through the same released version.
 
+The shared check also owns caching: the Composer cache, and the Rector, PHPStan and PHP-CS-Fixer caches (to be added). A library adds no cache step of its own; a cache it needs is a change to the shared check.
+
 ## Required checks on `main`
 
 - The family window check is required on `main` of every library.
