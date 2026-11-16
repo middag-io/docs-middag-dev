@@ -4,7 +4,7 @@ title: 'Versioning and compatibility'
 
 # Versioning and compatibility
 
-Status: proposed. This page is the home of the compatibility matrix of the MIDDAG PHP library family. The version family itself is defined by ADR-032 (version family for the MIDDAG PHP libraries) of the MIDDAG profile in `docs-middag-ops`; this page applies it and does not restate it. Related: [Platform](./platform), [Guards](./guards), [Documentation publication](./publication).
+Status: proposed. The version family of the MIDDAG PHP libraries: its members, its lifecycle, what each release may carry, the supported surface and the compatibility matrix of each MAJOR. This page states every rule a consumer of the libraries relies on. ADR-032 of the MIDDAG profile (`docs-middag-ops`) is the internal record behind it; a reader does not need it. Related: [Platform](./platform), [Guards](./guards), [Documentation publication](./publication).
 
 ## The family
 
@@ -38,13 +38,13 @@ From `2.0.0`:
 | PATCH    | Fixes only, per library                                                                                         |
 | MINOR    | Features and new ranges, released as a family MINOR in every library; never a break                            |
 | MAJOR    | Breaks, released as a family MAJOR; a removal is first deprecated in a MINOR, with a runtime notice             |
-| Previous | The last MINOR of the previous MAJOR receives security fixes for the window ADR-032 sets; the pre-stable line has none |
+| Previous | The last MINOR of the previous MAJOR receives security fixes only, for 6 months after the next MAJOR ships; the pre-stable line has none |
 
 ## Library lifecycle and product lifecycle
 
 The libraries and the products that consume them have separate lifecycles and separate support floors.
 
-- The library family follows this page and ADR-032. Its support floors are the ranges in the [matrix](#compatibility-matrix) below.
+- The library family follows this page. Its support floors are the ranges in the [matrix](#compatibility-matrix) below.
 - A product (`moodle-local_middag`, `wp-plugin-middag`, `wp-plugin-middag-account`) follows its own versioning scheme and its own support policy in the MIDDAG profile. A product release states the library range it is built on; it never extends the library support promise, and a library release never extends a product support promise.
 - A product may support a narrower range than the libraries (for example, the PHP versions its host supports). It never supports a wider one.
 - `wp-plugin-middag` is a lower-priority consumer: a `moodle-local_middag` release, `10.0.0` included, does not wait for it.

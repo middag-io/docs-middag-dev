@@ -4,7 +4,7 @@ title: 'Platform'
 
 # Platform
 
-Status: proposed. The platform every library of the MIDDAG PHP family declares, and how CI proves it. The general platform lifecycle (when a floor rises, how products pin) is the PHP platform floor reference of the MIDDAG profile in `docs-middag-ops`; this page holds the library values. Related: [Versioning and compatibility](./versioning-and-compatibility), [Guards](./guards).
+Status: proposed. The platform every library of the MIDDAG PHP family declares, when its PHP floor rises, and how CI proves it. This page states every platform rule a consumer of the libraries relies on. The PHP platform floor reference of the MIDDAG profile (`docs-middag-ops`) is the internal source behind it; a reader does not need it. Related: [Versioning and compatibility](./versioning-and-compatibility), [Guards](./guards).
 
 ## Declared platform
 
@@ -26,7 +26,13 @@ Rules:
 - No Symfony component is held to one major line. A constraint such as `^7.0` alone, or `^8.0` alone, is a platform defect.
 - The Symfony contracts (`symfony/*-contracts`) and polyfills (`symfony/polyfill-*`) are versioned on their own line, not on the 7.x/8.x line of the components. They keep their own ranges (for example `symfony/event-dispatcher-contracts` `^3.0`) and are outside the `^7.4 || ^8.1` rule.
 - The Rector and PHPStan targets equal the floor. A target above the floor would rewrite code into syntax the floor cannot parse.
-- A library raises its floor together with the family; no library goes alone.
+
+## Raising the floor
+
+- The floor is never lower than the lowest PHP version with official support (active or security) on php.net, the PHP minimum of the Symfony range or the PHP minimum of any dependency. On `2.x` it is PHP 8.3.
+- The floor rises only when the floor PHP version loses security support on php.net, and never by more than one minor at a time.
+- A newly required PHP extension counts as a floor change, because the host must install it.
+- The floor rises only in a family MAJOR, in every library at once; no library goes alone. The PHP requirement, the platform pin, the Rector and PHPStan targets and the CI PHP versions change together in that release.
 
 ## CI
 
