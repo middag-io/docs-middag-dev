@@ -18,12 +18,13 @@ This section:
 The library applies the family rule "no tag means `@internal`" ([Supported surface](../versioning-and-compatibility#supported-surface)):
 
 - A class, interface, trait or enum is public only when its class-level docblock carries `@api`.
-- Any other symbol is `@internal`, whether it carries the `@internal` tag or no tag, even when it is `public` in PHP. It may change in any release.
+- Any other symbol is `@internal`, even when it is `public` in PHP. It may change in any release.
+- Every class, interface, trait and enum under `src/` carries exactly one of `@api` or `@internal`. The `composer check:stability-tags` gate, run in CI, fails on a type with neither or with both, so no type is left untagged.
 - Only `@api` symbols follow the family versioning rules.
 
-[API-STABILITY.md](https://github.com/middag-io/middag-php-licensing/blob/v1.15.2/API-STABILITY.md) in the repository states the rule, the kinds of change and how the `@api` surface may change on `1.x` and from `2.0.0`. The command `grep -rl '@api' src` lists the `@api` files.
+[API-STABILITY.md](https://github.com/middag-io/middag-php-licensing/blob/v1.16.0/API-STABILITY.md) in the repository states the rule, the kinds of change and how the `@api` surface may change on `1.x` and from `2.0.0`. The command `grep -rl '@api' src` lists the `@api` files.
 
-At `v1.15.2`, `@api` covers 197 types in eight groups: `License`, `Delivery`, `Api` (the base client and its contract), `Api\Account`, `Api\Admin`, `Sso`, `RemoteSupport` and `AntiTamper`. [Public API](./public-api) documents every one of them and closes with a [type index](./public-api#type-index). The `Observability` and `Telemetry` namespaces, the scheduled tasks of `AntiTamper` and `RemoteSupport` and the helpers the `@api` types use inside are `@internal`.
+At `v1.16.0`, `@api` covers 204 types in ten groups: `License`, `Delivery`, `Api` (the base client and its contract), `Api\Account`, `Api\Admin`, `Sso`, `RemoteSupport`, `AntiTamper`, `Observability` and `Telemetry`. [Public API](./public-api) documents every one of them and closes with a [type index](./public-api#type-index). The rest of the `Observability` and `Telemetry` namespaces, the scheduled tasks of `AntiTamper` and `RemoteSupport` and the helpers the `@api` types use inside are `@internal`.
 
 ## Requirements
 
