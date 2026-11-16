@@ -82,7 +82,7 @@ Rules:
 The correspondence map lists each UI contract type emitted by PHP and the React component that renders it. It is a reference, not a design: it describes the wire contract both sides already share.
 
 - **Open-source half:** each `$defs` type of the `middag-php-ui` schema bundles, its PHP class and the `@middag-io/react` export that renders it, one row per type. It is a reference page of this hub (to be added), next to the [UI wire contract](../ui/wire-contract). `middag-php-ui` owns it, because its schemas are the source the React types are generated from.
-- **Proprietary half:** the UI contract types of `middag-php-core` and the `middag-react-pro` components that render them. It lives in the `middag-php-core` repository, which owns those schemas, and reaches this hub only as part of the curated public API of `middag-php-core`.
+- **Proprietary half:** the UI contract types of `middag-php-core` and the proprietary React components that render them. It lives in the `middag-php-core` repository, which owns those schemas, and reaches this hub only as part of the curated public API of `middag-php-core`.
 - The owner's maintainers approve the map in the pull request that adds it, against the schemas of a named release. A rename or a move on either side updates the map in the same change.
 - No reorganization of PHP UI classes starts before the map is approved.
 

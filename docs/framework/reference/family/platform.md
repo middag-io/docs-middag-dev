@@ -49,6 +49,16 @@ The library check and the `highest` job come from the shared PHP library check o
 
 The shared check also owns caching: the Composer cache, and the Rector, PHPStan and PHP-CS-Fixer caches (to be added). A library adds no cache step of its own; a cache it needs is a change to the shared check.
 
+::: warning Decision required at acceptance: where CI caches live
+
+| Option | Effect |
+| --- | --- |
+| **A. The shared check owns every cache: Composer, Rector, PHPStan and PHP-CS-Fixer (recommended)** | One change in `middag-io/actions` speeds up every library at once; the eight workflows stay identical. |
+| B. Each library adds its own tool-cache steps | Faster to land per library; the workflows drift apart. |
+| C. Composer cache only | No change to the shared check; static analysis and code style run cold on every push. |
+
+:::
+
 ## Required checks on `main`
 
 - The family window check is required on `main` of every library.
