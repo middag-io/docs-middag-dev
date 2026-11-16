@@ -10,14 +10,13 @@ Status: proposed. The automated checks that keep the OSS libraries free of propr
 
 | Rule                                                                                         | Applies to                                     | Guard                                                                  |
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- |
-| An OSS library never imports proprietary code (`middag-io/core`, `middag-io/licensing`, any product namespace) | `ui`, `framework`, `moodle`, `wordpress` | the cross-repository OSS purity job |
+| An OSS library never imports proprietary code (`middag-io/core`, `middag-io/licensing`, any product namespace) | `ui`, `framework`, `moodle`, `wordpress`, `demo-standalone` | the cross-repository OSS purity job |
 | `ui` has no runtime dependency other than PHP                                                | `ui`                                           | `ui` architecture test                                                 |
 | No host vocabulary in `ui` code, docblocks or schemas                                        | `ui` (`src/` and `schema/`)                    | `ui` host-vocabulary architecture test (to be added, with the `draftitemid` rename) |
 | No host namespace, global or function in the framework                                       | `framework`                                    | `composer check:portability` (dependency rules plus host-globals scan) |
 | No host adapter directory inside the framework                                               | `framework`                                    | framework architecture test                                            |
 | Each adapter talks to one host only                                                          | `moodle`, `wordpress`                          | each adapter's architecture tests (to be added)                        |
 | The demo imports no host API                                                                 | `demo-standalone`                              | demo architecture test (to be added)                                   |
-| The demo imports no proprietary code                                                         | `demo-standalone`                              | the OSS purity job, if the demo becomes one of its checkouts (open)    |
 
 Rules:
 
@@ -30,7 +29,7 @@ Rules:
 
 The purity job runs in the CI of `middag-php-dev-tools`, the library that owns the purity command.
 
-- It checks out the public OSS libraries (`ui`, `framework`, `moodle`, `wordpress`) at their `main` and runs the purity command over each.
+- It checks out the five public OSS libraries (`ui`, `framework`, `moodle`, `wordpress` and `demo-standalone`) at their `main` and runs the purity command over each.
 - It runs on every push and pull request to `dev-tools` and on a schedule, so a change in an OSS library is caught even when `dev-tools` does not change.
 - The deny list covers every proprietary namespace, including product namespaces, in both the single- and the double-backslash forms of a fully qualified name.
 - The deny list lives only in `dev-tools`, which is private. No OSS library copies it into its own tests or scripts: a per-library copy would name proprietary namespaces in a public repository.
@@ -43,8 +42,6 @@ The purity job runs in the CI of `middag-php-dev-tools`, the library that owns t
 | **A. A job in the `dev-tools` CI that checks out the public OSS libraries (recommended)**                 | One deny list, owned by the private library that ships the command; no public repository names a proprietary namespace; the OSS repositories need no token. A violation is caught on the next push or scheduled run, not on the OSS pull request. |
 | B. A job in the development environment of the products                                                 | Ties an OSS rule to a product environment.                                                 |
 | C. Each library's architecture tests                                                                     | Each public repository names the proprietary namespaces it forbids, which leaks them; the copies drift. |
-
-Sub-question, with no recommendation: whether `demo-standalone` becomes a fifth checkout of the job. It is public and Apache-2.0.
 
 :::
 
