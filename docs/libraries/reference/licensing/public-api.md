@@ -4,7 +4,7 @@ title: 'middag-php-licensing public API'
 
 # Public API
 
-The `@api` surface of `middag-php-licensing` at `v1.15.2`, grouped by what a host product does with it. Every type on this page carries `@api`, and every `@api` type is on this page; the [type index](#type-index) lists them by namespace. The namespace root is `Middag\Licensing`. The stability rules are in [API-STABILITY.md](https://github.com/middag-io/middag-php-licensing/blob/v1.15.2/API-STABILITY.md). Errors are on [Errors](./errors). Related: [middag-php-licensing](./).
+The `@api` surface of `middag-php-licensing` at `v1.16.0`, grouped by what a host product does with it. Every type on this page carries `@api`, and every `@api` type is on this page; the [type index](#type-index) lists them by namespace. The namespace root is `Middag\Licensing`. The stability rules are in [API-STABILITY.md](https://github.com/middag-io/middag-php-licensing/blob/v1.16.0/API-STABILITY.md). Errors are on [Errors](./errors). Related: [middag-php-licensing](./).
 
 ## Entry points
 
@@ -206,6 +206,18 @@ The anti-tamper module checks the files of a release against a signed integrity 
 - `AntiTamper\SealedConfigService` seals named values at rest with an authenticated cipher over the host `AntiTamper\Contract\SealedStorageInterface`, under a 32-byte key the caller derives. `get()` throws `SealedConfigTamperedException` when a stored value does not open.
 - `AntiTamper\CompositeSealKey` builds a seal key from two parts the host keeps in different places, one in its database and one in a file outside it, so a database dump alone cannot open the sealed install material. `generatePart()` makes a part, `isWellFormedPart()` tests one, and `derive()` throws `SealKeyUnavailableException` when a part is missing or malformed.
 
+## Observability and telemetry
+
+The host reports errors, timings and audit events to the licensing worker. The client that sends them is `@internal`; the host builds the events and the config.
+
+- `Observability\Config\ObservabilityConfig` holds the worker base URI the error, perf and audit batches go to, the batch size cap (`batchMaxSize`, 1000 by default), the cron flush interval (`flushIntervalSec`, 300 by default) and the on/off switch (`enabled`).
+- `Observability\Contract\ObservabilityClientInterface` is the ingest contract: `sendErrors()`, `sendPerf()` and `sendEvents()` each take a batch of up to 1000 events of their kind.
+- `Observability\Contract\ObservabilityEventInterface` marks an event; `toApiArray()` returns the body the worker schema expects.
+- `Observability\ValueObject\ErrorEvent` is an error: level (`debug`, `info`, `warning`, `error` or `critical`), a summary with personal data scrubbed, the SHA-256 hash of the normalized stack, the source, the time in Unix milliseconds and an optional JSON payload.
+- `Observability\ValueObject\PerfEvent` is a timing: metric name, value in milliseconds, source and time in Unix milliseconds.
+- `Observability\ValueObject\AuditEvent` is an audit event: event type, the SHA-256 hash of the payload, source, time in Unix milliseconds and an optional JSON payload.
+- `Telemetry\Config\TelemetryConfig` holds the worker base URI and the on/off switch for telemetry. Telemetry events ride the same `/v1/events` HMAC envelope as metering, marked `event_category: telemetry`, so the worker does not debit them.
+
 ## Host contracts
 
 The interfaces the host implements or supplies an implementation for:
@@ -229,7 +241,7 @@ The interfaces the host implements or supplies an implementation for:
 
 ## Type index
 
-Every `@api` type of `v1.15.2`, by namespace, relative to `Middag\Licensing`. Exceptions are on [Errors](./errors).
+Every `@api` type of `v1.16.0`, by namespace, relative to `Middag\Licensing`. Exceptions are on [Errors](./errors).
 
 ### `License` (64)
 
@@ -299,3 +311,13 @@ Every `@api` type of `v1.15.2`, by namespace, relative to `Middag\Licensing`. Ex
 - `AntiTamper\Enum`: `AntiTamper\Enum\FileScope`, `AntiTamper\Enum\ReactionMode`.
 - `AntiTamper\Exception`: `AntiTamper\Exception\IntegrityCheckFailedException`, `AntiTamper\Exception\IntegrityManifestInvalidException`, `AntiTamper\Exception\SealKeyUnavailableException`, `AntiTamper\Exception\SealedConfigTamperedException`.
 - `AntiTamper\ValueObject`: `AntiTamper\ValueObject\BackendAttestation`, `AntiTamper\ValueObject\IntegrityManifest`, `AntiTamper\ValueObject\IntegrityReport`.
+
+### `Observability` (6)
+
+- `Observability\Config`: `Observability\Config\ObservabilityConfig`.
+- `Observability\Contract`: `Observability\Contract\ObservabilityClientInterface`, `Observability\Contract\ObservabilityEventInterface`.
+- `Observability\ValueObject`: `Observability\ValueObject\AuditEvent`, `Observability\ValueObject\ErrorEvent`, `Observability\ValueObject\PerfEvent`.
+
+### `Telemetry` (1)
+
+- `Telemetry\Config`: `Telemetry\Config\TelemetryConfig`.

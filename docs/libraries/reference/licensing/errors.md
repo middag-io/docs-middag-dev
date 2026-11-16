@@ -4,7 +4,7 @@ title: 'middag-php-licensing errors'
 
 # Errors
 
-The `@api` exceptions and typed refusal enums of `middag-php-licensing` at `v1.15.2`, when each one is thrown and what the host does with it. The namespace root is `Middag\Licensing`. Related: [Public API](./public-api).
+The `@api` exceptions and typed refusal enums of `middag-php-licensing` at `v1.16.0`, when each one is thrown and what the host does with it. The namespace root is `Middag\Licensing`. Related: [Public API](./public-api).
 
 ## Rules for every error
 
