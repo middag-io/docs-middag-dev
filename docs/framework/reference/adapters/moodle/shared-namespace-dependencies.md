@@ -8,7 +8,7 @@ Reference for the Composer dependencies of `middag-io/moodle` whose PHP namespac
 
 Verified on 2026-11-16 against:
 
-- `middag-php-moodle` `main@89cef44` (`composer.json`, `src/`, `tests/`, `bin/`), and `middag-php-framework` `main@5af00e8` (`composer.json`) for the packages the adapter gets through the framework.
+- `middag-php-moodle` tag `v1.17.1` (`4d0a935`; `composer.json`, `src/`, `tests/`, `bin/`), `middag-php-framework` tag `v1.20.2` (`6833bc7`; `composer.json`) for the packages the adapter gets through the framework, and `middag-php-ui` tag `v1.8.2` (`composer.json`, which requires PHP only).
 - The Moodle stable branches of the supported range, in the upstream repository [`moodle/moodle`](https://github.com/moodle/moodle): `MOODLE_405_STABLE@69ef83ad2948` (4.5), `MOODLE_501_STABLE@939b25ee6be4` (5.1), `MOODLE_502_STABLE@5ce15767f3ab` (5.2) and `MOODLE_503_STABLE@cfe123f26fc7` (5.3), plus `MOODLE_500_STABLE@2d62d8b15891` (5.0, best effort). In each branch: the `$psr4namespaces` map of `core_component` (`lib/classes/component.php` on 4.5 and 5.0, `public/lib/classes/component.php` from 5.1), the bundled versions in `thirdpartylibs.xml` (`lib/` on 4.5 and 5.0, `public/lib/` from 5.1), and the root `composer.json` and `composer.lock`.
 
 ## The risk
@@ -57,17 +57,23 @@ The `Psr\Http\Message` cells give `psr/http-factory`, then `psr/http-message`. T
 
 ### Global function: `trigger_deprecation()`
 
-Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib/symfony/deprecation-contracts`; 3.5.0 on 4.5, 3.5.1 on 5.0 and 5.1, 3.6.0 on 5.2 and 5.3) and requires its `function.php` on every request through `$composerautoloadfiles`. The file defines the global function `trigger_deprecation()` only when no copy defines it yet (`function_exists()` guard). This adapter's tree always contains the same package: `middag-io/framework` requires it directly (`^3.5`), and `symfony/dependency-injection` and `symfony/routing`, which the adapter requires at `^7.4 || ^8.1`, require it in every 7.x and 8.x release. The other Symfony packages of the tree differ by release line:
+Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib/symfony/deprecation-contracts`; 3.5.0 on 4.5, 3.5.1 on 5.0 and 5.1, 3.6.0 on 5.2 and 5.3) and requires its `function.php` on every request through `$composerautoloadfiles`. The file defines the global function `trigger_deprecation()` only when no copy defines it yet (`function_exists()` guard). This adapter's tree always contains the same package: `middag-io/framework` requires it directly (`^3.5`). The adapter and the framework require their Symfony components at `^7.4 || ^8.1`, so each of them resolves on the 7.4 line or on 8.1 and later:
 
-- Require it on the 7.4 line, not on 8.0: `symfony/cache`, `symfony/http-kernel`, `symfony/messenger`, `symfony/property-info`, `symfony/serializer`, `symfony/string`, `symfony/type-info`, `symfony/validator`, `symfony/var-dumper` and `symfony/var-exporter`. The adapter requires `symfony/http-client` and `symfony/http-foundation` at `^7.4 || ^8.1`; both require it on the 7.4 line.
-- Never require it on 7.x or 8.x: `symfony/clock`, `symfony/error-handler`, `symfony/property-access`, `symfony/psr-http-message-bridge` and `symfony/uid`. `symfony/event-dispatcher` requires it only from 8.1.
-- Among the contracts packages, only `symfony/service-contracts` requires it, from 3.5.
+- Require it on the 7.4 line and on 8.1: `symfony/dependency-injection`, `symfony/http-client`, `symfony/http-foundation`, `symfony/http-kernel`, `symfony/messenger`, `symfony/routing`, `symfony/serializer` and `symfony/validator`.
+- Require it on the 7.4 line, not on the 8.x line: `symfony/cache` and `symfony/property-info`.
+- Never require it on 7.4 or 8.x: `symfony/clock`, `symfony/property-access`, `symfony/psr-http-message-bridge` and `symfony/uid`.
+
+The Symfony packages the tree gets transitively can resolve on other lines:
+
+- `symfony/string`, `symfony/type-info` and `symfony/var-dumper` require it on the 7.4 line, not on the 8.x line. On older lines it varies by release.
+- `symfony/var-exporter` requires it on 7.4 and 8.1, not on 8.0. `symfony/event-dispatcher` requires it only from 8.1. `symfony/error-handler` never requires it.
+- Among the contracts packages, only `symfony/service-contracts` requires it, from 3.5. `symfony/dependency-injection` requires `symfony/service-contracts` at `^3.6`.
 
 The first copy loaded defines the function for the whole request. Both copies are on the 3.x line.
 
 ### Composer packages declared by Moodle 5.2 and 5.3
 
-The root `composer.lock` of 5.2 and 5.3 shares the packages below with this adapter's dependency tree. The tree is the closure of the `require` sections of `middag-php-moodle` `main@89cef44` and `middag-php-framework` `main@5af00e8`, resolved transitively from Packagist over every stable release inside the accepted ranges and installable on PHP 8.2 to 8.5. A version marked _dev_ is locked in `packages-dev`: it reaches the root `vendor/` only when Composer installs development packages (the default of `composer install`, skipped with `--no-dev`).
+The root `composer.lock` of 5.2 and 5.3 shares the packages below with this adapter's dependency tree. The tree is the closure of the `require` sections of `middag-php-moodle` `v1.17.1` and `middag-php-framework` `v1.20.2`, resolved transitively from Packagist over every stable release inside the accepted ranges and installable on PHP 8.3 to 8.5. A version marked _dev_ is locked in `packages-dev`: it reaches the root `vendor/` only when Composer installs development packages (the default of `composer install`, skipped with `--no-dev`).
 
 | Package                            | 5.2            | 5.3            | In this adapter's tree through                                                                     |
 | ---------------------------------- | -------------- | -------------- | -------------------------------------------------------------------------------------------------- |
@@ -98,13 +104,13 @@ The root `composer.lock` of 5.2 and 5.3 shares the packages below with this adap
 | `symfony/http-client-contracts`    | v3.6.0 _dev_   | v3.7.3 _dev_   | `symfony/http-client`                                                                              |
 | `symfony/translation-contracts`    | v3.6.1 _dev_   | v3.7.1 _dev_   | `middag-io/framework` (direct), `symfony/validator`                                                |
 | `symfony/var-exporter`             | v7.4.0 _dev_   | v7.4.18 _dev_  | `symfony/cache`, `symfony/dependency-injection`                                                    |
-| `symfony/polyfill-php83`           | v1.33.0 _dev_  | v1.41.0 _dev_  | `symfony/clock`, `symfony/http-client`, `symfony/http-foundation`, `symfony/validator`             |
+| `symfony/polyfill-php83`           | v1.33.0 _dev_  | v1.41.0 _dev_  | `symfony/clock`, `symfony/http-client`, `symfony/validator`                                        |
 
 "direct" means a requirement of `middag-io/moodle` itself. No other package of either `composer.lock` is in the tree.
 
 `monolog/monolog`, the `psr/*` packages and `symfony/deprecation-contracts` are also vendored under `public/lib/` at the same versions ([above](#namespaces-moodle-bundles)). The other packages are neither vendored nor in the `core_component` map: they reach the request only through a root `vendor/` installed by Composer, which `register_autoloader()` loads when its `autoload.php` exists ([order above](#the-risk)).
 
-`symfony/string` is a component, not a contract or a polyfill. `middag-io/framework` accepts `symfony/property-info` `^7.0 || ^8.0`, and every release of both majors requires `symfony/string`: 7.0 to 7.3 accept `^6.4|^7.0`, 7.4 accepts `^6.4|^7.0|^8.0`, and 8.x accepts `^7.4|^8.0`. `symfony/string` 8.x requires PHP 8.4. The adapter's tree can therefore hold `symfony/string` 6.4, 7.x or 8.x, while a Moodle 5.3 root `vendor/` holds v7.4.15 (5.2 with development packages: v7.4.4). Both copies then define classes in `Symfony\Component\String`, and which one loads depends on bootstrap order. Treat a Moodle site with a root `vendor/` that holds `symfony/string` as a possible major-mismatch case for this namespace. The same applies to `symfony/event-dispatcher` and `symfony/var-exporter`, which the tree can resolve outside the 7.4 line that Moodle locks in `packages-dev`.
+`symfony/string` is a component, not a contract or a polyfill. `middag-io/framework` requires `symfony/property-info` at `^7.4 || ^8.1`, and every release of both lines requires `symfony/string`: 7.4 accepts `^6.4|^7.0|^8.0`, and 8.1 accepts `^7.4|^8.0`. `symfony/string` 8.x requires PHP 8.4. The adapter's tree can therefore hold `symfony/string` 6.4, 7.x or 8.x, while a Moodle 5.3 root `vendor/` holds v7.4.15 (5.2 with development packages: v7.4.4). Both copies then define classes in `Symfony\Component\String`, and which one loads depends on bootstrap order. Treat a Moodle site with a root `vendor/` that holds `symfony/string` as a possible major-mismatch case for this namespace. The same applies to `symfony/event-dispatcher` and `symfony/var-exporter`, which the tree can resolve outside the 7.4 line that Moodle locks in `packages-dev`.
 
 `paragonie/random_compat` polyfills `random_bytes()` and `random_int()`, which are native in every PHP version the adapter supports. It enters the tree only when `symfony/polyfill-uuid` resolves to one of the oldest releases that `symfony/uid` accepts.
 
@@ -126,7 +132,7 @@ The polyfills declare classes in `Symfony\Polyfill\*` and define global function
 
 ## `Firebase\JWT`
 
-The adapter does not require `firebase/php-jwt`: the requirement was dropped in `middag-php-moodle` commit `eb30618`, and nothing in `src/`, `tests/` or `bin/` on `main@89cef44` references `Firebase\JWT`.
+The adapter does not require `firebase/php-jwt`: the requirement was dropped in `middag-php-moodle` commit `eb30618`, and nothing in `src/`, `tests/` or `bin/` at tag `v1.17.1` references `Firebase\JWT`.
 
 The namespace stays in the table because every Moodle version in range bundles it, at 6.x (6.10.0 on 4.5; 6.11.0 or 6.11.1 from 5.0). `firebase/php-jwt` 7.0 changed the `JWT` / `Key` API. Any package installed next to the adapter that requires `firebase/php-jwt ^7.0` shares the namespace with a 6.x copy that Moodle registers globally; which copy loads is a matter of bootstrap order.
 
