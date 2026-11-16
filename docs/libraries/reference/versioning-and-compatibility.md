@@ -92,7 +92,7 @@ Each family MAJOR publishes one matrix. The matrix is the support floor and ceil
 | Symfony                  | `^7.4 \|\| ^8.1`                                                                          |
 | Sibling libraries        | `^2.0` (each library requires its siblings on the family MAJOR)                          |
 | Moodle (`middag-io/moodle`) | 4.5 (PHP 8.3), 5.1, 5.2 and 5.3 (PHP 8.3 and 8.4); 5.0 as best effort, with no support promise |
-| WordPress (`middag-io/wordpress`) | 6.5 and later, on the PHP versions that WordPress version supports              |
+| WordPress (`middag-io/wordpress`) | The versions with official upstream support, on the PHP versions each one supports; the concrete floor is a decision required at acceptance (below) |
 | Database engines (`middag-io/moodle`) | PostgreSQL and MySQL, as supported by the Moodle version in range |
 
 How the Symfony range resolves per PHP version:
@@ -111,15 +111,18 @@ Rules:
 - A host version enters the range in a family MINOR. A host version leaves the range when its official upstream support ends; the next family MINOR records the removal.
 - A host version marked best effort is listed in the matrix because it is expected to run, but no support promise covers it and no fix is owed for it. Moodle 5.0 is best effort in `2.x`: its official upstream support has ended.
 - `moodle-local_middag` declares `$plugin->supported = [405, 503]`, which covers Moodle 4.5 to 5.3. Its range keeps Moodle 5.0 with a warning, as best effort, the same status the adapter gives it; the product promises support only for the versions the adapter supports.
+- The WordPress range follows the same rule as the Moodle range: a WordPress version leaves it when official upstream support ends. WordPress officially supports only its last major release ([Supported versions](https://wordpress.org/documentation/article/supported-versions/)). Security fixes that WordPress backports to older branches as a courtesy do not count as support.
 - A PHP or Symfony line leaves the range only in a family MAJOR.
 - The matrix is checked in each library's CI from `2.0.0`.
 
 ::: warning Decision required at acceptance: the WordPress floor
 
-| Option                                                       | Effect                                                                                          |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| **A. WordPress 6.5 and later (recommended)**                 | Matches the floor both WordPress products declare in their plugin headers. The `wp-plugin-middag` README still states 6.0 and is aligned separately. |
-| B. No WordPress floor in the matrix; each product states its own | The adapter carries no host statement, unlike the Moodle adapter.                          |
+The rule above is decided; the concrete floor it gives today is not.
+
+| Option | Effect |
+| --- | --- |
+| A. The latest major only: WordPress 7.1 | The range is exactly the release WordPress supports officially. |
+| B. The latest and the previous major: WordPress 7.1 and 7.0, with a grace window | The previous major stays in range for a grace window after the next major ships, so a site has time to upgrade. |
 
 :::
 
