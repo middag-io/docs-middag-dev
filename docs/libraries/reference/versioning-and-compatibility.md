@@ -47,7 +47,7 @@ The libraries and the products that consume them have separate lifecycles and se
 - The library family follows this page. Its support floors are the ranges in the [matrix](#compatibility-matrix) below.
 - A product (`moodle-local_middag`, `wp-plugin-middag`, `wp-plugin-middag-account`) follows its own versioning scheme and its own support policy in the MIDDAG profile. A product release states the library range it is built on; it never extends the library support promise, and a library release never extends a product support promise.
 - A product may support a narrower range than the libraries (for example, the PHP versions its host supports). It never supports a wider one.
-- `wp-plugin-middag` is a lower-priority consumer: a `moodle-local_middag` release, `10.0.0` included, does not wait for it.
+- `wp-plugin-middag` is a lower-priority consumer: a `moodle-local_middag` release, `10.0.0` included, does not wait for it. It raises its PHP floor to 8.3 and adopts the hooks of [middag-io/middag-php-wordpress#68](https://github.com/middag-io/middag-php-wordpress/issues/68) in its `3.0`, after `moodle-local_middag` `10.0.0`. Until then it stays on the `1.x` MINORs of the libraries it already builds on.
 
 ## Supported surface
 
