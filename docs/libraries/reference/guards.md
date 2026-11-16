@@ -10,7 +10,7 @@ Status: proposed. The automated checks that keep the OSS libraries free of propr
 
 | Rule                                                                                         | Applies to                                     | Guard                                                                  |
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- |
-| An OSS library never imports proprietary code (`middag-io/core`, `middag-io/licensing`, any product namespace) | `ui`, `framework`, `moodle`, `wordpress` | the cross-repository OSS purity job (to be added) |
+| An OSS library never imports proprietary code (`middag-io/core`, `middag-io/licensing`, any product namespace) | `ui`, `framework`, `moodle`, `wordpress` | the cross-repository OSS purity job |
 | `ui` has no runtime dependency other than PHP                                                | `ui`                                           | `ui` architecture test                                                 |
 | No host vocabulary in `ui` code, docblocks or schemas                                        | `ui` (`src/` and `schema/`)                    | `ui` host-vocabulary architecture test (to be added, with the `draftitemid` rename) |
 | No host namespace, global or function in the framework                                       | `framework`                                    | `composer check:portability` (dependency rules plus host-globals scan) |
@@ -26,17 +26,6 @@ Rules:
 - A guard scans comments and docblocks too, unless the page that states its rule says otherwise.
 - No public repository names a proprietary namespace, in code, tests or scripts. Proprietary-import rules are checked only by the OSS purity job; library architecture tests check host rules.
 
-## Current state
-
-A guard marked "to be added" in the table does not exist yet. On `main` of each repository:
-
-- `middag-php-dev-tools` has no OSS purity job. Its CI runs only the shared PHP library check.
-- The purity command does not yet meet this page. Its deny list does not cover product namespaces or the double-backslash form, it skips comment lines, and in auto-discovery mode it exits 0 with a skip message when no library is present. Each gap is a change to `dev-tools` that lands before the job is required.
-- `ui` has architecture tests for its runtime dependency and enum case style only; the host-vocabulary test is missing, and `ui` breaks its rule today (see `draftitemid` below).
-- `moodle` and `wordpress` have no one-host-only test.
-- `licensing` and `dev-tools` have no `tests/Architecture/` suite.
-- `demo-standalone` has no `tests/Architecture/` suite, so the demo is not guarded against host or proprietary imports.
-
 ## OSS purity
 
 The purity job runs in the CI of `middag-php-dev-tools`, the library that owns the purity command.
@@ -44,7 +33,7 @@ The purity job runs in the CI of `middag-php-dev-tools`, the library that owns t
 - It checks out the public OSS libraries (`ui`, `framework`, `moodle`, `wordpress`) at their `main` and runs the purity command over each.
 - It runs on every push and pull request to `dev-tools` and on a schedule, so a change in an OSS library is caught even when `dev-tools` does not change.
 - The deny list covers every proprietary namespace, including product namespaces, in both the single- and the double-backslash forms of a fully qualified name.
-- The deny list lives only in `dev-tools`, which is private. No OSS library copies it into its own tests or scripts: a per-library copy would name proprietary namespaces in a public repository, which is why `dev-tools` replaced the per-library `check:boundaries` script.
+- The deny list lives only in `dev-tools`, which is private. No OSS library copies it into its own tests or scripts: a per-library copy would name proprietary namespaces in a public repository.
 - A proprietary import in an OSS library is caught on the next push or scheduled run of the job, not on the library's own pull request.
 
 ::: warning Decision required at acceptance: where the OSS purity guard runs
