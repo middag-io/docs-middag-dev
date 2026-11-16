@@ -19,15 +19,15 @@ The `@api` exceptions of `middag-php-licensing`, when each one is thrown and wha
 
 | Exception                                   | When                                                                                   | Host action                                                                                  |
 | ------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `License\Exception\LicenseForbiddenException` | The license is refused (validate, resync, update check, metering, ingest-key bootstrap, licensed manifest). `$refusal` is a `License\Enum\Refusal` | Treat the license as not valid. Stop reporting usage                                          |
+| `License\Exception\LicenseForbiddenException` | The license is refused (validate, resync, update check, metering, ingest-key bootstrap, licensed manifest). `$refusal` is a `License\Enum\Refusal` | Treat the license as not valid. On a metering call, stop reporting usage |
 | `License\Exception\NotEnrolledException`    | The pair holds no install key                                                          | Enroll first                                                                                 |
 | `License\Exception\ClockSkewException`      | The site clock is too far from the instance clock. `$serverTime` carries the instance time in Unix seconds, when given | Correct the drift, then sign again with a fresh nonce; the library does not retry           |
 | `License\Exception\InstallSiteMismatchException` | The install id is bound to another site: a cloned install                         | Generate a new install id                                                                    |
-| `License\Exception\RateLimitedException`    | Too many calls. `$retryAfter` carries the wait in seconds, when given                  | Back off, honouring `$retryAfter`; keep using the last valid answer. A metering retry reuses the same idempotency key |
-| `License\Exception\ApiUnavailableException` | The instance answered with a server error                                              | Retry later; keep using the last valid answer                                                 |
-| `License\Exception\ApiTransportException`   | The PSR-18 transport failed                                                            | Retry later; keep using the last valid answer                                                 |
-| `License\Exception\EnrollTokenRejectedException` | Enrollment refused: the token binds nothing. `$refusal` is a `Refusal`, `$rejection` an `EnrollTokenRejection` (`TokenUnknown`, `TokenExpired`, `SiteMismatch`, `TokenReused`, `Unknown`) | Ask for a new enrollment token                                                               |
-| `License\Exception\EnrollConflictException` | Enrollment conflict. `$conflict` is an `EnrollConflict` (`MaxInstallsReached`, `BindingDeactivated`, `InstallAlreadyEnrolled`, `ProductMismatch`, `Unknown`) | Report the conflict. It is never a cue to resync                                             |
+| `License\Exception\RateLimitedException`    | Too many calls. `$retryAfter` carries the wait in seconds, when given                  | Back off, honouring `$retryAfter`. A metering retry reuses the same idempotency key |
+| `License\Exception\ApiUnavailableException` | The instance answered with a server error                                              | A license kept from an earlier valid answer still counts until its own expiry |
+| `License\Exception\ApiTransportException`   | The PSR-18 transport failed                                                            | A license kept from an earlier valid answer still counts until its own expiry |
+| `License\Exception\EnrollTokenRejectedException` | Enrollment refused: the token binds nothing. `$refusal` is a `Refusal`, `$rejection` an `EnrollTokenRejection` (`TokenUnknown`, `TokenExpired`, `SiteMismatch`, `TokenReused`, `Unknown`) | Show a generic refusal; log `$rejection` |
+| `License\Exception\EnrollConflictException` | Enrollment conflict. `$conflict` is an `EnrollConflict` (`MaxInstallsReached`, `BindingDeactivated`, `InstallAlreadyEnrolled`, `ProductMismatch`, `Unknown`) | Show a generic refusal; log `$conflict`. It is never a cue to resync |
 | `License\Exception\AlreadyEnrolledException` | The ingest key of the pair was already issued                                          | `ActivationService` turns it into `IngestKeyAlreadyIssuedException`                         |
 | `Api\Account\Exception\AccountRefusedException` | An account call was refused. `$reason` is an `AccountRefusalReason`; `$licenseIds` lists the candidate licenses when a credential request matches several | With `$licenseIds`, repeat the call with one of them; otherwise show a generic refusal       |
 
@@ -61,7 +61,7 @@ The licensed-manifest calls also throw `LicenseForbiddenException`, `NotEnrolled
 
 ### Manifest verification
 
-A manifest whose signature or claims fail verification, or whose signing key is not in the JWKS after one refresh, raises an exception of `Sso\Exception`. Those types are not `@api`; they extend `RuntimeException`. Catch them as `RuntimeException` and treat the manifest as absent.
+A manifest whose signature or claims fail verification, or whose signing key is not in the JWKS after one refresh, raises an exception of `Sso\Exception`. Those types are not `@api`; they extend `RuntimeException`. Nothing is stored and the last valid manifest stays. Catch the `@api` exceptions of this section first: they are `RuntimeException` too, so a catch of `RuntimeException` alone would also take the rollback, binding and refusal cases.
 
 ## Entitlements
 

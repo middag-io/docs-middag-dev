@@ -4,7 +4,7 @@ title: 'middag-php-licensing public API'
 
 # Public API
 
-The curated `@api` surface of `middag-php-licensing`, grouped by what a host product does with it. Every type on this page carries `@api`; the namespace root is `Middag\Licensing`. Signatures, docblocks and the remaining `@api` types are in the [repository](https://github.com/middag-io/middag-php-licensing#public-api-surface). Errors are on [Errors](./errors). Related: [middag-php-licensing](./).
+The curated `@api` surface of `middag-php-licensing`, grouped by what a host product does with it. Every type on this page carries `@api`, except those listed under [Types outside the surface](#types-outside-the-surface); the namespace root is `Middag\Licensing`. Signatures, docblocks and the remaining `@api` types are in the [repository](https://github.com/middag-io/middag-php-licensing#public-api-surface). Errors are on [Errors](./errors). Related: [middag-php-licensing](./).
 
 ## Entry points
 
@@ -46,7 +46,7 @@ The curated `@api` surface of `middag-php-licensing`, grouped by what a host pro
 
 The constructor takes the host `InstallMaterialStoreInterface`, an `EnrollClient`, a closure that builds the `EnrollMeteringClient` for a given `InstallSigner`, and the host scope map, whose declared support scopes go in the enrollment.
 
-`License\Activation\ValueObject\InstallMaterial` holds the install id, the product, the sealed private key, the key id and JWKS URL from enrollment, and the ingest key id and secret. `isEnrolled()`, `isComplete()` and `isFor()` read its state; `signer()` rebuilds the `InstallSigner`. Its debug output redacts the secrets.
+`License\Activation\ValueObject\InstallMaterial` holds the install id, the product, the private install key (the host store keeps it sealed), the key id and JWKS URL from enrollment, and the ingest key id and secret. `isEnrolled()`, `isComplete()` and `isFor()` read its state; `signer()` rebuilds the `InstallSigner`. Its debug output leaves out the private key and the ingest secret.
 
 `License\EnrollClient` and `License\EnrollMeteringClient` are the two calls the service composes, with `EnrollRequest`/`EnrollResult` and `MeteringEnrollRequest`/`MeteringEnrollResult`. A host calls them directly only when it does not use the service.
 
@@ -63,7 +63,7 @@ The constructor takes the host `InstallMaterialStoreInterface`, an `EnrollClient
 - `License\ResyncManifestReconciler` applies a resync answer to the stored manifests and returns a `ResyncOutcome` (`Unchanged`, `Refreshed`, `Dropped`):
   - A revoked or expired license, or a released binding, retires the pair at once: the stored licensed manifests of the pair, of every release, its install material and its kept digest are dropped.
   - A changed entitlements digest fetches, verifies and stores a new manifest for the current release, and only then keeps the digest. A failed fetch keeps no digest, so the next resync tries again.
-  - `reconcileRefusal()` retires the pair the same way when the resync itself was refused, then rethrows the refusal. The stored default manifest stays.
+  - `reconcileRefusal()` takes a resync refused with `LicenseForbiddenException`. When the refusal is `binding_deactivated`, `revoked` or `expired`, it retires the pair the same way. It always rethrows the refusal. The stored default manifest stays.
   - The host calls it from its own license check, for example a scheduled task.
 - `License\UpdateCheckClient::check(UpdateCheckRequest)` returns an `UpdateCheckResult`: the channel of the installation, whether an update is available, and the latest version with its download URL and integrity when there is one.
 
@@ -140,7 +140,7 @@ The library only verifies and reads. It composes no entitlement and never fails 
 
 ## Host contracts
 
-The interfaces the host implements, each backed by its own storage:
+The interfaces the host implements or supplies an implementation for:
 
 | Interface                                                   | Holds                                                                                       |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -153,7 +153,7 @@ The interfaces the host implements, each backed by its own storage:
 | `Delivery\Contract\ProtectedJwksProviderInterface`          | The signing keys the manifest verifiers check against, cached as the host prefers; `getJwks(true)` bypasses the cache |
 | `Api\Account\Contract\PersonAccessTokenProviderInterface`, `Api\Account\Contract\LicenseDerivedAccessTokenProviderInterface` | The person's access tokens for the account calls |
 
-`InMemoryManifestStorage`, `InMemoryDefaultManifestStorage` and `InMemoryResyncDigestStore` in `Delivery` are in-memory implementations for tests.
+`InMemoryManifestStorage`, `InMemoryDefaultManifestStorage` and `InMemoryResyncDigestStore` in `Delivery` are process-local implementations for tests and bare deployments; a product adapter replaces them with its own storage.
 
 ## Types outside the surface
 
@@ -162,6 +162,7 @@ Some `@api` signatures name types that carry no `@api` tag. Under the rule they 
 - `RemoteSupport\Contract\ScopeMapInterface`, taken by the `ActivationService` constructor and by `SupportedScopes::fromScopeMap()`, and `RemoteSupport\Enum\SessionTier`;
 - `Sso\ValueObject\VerifiedClaims` and `Sso\ValueObject\Jwks`, returned by the SSO verifier and the JWKS provider;
 - the `Sso\Exception` types the manifest verifiers throw (see [Errors](./errors#manifest-verification));
+- `Sso\JwtVerifier` and `Delivery\HttpProtectedJwksProvider`, the library implementations of `JwtVerifierInterface` and `ProtectedJwksProviderInterface`;
 - the abstract client base classes the `@api` clients extend.
 
 Use them only as far as the `@api` signature that names them requires.

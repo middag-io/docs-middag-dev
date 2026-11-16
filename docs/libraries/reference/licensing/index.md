@@ -23,10 +23,10 @@ The library applies the family rule "no tag means `@internal`" ([Supported surfa
 
 The pages of this section cover the `@api` types of `License`, `Delivery`, `Api\Account`, `Sso` and `RemoteSupport`, and the one `AntiTamper` exception the activation flow throws. Two more groups carry `@api` and are documented only in the repository:
 
-- `Api\Admin`: the operator clients of the licensing instance, for MIDDAG operations rather than for a host product.
+- `Api\Admin`: the operator clients of the licensing instance, for MIDDAG operations rather than for a host product. Two of its value objects, `ServiceTokenCredentials` and `IdempotencyKey`, are covered here because the account client takes them.
 - `AntiTamper`: the anti-tamper attestation and integrity services.
 
-The full list of `@api` files is in the repository, section [Public API surface](https://github.com/middag-io/middag-php-licensing#public-api-surface).
+The repository section [Public API surface](https://github.com/middag-io/middag-php-licensing#public-api-surface) states the rule and the command that lists the `@api` files.
 
 ## Requirements
 
