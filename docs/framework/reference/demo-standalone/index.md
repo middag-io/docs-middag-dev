@@ -6,8 +6,8 @@ title: 'Demo Application — demo-standalone'
 
 `middag-io/demo-standalone` ([middag-php-demo-standalone](https://github.com/middag-io/middag-php-demo-standalone)) is a runnable help-desk application that boots `middag-io/framework` and `middag-io/ui` with no host and no proprietary code. It is a demonstration, not a library: read it to see how the published packages wire together in a real application. It exercises the `@api` areas of `ui` and `framework` and proves each one with a test.
 
-::: info Status: in progress
-This page states the `2.x` line of the library family. The demo stays on `0.x` until the family cut and joins the family at `2.0.0` ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility#lifecycle)).
+::: info Status
+This page states the `2.x` line of the library family. The demo joins the family at `2.0.0`, and support starts there; its `0.x` releases are pre-stable and unsupported ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility#lifecycle)).
 :::
 
 ## Who it is for
@@ -36,14 +36,16 @@ The demo ships no JavaScript bundle: the Inertia HTML shell embeds the page payl
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, with the `pdo` and `pdo_sqlite` extensions                                       |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires; the `composer.lock` its Docker image ships resolves Symfony 7.4 |
 | Sibling libraries   | `middag-io/framework` and `middag-io/ui`, on the family MAJOR (`^2.0` on `2.x`)                             |
-| Host                | none                                                                                                        |
+| Host                | none: no Moodle and no WordPress; the host ranges of the adapters do not apply                                                                                                        |
 | Database            | SQLite, in a file or in memory                                                                              |
 
 The platform rules behind these values are in [Platform](/libraries/reference/platform), which also gives the demo's CI recipe.
 
-## Run it
+## Install and run
 
-The demo is an application, so it is cloned, not required as a dependency:
+The demo is an application, so it is cloned or run as an image, never required as a dependency.
+
+From source:
 
 ```bash
 git clone https://github.com/middag-io/middag-php-demo-standalone
@@ -54,16 +56,26 @@ composer serve              # http://localhost:8080
 composer test               # PHPUnit against the real stack, in-memory SQLite
 ```
 
-The repository [README](https://github.com/middag-io/middag-php-demo-standalone/blob/main/README.md) lists the full route map, the console commands and the seeded login. [`DOCKER.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/DOCKER.md) runs the same application in a container.
+From the published image: every release publishes `middagtec/middag-demo-standalone` on Docker Hub for `linux/amd64` and `linux/arm64`, tagged with the release version and `latest`. The image serves the application and runs the worker; on first boot it creates and seeds a SQLite file under `/app/var`.
+
+```bash
+docker run --rm -p 8080:8080 middagtec/middag-demo-standalone:latest          # serve
+docker run --rm middagtec/middag-demo-standalone:latest worker                # worker
+docker run --rm -p 8080:8080 -v "$PWD/var:/app/var" middagtec/middag-demo-standalone:latest   # keep the database
+```
+
+The repository [README](https://github.com/middag-io/middag-php-demo-standalone/blob/main/README.md) lists the full route map, the console commands and the seeded login. [`DOCKER.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/DOCKER.md) builds the image locally and runs it with Docker Compose.
 
 ## Public surface
 
-The demo has no public PHP surface. The rule "no tag means `@internal`" applies to it ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)): nothing in it is meant to be imported by another package. What it documents is coverage, not API:
+The demo has no public PHP surface: it has no `@api` tag, and everything under `src/` is `@internal`. The rule "no tag means `@internal`" applies to it ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)), so nothing in it is meant to be imported by another package and no reference is generated for it. What it documents is coverage, not API:
 
+- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/API-STABILITY.md) states that the demo has no public surface and points to [Versioning and compatibility](/libraries/reference/versioning-and-compatibility) for the support rules.
 - [`COVERAGE.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/COVERAGE.md) maps each `@api` area of `framework` and `ui` to the demo artifact that exercises it and the test that proves it, and states the boundary with the internal libraries.
+- The surface the demo exercises is the public surface of its siblings: the [`API-STABILITY.md` of `framework`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md), the [`API-STABILITY.md` of `ui`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md) and the reference pages of this section.
 
 ## Changelog and help
 
-- [`CHANGELOG.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/CHANGELOG.md) records every release; [Releases](https://github.com/middag-io/middag-php-demo-standalone/releases) carry the tags.
+- [`CHANGELOG.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/CHANGELOG.md) records every release and continues across the `2.0.0` cut; [Releases](https://github.com/middag-io/middag-php-demo-standalone/releases) carry the tags. The release version is also the tag of the Docker image.
 - Questions and bugs: [issues of `middag-php-demo-standalone`](https://github.com/middag-io/middag-php-demo-standalone/issues). Security reports: [`SECURITY.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/SECURITY.md); do not open a public issue for a vulnerability.
 - Contributions: [`CONTRIBUTING.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/CONTRIBUTING.md).
