@@ -17,13 +17,13 @@ This section:
 
 The library applies the family rule "no tag means `@internal`" ([Supported surface](../versioning-and-compatibility#supported-surface)):
 
-- Every class, interface, trait and enum under `src/` carries a class-level annotation: `@api` or `@internal`.
-- A type is public only when its docblock carries `@api`. A symbol without the tag is `@internal`, even when it is `public` in PHP, and may change in any release.
+- A class, interface, trait or enum is public only when its class-level docblock carries `@api`.
+- Any other symbol is `@internal`, whether it carries the `@internal` tag or no tag, even when it is `public` in PHP. It may change in any release.
 - Only `@api` symbols follow the family versioning rules.
 
 [API-STABILITY.md](https://github.com/middag-io/middag-php-licensing/blob/v1.15.2/API-STABILITY.md) in the repository states the rule, the kinds of change and how the `@api` surface may change on `1.x` and from `2.0.0`. The command `grep -rl '@api' src` lists the `@api` files.
 
-From `v1.15.2`, `@api` covers 197 types in eight groups: `License`, `Delivery`, `Api` (the base client and its contract), `Api\Account`, `Api\Admin`, `Sso`, `RemoteSupport` and `AntiTamper`. [Public API](./public-api) documents every one of them and closes with a [type index](./public-api#type-index). The `Observability` and `Telemetry` namespaces, the scheduled tasks of `AntiTamper` and `RemoteSupport` and the helpers the `@api` types use inside are `@internal`.
+At `v1.15.2`, `@api` covers 197 types in eight groups: `License`, `Delivery`, `Api` (the base client and its contract), `Api\Account`, `Api\Admin`, `Sso`, `RemoteSupport` and `AntiTamper`. [Public API](./public-api) documents every one of them and closes with a [type index](./public-api#type-index). The `Observability` and `Telemetry` namespaces, the scheduled tasks of `AntiTamper` and `RemoteSupport` and the helpers the `@api` types use inside are `@internal`.
 
 ## Requirements
 
