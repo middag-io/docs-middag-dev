@@ -62,7 +62,7 @@ The platform rules behind these values are in [Platform](/libraries/reference/pl
 
 - Support covers the types tagged `@api` only, under the rules of [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#supported-surface). A type tagged `@internal`, or with no tag, is an implementation detail and may change in any release.
 - Every type of the framework carries its stability tag at class level. The `@api` surface is the interfaces in the `Contract/` sub-namespace of each concern, plus the exported `@api` classes: value objects, default implementations, base classes, attributes, enums and exceptions.
-- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md) in the repository lists the public surface and the types other libraries of the family consume.
+- [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md) in the repository lists every `@api` type of the public surface; a test in the repository keeps the list equal to the tags in `src/`.
 - Depend only on `@api` types. When a behavior is reachable only through an `@internal` type, open an issue to have it promoted; a promotion is an additive change for a family MINOR.
 - The framework ships no MIDDAG domain base classes and no MIDDAG domain helpers. Entity and value-object bases, formatting helpers and validators of the MIDDAG domain belong to the internal library `middag-io/core`; for entities, the framework exposes only the generic `EntityInterface` contract. The generic DTO base and utilities in `Shared` are outside this exclusion.
 
