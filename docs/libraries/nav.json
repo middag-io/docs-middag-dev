@@ -1,0 +1,35 @@
+{
+  "label": "PHP Libraries",
+  "reference": {
+    "groups": [
+      {
+        "label": "Family Policy",
+        "order": 0,
+        "files": [
+          "reference/versioning-and-compatibility",
+          "reference/platform",
+          "reference/publication",
+          "reference/guards"
+        ],
+        "labels": [
+          {
+            "file": "reference/versioning-and-compatibility",
+            "label": "Versioning & Compatibility"
+          },
+          {
+            "file": "reference/platform",
+            "label": "Platform"
+          },
+          {
+            "file": "reference/publication",
+            "label": "Documentation Publication"
+          },
+          {
+            "file": "reference/guards",
+            "label": "Guards"
+          }
+        ]
+      }
+    ]
+  }
+}

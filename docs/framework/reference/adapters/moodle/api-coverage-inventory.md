@@ -67,7 +67,7 @@ Every class in `src/` carries an explicit stability tag. The default for the hos
 | `Runtime/Kernel`, `Bus/MoodleHostEventBridge`                                                                                    | `@api`      | The consumer's composition root drives them                                                                                                                   |
 | Port implementations wired by the container (`MoodleConfigResolver`, `MoodleConnectionAdapter`, `MoodleSqlDialect`, `TransactionManager`, `MoodleBootstrap`, `MoodleMaintenanceGate`), `Http/` controllers, kernel, routing and Inertia bridge, `Form/`, `Security/` implementations, `Output/NavbarService`, `Output/Widget`, `Output/AbstractBlock` | `@internal` | Bind or consume them through the framework port or the local `Contract/` interface, never by importing the concrete class                                     |
 
-An `@api` class enters the API evolution and deprecation cycle of the family's `1.x` policy (`API-STABILITY.md` in each repository): a breaking change goes through deprecation, never a silent rename.
+An `@api` class is part of the supported surface defined in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility): from `2.0.0` a breaking change goes through deprecation in a MINOR and removal in the next MAJOR, never a silent rename. `API-STABILITY.md` in each repository lists the surface.
 
 ## Enforcement state
 

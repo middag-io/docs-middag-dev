@@ -53,7 +53,7 @@ Injection points (each takes an optional policy; `null` means the default):
 | `SettingsSupport::get()`, `set()`, `unset()`                          | Typed runtime access                                    |
 | `ThemeSupport::isInheritanceEnabled()`, `getCssInjection()`, `buildTheme()` | The theme-inheritance flag (`{prefix}core_inherit_theme_colors`) |
 
-History: the default was `mdg_` (the MIDDAG brand) until the adapter changed it to `mdglib_`, released as a marked breaking change under the family's `1.x` policy. (Before that, the legacy plugin had migrated its unprefixed keys to `mdg_` in `db/upgrade.php` version `2026040900`.) A consumer that relied on the silent default must now pass its prefix explicitly; any component that builds its own reader or support call without the policy silently reads `mdglib_*` keys and misses values written under the product prefix.
+The default prefix is `mdglib_`, a library prefix that belongs to no product. A consumer passes its own prefix explicitly; any component that builds its own reader or support call without the policy silently reads `mdglib_*` keys and misses values written under the product prefix.
 
 ## Typed runtime access
 

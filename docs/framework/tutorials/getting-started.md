@@ -4,7 +4,7 @@ title: 'framework — Getting Started'
 
 # Getting Started with framework
 
-Requires PHP `^8.2`. Install via Composer:
+Requires PHP `^8.3` (8.3, 8.4 and 8.5 are supported; see [Platform](/libraries/reference/platform)). Install via Composer:
 
 ```bash
 composer require middag-io/framework
@@ -45,4 +45,4 @@ The same controller runs standalone, inside Moodle, or inside WordPress, by swap
 
 - [Overview](../explanation/overview) — the OSS × MIDDAG boundary and licensing model.
 - [Architecture](../explanation/architecture) — the four pillars, concern-first layout, and bridge contracts.
-- [Bootstrap](../explanation/bootstrap) — boot phases and the concrete boot flow.
+- [Bootstrap](../explanation/bootstrap-lifecycle) — boot phases and the concrete boot flow.

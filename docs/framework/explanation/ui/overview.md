@@ -12,8 +12,8 @@ The builders carry no transport and no host knowledge: the same contract renders
 
 ## Open source and MIDDAG
 
-`middag-io/ui`, `middag-io/framework`, and the Moodle/WordPress adapters are open source under Apache-2.0 — the generic plumbing, free, forever. The governed domain infrastructure built on top is MIDDAG's proprietary product, opt-in; this library has zero dependencies and never points at it.
+`middag-io/ui`, `middag-io/framework`, the Moodle and WordPress adapters and `middag-io/demo-standalone` are open source under Apache-2.0 — the generic plumbing, free, forever. The governed domain infrastructure built on top lives in MIDDAG's internal (proprietary, not free) libraries, opt-in; product features live in the products. See [OSS and internal libraries](../architecture#oss-and-internal-libraries). This library has zero dependencies and never points at the internal libraries.
 
 ## Licensing note
 
-Apache-2.0. On the `1.x` line a minor release may carry a documented breaking change, cut deliberately by a maintainer — strict semver (breaking only in majors) starts at `2.0`.
+Apache-2.0. Support starts at `2.0.0`, the first stable release of the library family: from there breaking changes land only in a MAJOR. Earlier releases are pre-stable and unsupported. See [Versioning and compatibility](/libraries/reference/versioning-and-compatibility).
