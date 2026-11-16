@@ -48,7 +48,7 @@ Rules:
 - On this hub, generated API reference covers only the `@api` surface of an OSS library and, for `middag-php-core`, only the types of its curated section: the types, signatures and docblocks a consumer codes against. Untagged and `@internal` types are not published here.
 - The library generates it from its source and publishes it as a versioned docs payload through the docs proxy, like any aggregated channel. The hub never commits generated reference and never edits it.
 - Generated reference complements the curated section of `middag-php-core`; it does not replace it. The curated section explains contracts and errors; the generated reference lists signatures.
-- This is the target rule. ADR-015 of the MIDDAG profile still sends the reference of a consumer-facing library to a site of its own, and the [Generate PHP reference docs](/framework/how-to/generate-php-reference) guide follows ADR-015. Both change with the ADR-015 amendment of its publish-target clause, not with this page. The choice of generator (the tool clause of ADR-015) is outside this page.
+- ADR-015 of the MIDDAG profile records this rule; the [Generate PHP reference docs](/framework/how-to/generate-php-reference) guide follows it. The choice of generator (the tool clause of ADR-015) is outside this page.
 
 ## PHP-React correspondence map
 
