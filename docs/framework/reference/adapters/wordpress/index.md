@@ -81,7 +81,7 @@ Where WordPress already has the mechanism a port describes, the adapter maps the
 | `AdminSupport` | wp-admin menu and notice APIs | `@api` |
 | `AssetSupport` | `wp_enqueue_script` / `wp_enqueue_style` | `@internal` |
 | `CacheSupport` | Object Cache (`wp_cache_*`) | `@api` |
-| `CacheSupportPsr16` | PSR-16 over the Object Cache, one cache area per `wp_cache` group | `@api` |
+| `CacheSupportPsr16` | PSR-16 over the Object Cache, one cache area per `wp_cache` group (group prefix: a constructor argument with a [neutral default](./configuration#neutral-defaults)) | `@api` |
 | `CapabilitySupport` | roles and capabilities write side (`add_role`, `WP_Role::add_cap`, ...) | `@internal` |
 | `CronSupport` | `wp_next_scheduled` / `wp_schedule_event` / `wp_unschedule_event` | `@internal` |
 | `EscapeSupport` | `esc_html` / `esc_attr` / `esc_url` | `@internal` |
@@ -102,7 +102,7 @@ Where WordPress already has the mechanism a port describes, the adapter maps the
 | `ShortcodeSupport` | Shortcode API | `@api` |
 | `TransientSupport` | Transients API | `@api` |
 | `UploadSupport` | `wp_upload_dir()` | `@api` |
-| `UserSupport` | `get_current_user_id`, `current_user_can`, `wp_get_current_user` | `@internal` |
+| `UserSupport` | `get_current_user_id`, `current_user_can`, `user_can`, `wp_get_current_user` | `@internal` |
 
 ## Cron and async jobs
 

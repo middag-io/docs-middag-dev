@@ -96,8 +96,12 @@ A default in the adapter must not name a product: a third-party consumer that co
 | Routing namespaces, menu slugs, query var, cron keys, nonce action, mount node | derived from `componentName()` | `WpComponentContext` |
 | Action Scheduler group (`ActionSchedulerDriver`, `JobScheduler::make()`) | empty | constructor / `make($group)` |
 | Schema version option (`Persistence/VersionTracker`) | none: the option name is required | constructor |
+| Text domain when no component is given (`WpTranslator`) | `middaglib` | constructor (`$defaultDomain`) |
+| Host event hook prefix (`WpHostEventBridge`) | `middaglib/` | constructor (`$hookPrefix`) |
+| Hookfile filter and file name (`WpHookfileLoader`) | `middaglib_hookfiles` / `middaglib_hooks.php` | constructor (`$filterName`, `$hookfileName`) |
+| Object Cache group prefix (`Support/CacheSupportPsr16`) | `middaglib_` | constructor (`$groupPrefix`) |
 
-The same rule covers every other default of the adapter: the translator's text domain when no component is given (`WpTranslator`), the host event hook prefix (`WpHostEventBridge`), and the hookfile filter and file name (`WpHookfileLoader`). None of them names a product. Each product, MIDDAG's included, passes its own values in its composition root.
+`middaglib` is the library marker, not a product name. Each product, MIDDAG's included, passes its own values in its composition root.
 
 ## No mutable static state
 
