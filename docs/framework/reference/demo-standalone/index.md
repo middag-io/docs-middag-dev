@@ -4,7 +4,7 @@ title: 'Demo Application — demo-standalone'
 
 # Demo Application — demo-standalone
 
-`middag-io/demo-standalone` ([middag-php-demo-standalone](https://github.com/middag-io/middag-php-demo-standalone)) is a runnable help-desk application that boots `middag-io/framework` and `middag-io/ui` with no host and no proprietary code. It is a demonstration, not a library: read it to see how the published packages wire together in a real application. It exercises the `@api` areas of `ui` and `framework` and proves each one with a test.
+`middag-io/demo-standalone` ([middag-php-demo-standalone](https://github.com/middag-io/middag-php-demo-standalone)) is a runnable help-desk application that boots `middag-io/framework` and `middag-io/ui` with no host and no proprietary code. It is a demonstration, not a library: read it to see how the published packages wire together in a real application. Its coverage ledger lists every `@api` symbol of `ui` and `framework` and how a test proves it.
 
 ::: info Status
 This page states the `2.x` line of the library family. The demo joins the family at `2.0.0`, and support starts there; its `0.x` releases are pre-stable and unsupported ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility#lifecycle)).
@@ -27,10 +27,12 @@ Its place in the architecture is in [OSS and internal libraries](../../explanati
 - **Forms, schema and logging:** a multi-step form wizard, descriptor-driven schema with forward-only migrations, and Monolog-backed logging.
 - **ui contracts:** the full page contract and a partial fragment as JSON, the payload a React client consumes ([UI Wire Contract](../ui/wire-contract)).
 
-What the demo proves is the server-side contract; how the client renders it depends on the run mode:
+The demo ships a React bundle built from `ui/`:
 
-- **From source**, no JavaScript bundle is built: the Inertia HTML shell embeds the page payload.
-- **The published image** bakes the React client from `ui/`, built on the OSS `@middag-io/react`, into `public/build`, so the image serves the complete, styled application.
+- **What builds it:** Vite with `@vitejs/plugin-react`. `npm ci && npm run build:host` (`vite.config.custom.ts`) writes the app entry (`app.js`, `style.css` and hashed chunks) to `public/build`.
+- **What it uses:** React 19, the Inertia React client and the OSS renderer `@middag-io/react` (`^0.45.0`); `ui/src/app/register.ts` registers its shells, layouts and blocks plus the demo's own extensions.
+- **From source:** `composer serve` runs the PHP built-in server on `public/`, so it serves `/build/app.js` and `/build/style.css` once the bundle is built.
+- **The Docker image** builds the bundle in a Node stage and copies it into `public/build`, so a bare `docker run` serves the complete, styled application.
 
 ## Requirements
 
@@ -38,7 +40,8 @@ What the demo proves is the server-side contract; how the client renders it depe
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, with the `pdo` and `pdo_sqlite` extensions                                       |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires; the `composer.lock` its Docker image ships resolves Symfony 7.4 |
-| Sibling libraries   | `middag-io/framework` and `middag-io/ui`, on the family MAJOR (`^2.0` on `2.x`)                             |
+| Sibling libraries   | `middag-io/framework` `^1.20` and `middag-io/ui` `^1.8` (`composer.json`)                                  |
+| Renderer            | `@middag-io/react` `^0.45.0` (`ui/package.json`)                                                            |
 | Host                | none: no Moodle and no WordPress; the host ranges of the adapters do not apply                                                                                                        |
 | Database            | SQLite, in a file or in memory                                                                              |
 
@@ -72,7 +75,7 @@ The repository [README](https://github.com/middag-io/middag-php-demo-standalone/
 
 The demo is an example application, not a library, and has no public surface ([Supported surface](/libraries/reference/versioning-and-compatibility#supported-surface)). Nothing in it is meant to be imported by another package, it keeps no `API-STABILITY.md` and no reference is generated for it. What it documents is coverage, not API:
 
-- [`COVERAGE.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/COVERAGE.md) maps each `@api` area of `framework` and `ui` to the demo artifact that exercises it and the test that proves it, and states the boundary with the internal libraries.
+- [`COVERAGE.md`](https://github.com/middag-io/middag-php-demo-standalone/blob/main/COVERAGE.md) lists every `@api` symbol of the installed `framework` and `ui` as covered by a demo test or E2E spec, proved by the host adapters, or a gap with its reason, and states the boundary with the internal libraries.
 - The surface the demo exercises is the public surface of its siblings: the [`API-STABILITY.md` of `framework`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md), the [`API-STABILITY.md` of `ui`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md) and the reference pages of this section.
 
 ## Changelog and help
