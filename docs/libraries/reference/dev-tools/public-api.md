@@ -29,6 +29,7 @@ The curated public surface of `middag-php-dev-tools`: the gates, the generators 
 `check:oss-purity`:
 
 - It scans the `src/` tree of each target. Every target must have that tree with at least one `.php` file.
+- It scans code lines only. Comment lines and docblocks are not scanned, so a docblock may name a host or a product as an example.
 - `--auto` scans every one of the five public OSS libraries (`ui`, `framework`, `moodle`, `wordpress` and `demo-standalone`) under `<root>/libs/middag-php-<name>`. If one of them is missing, the command lists it and exits `1`: a partial checkout never passes.
 - The deny list lives only in `dev-tools`. It covers the proprietary namespaces and the product namespaces, and it matches them case-insensitively, as PHP resolves namespaces.
 - The purity job runs it in the CI of `dev-tools`, as [Guards](../guards#oss-purity) describes. No OSS library runs it or copies its deny list.
