@@ -8,13 +8,13 @@ Status: proposed. The platform every library of the MIDDAG PHP family declares, 
 
 ## Declared platform
 
-Every library declares the same values.
+Every library declares the same values. The Symfony row applies only to a library that depends on a Symfony component; `ui` depends on none.
 
 | Item                             | Value                                              | Where                                          |
 | -------------------------------- | -------------------------------------------------- | ---------------------------------------------- |
 | PHP requirement                  | `^8.3`                                             | `composer.json` `require.php`                  |
 | Platform pin                     | `8.3.0`                                            | `composer.json` `config.platform.php`          |
-| Symfony packages                 | `^7.4 \|\| ^8.1`                                   | every Symfony component (`symfony/*` on the 7.x/8.x release line) in `require` and `require-dev` |
+| Symfony packages                 | `^7.4 \|\| ^8.1`                                   | every Symfony component (`symfony/*` on the 7.x/8.x release line) in `require` and `require-dev`, in a library that has one |
 | Sibling libraries                | the family MAJOR (`^2.0` on `2.x`)                 | `require` / `require-dev`                      |
 | Rector target                    | `LevelSetList::UP_TO_PHP_83`                       | `rector.php`                                   |
 | PHPStan PHP version              | `80300`                                            | `phpVersion` in the PHPStan config             |
@@ -41,10 +41,11 @@ Each library's CI runs these jobs on every pull request and on `main`.
 The `highest` job:
 
 - removes the platform pin before `composer update` (by unsetting `config.platform.php` or by overriding it for the run), so Composer resolves on the real PHP of the runner;
-- **asserts that a Symfony package resolves to 8.x** (for example `symfony/dependency-injection`, or the library's main Symfony dependency). A green run that resolved Symfony 7.4 does not pass;
+- in a library that depends on a Symfony component, **asserts that a Symfony package resolves to 8.x** (for example `symfony/dependency-injection`, or the library's main Symfony dependency). A green run that resolved Symfony 7.4 does not pass;
+- in a library with no Symfony component (`ui`), makes no Symfony assertion. The job still runs on 8.4 and 8.5 without the pin and is still required; it proves only the PHP range;
 - runs the same test suite as the library check.
 
-The library check and the `highest` job come from the shared PHP library check of `middag-io/actions`. The input that lets the reusable workflow drop the pin is part of that component, so every library gets the `highest` job through the same released version.
+The library check and the `highest` job come from the shared PHP library check of `middag-io/actions`. The input that lets the reusable workflow drop the pin, and the switch that turns the Symfony assertion off for a library with no Symfony component, are part of that component, so every library gets the `highest` job through the same released version.
 
 ## Required checks on `main`
 

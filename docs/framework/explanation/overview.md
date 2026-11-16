@@ -8,7 +8,7 @@ A platform-agnostic PHP framework for building business domains that do not depe
 
 > Your domain should not know, or care, where it runs.
 
-See [Architecture](./architecture) for the four pillars, the OSS × proprietary boundary, the concern-first 3-tier layout, the bridge contracts, and the Active-Record / Eloquent compatibility matrix. See [Bootstrap](./bootstrap) for the boot phases, what the kernel provides at boot, and the bridge contracts an adapter implements.
+See [Architecture](./architecture) for the four pillars, the OSS × proprietary boundary, the concern-first 3-tier layout, the bridge contracts, and the Active-Record / Eloquent compatibility matrix. See [Bootstrap](./bootstrap-lifecycle) for the boot phases, what the kernel provides at boot, and the bridge contracts an adapter implements.
 
 ## Open source and MIDDAG
 

@@ -45,4 +45,4 @@ The same controller runs standalone, inside Moodle, or inside WordPress, by swap
 
 - [Overview](../explanation/overview) — the OSS × MIDDAG boundary and licensing model.
 - [Architecture](../explanation/architecture) — the four pillars, concern-first layout, and bridge contracts.
-- [Bootstrap](../explanation/bootstrap) — boot phases and the concrete boot flow.
+- [Bootstrap](../explanation/bootstrap-lifecycle) — boot phases and the concrete boot flow.

@@ -104,7 +104,7 @@ How the Symfony range resolves per PHP version:
 
 Rules:
 
-- Symfony 8.x requires PHP 8.4 or later, so PHP 8.3 always resolves Symfony 7.4. Both ends of the Symfony range are tested ([Platform](./platform)).
+- Symfony 8.x requires PHP 8.4 or later, so PHP 8.3 always resolves Symfony 7.4. In every library that depends on Symfony, both ends of the Symfony range are tested; `ui` has no Symfony dependency, so its tests cover only the PHP range ([Platform](./platform)).
 - The host columns bind the adapters only. `middag-io/ui` and `middag-io/framework` run with no host.
 - A Moodle version caps the PHP versions available on that host (Moodle 4.5 runs up to PHP 8.3). The adapter supports the intersection, never more.
 - A host version enters or leaves the range in a family MINOR. A PHP or Symfony line leaves the range only in a family MAJOR.
