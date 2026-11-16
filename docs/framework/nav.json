@@ -59,34 +59,6 @@
   "reference": {
     "groups": [
       {
-        "label": "Family Policy",
-        "order": 0,
-        "files": [
-          "reference/family/versioning-and-compatibility",
-          "reference/family/platform",
-          "reference/family/publication",
-          "reference/family/guards"
-        ],
-        "labels": [
-          {
-            "file": "reference/family/versioning-and-compatibility",
-            "label": "Versioning & Compatibility"
-          },
-          {
-            "file": "reference/family/platform",
-            "label": "Platform"
-          },
-          {
-            "file": "reference/family/publication",
-            "label": "Documentation Publication"
-          },
-          {
-            "file": "reference/family/guards",
-            "label": "Guards"
-          }
-        ]
-      },
-      {
         "label": "HTTP, Routing & Rendering",
         "order": 1,
         "files": [

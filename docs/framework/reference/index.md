@@ -6,13 +6,6 @@ title: 'Reference — Framework'
 
 Information-oriented API and contract detail, grouped by topic (see the sidebar for the same clustering).
 
-## Family Policy
-
-- [Versioning & Compatibility](./family/versioning-and-compatibility)
-- [Platform](./family/platform)
-- [Documentation Publication](./family/publication)
-- [Guards](./family/guards)
-
 ## HTTP, Routing & Rendering
 
 - [Routing & Auth Attributes](./attribute-routing-and-auth-model)

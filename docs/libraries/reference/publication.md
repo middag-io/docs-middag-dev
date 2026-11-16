@@ -65,7 +65,7 @@ Rules:
 - On this hub, generated API reference covers only the `@api` surface of a family library: the types, signatures and docblocks a consumer codes against. Untagged and `@internal` types are not published here.
 - The library generates it from its source and publishes it as a versioned docs payload through the docs proxy, like any aggregated channel. The hub never commits generated reference and never edits it.
 - Generated reference complements the curated public-API section of an internal library; it does not replace it. The curated section explains contracts and errors; the generated reference lists signatures.
-- This is the target rule. ADR-015 of the MIDDAG profile still sends the reference of a consumer-facing library to a site of its own, and the [Generate PHP reference docs](../../how-to/generate-php-reference) guide follows ADR-015. Both change with the ADR-015 amendment, not with this page.
+- This is the target rule. ADR-015 of the MIDDAG profile still sends the reference of a consumer-facing library to a site of its own, and the [Generate PHP reference docs](/framework/how-to/generate-php-reference) guide follows ADR-015. Both change with the ADR-015 amendment, not with this page.
 
 ::: warning Decision required at acceptance: generated API reference on this hub
 
@@ -81,7 +81,7 @@ Rules:
 
 The correspondence map lists each UI contract type emitted by PHP and the React component that renders it. It is a reference, not a design: it describes the wire contract both sides already share.
 
-- **Open-source half:** each `$defs` type of the `middag-php-ui` schema bundles, its PHP class and the `@middag-io/react` export that renders it, one row per type. It is a reference page of this hub (to be added), next to the [UI wire contract](../ui/wire-contract). `middag-php-ui` owns it, because its schemas are the source the React types are generated from.
+- **Open-source half:** each `$defs` type of the `middag-php-ui` schema bundles, its PHP class and the `@middag-io/react` export that renders it, one row per type. It is a reference page of this hub (to be added), next to the [UI wire contract](/framework/reference/ui/wire-contract). `middag-php-ui` owns it, because its schemas are the source the React types are generated from.
 - **Proprietary half:** the UI contract types of `middag-php-core` and the proprietary React components that render them. It lives in the `middag-php-core` repository, which owns those schemas, and reaches this hub only as part of the curated public API of `middag-php-core`.
 - The owner's maintainers approve the map in the pull request that adds it, against the schemas of a named release. A rename or a move on either side updates the map in the same change.
 - No reorganization of PHP UI classes starts before the map is approved.

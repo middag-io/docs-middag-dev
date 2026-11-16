@@ -63,9 +63,9 @@ The ecosystem is **Hexagonal (Ports & Adapters)**, arranged in four rings. Depen
 The pillars carry two kinds of library, and the difference is a rule, not a label.
 
 - **OSS (Apache-2.0):** `middag-php-ui`, `middag-php-framework`, `middag-php-moodle`, `middag-php-wordpress` and `middag-php-demo-standalone`. Free to use, documented in full on this hub.
-- **Internal (proprietary):** `middag-php-core`, `middag-php-licensing` and `middag-php-dev-tools`. They are not free open source. Their full documentation lives in their own repositories; this hub publishes only their public API ([Documentation publication](../reference/family/publication)).
+- **Internal (proprietary):** `middag-php-core`, `middag-php-licensing` and `middag-php-dev-tools`. They are not free open source. Their full documentation lives in their own repositories; this hub publishes only their public API ([Documentation publication](/libraries/reference/publication)).
 - **Product features are not in the OSS libraries.** Governed event delivery, async jobs with audit, EAV, multi-tenancy, licensing and every product feature live in the internal libraries or in the products. An OSS library ships the generic seam (a contract, an OSS default), never the product behavior behind it.
-- The libraries share one version family and one lifecycle, separate from the products' ([Versioning and compatibility](../reference/family/versioning-and-compatibility)).
+- The libraries share one version family and one lifecycle, separate from the products' ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility)).
 - This hub is the normative architecture of the OSS libraries. A `docs/architecture.md` (or similar) in an OSS repository is a pointer to this page, not a second copy.
 
 ::: warning Decision required at acceptance: how core declares the adapters

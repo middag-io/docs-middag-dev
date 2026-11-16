@@ -16,4 +16,4 @@ The builders carry no transport and no host knowledge: the same contract renders
 
 ## Licensing note
 
-Apache-2.0. Support starts at `2.0.0`, the first stable release of the library family: from there breaking changes land only in a MAJOR. Earlier releases are pre-stable and unsupported. See [Versioning and compatibility](../../reference/family/versioning-and-compatibility).
+Apache-2.0. Support starts at `2.0.0`, the first stable release of the library family: from there breaking changes land only in a MAJOR. Earlier releases are pre-stable and unsupported. See [Versioning and compatibility](/libraries/reference/versioning-and-compatibility).

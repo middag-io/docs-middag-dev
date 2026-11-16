@@ -17,6 +17,9 @@ features:
   - title: MIDDAG Framework
     details: Platform-agnostic PHP — DI, PSR-15 HTTP, query builder, forms, command bus, Inertia. Apache-2.0.
     link: /framework/
+  - title: PHP Libraries
+    details: OSS (Apache-2.0) and internal (proprietary) libraries. Versioning, compatibility, platform, documentation and guards of the PHP library family.
+    link: /libraries/
   - title: middag-react
     details: React component library for the frontend side of a MIDDAG-based app.
     link: /middag-react/latest/

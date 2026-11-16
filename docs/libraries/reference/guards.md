@@ -4,7 +4,7 @@ title: 'Guards'
 
 # Guards
 
-Status: proposed. The automated checks that keep the OSS libraries free of proprietary code and of host code where the design forbids it. Related: [Architecture](../../explanation/architecture), [Platform](./platform), [Pre-PR Boundary Checklist](../../how-to/pre-pr-boundary-checklist).
+Status: proposed. The automated checks that keep the OSS libraries free of proprietary code and of host code where the design forbids it. Related: [Architecture](/framework/explanation/architecture), [Platform](./platform), [Pre-PR Boundary Checklist](/framework/how-to/pre-pr-boundary-checklist).
 
 ## What is guarded
 

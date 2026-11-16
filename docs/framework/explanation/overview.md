@@ -16,7 +16,7 @@ The framework, the Moodle and WordPress adapters, and `middag-io/ui` are open so
 
 ## Licensing note
 
-Apache-2.0. Support starts at `2.0.0`, the first stable release of the library family: from there a MINOR never breaks, and a removal is deprecated first and leaves only in the next MAJOR. Earlier releases are pre-stable and unsupported. The rules and the compatibility matrix are in [Versioning and compatibility](../reference/family/versioning-and-compatibility); the public surface is listed in [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md).
+Apache-2.0. Support starts at `2.0.0`, the first stable release of the library family: from there a MINOR never breaks, and a removal is deprecated first and leaves only in the next MAJOR. Earlier releases are pre-stable and unsupported. The rules and the compatibility matrix are in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility); the public surface is listed in [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md).
 
 ## Contributing
 
