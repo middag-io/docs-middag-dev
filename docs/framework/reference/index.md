@@ -52,3 +52,4 @@ Information-oriented API and contract detail, grouped by topic (see the sidebar 
 
 - **[UI](./ui/)** — page composition contract, UI stack and design system.
 - **[Adapters](./adapters/)** — host-specific implementation detail.
+- **[Demo Application](./demo-standalone/)** — the standalone example application, its requirements and how to run it.

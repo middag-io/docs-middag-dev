@@ -93,7 +93,7 @@ docs/
     └── explanation/
 ```
 
-- **`framework/`**: `middag-php-framework`, its host adapters (`moodle`, `wordpress`, `standalone`) and `middag-php-ui`. Ownership is full: each source repository's reference docs and loose docs move here, and the source repository keeps only `docs/decisions/`.
+- **`framework/`**: `middag-php-framework`, its host adapters (`moodle`, `wordpress`, `standalone`), `middag-php-ui` and the example application `middag-php-demo-standalone` (`reference/demo-standalone/`). Ownership is full: each source repository's reference docs and loose docs move here, and the source repository keeps only `docs/decisions/`.
 - **`core/`**: `middag-php-core` and the same adapter pattern, product-scoped. Ownership is narrower: `docs/decisions/` and `docs/ref/` stay in the source repository, and only a curated Surface-API subset is authored here. The axis is paused until the product launches, so the folder does not exist yet.
 - **`libraries/`**: the family policy of the eight `middag-php-*` libraries (versioning and compatibility, platform, documentation publication, guards). It covers OSS and internal libraries alike, so it sits outside `framework/`, whose content is Apache-2.0. Reference only; it documents no library API.
 - **`ui/`** is a leaf under the Diataxis folders of `framework/`, not a third axis. On the site it gets its own sidebar entry, because `middag-php-ui` is an isolated library rather than a host adapter. Navigation (`docs/<axis>/nav.json`) and the physical path are decoupled on purpose.

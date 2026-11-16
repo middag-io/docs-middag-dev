@@ -6,12 +6,6 @@
         "file": "tutorials/getting-started",
         "label": "Getting Started"
       }
-    ],
-    "ui": [
-      {
-        "file": "tutorials/ui/getting-started",
-        "label": "Getting Started"
-      }
     ]
   },
   "howTo": {
@@ -30,7 +24,7 @@
     "items": [
       {
         "file": "explanation/overview",
-        "label": "Overview"
+        "label": "Overview, Requirements & Install"
       },
       {
         "file": "explanation/architecture",
@@ -43,16 +37,6 @@
       {
         "file": "explanation/identifiers-and-visual-ids",
         "label": "Identifiers & Visual Ids"
-      }
-    ],
-    "ui": [
-      {
-        "file": "explanation/ui/overview",
-        "label": "Overview"
-      },
-      {
-        "file": "explanation/ui/architecture",
-        "label": "Architecture"
       }
     ]
   },
@@ -214,20 +198,6 @@
           }
         ]
       }
-    ],
-    "ui": [
-      {
-        "file": "reference/ui/composition-levels-and-capabilities",
-        "label": "Page Composition Contract"
-      },
-      {
-        "file": "reference/ui/design-system-catalog",
-        "label": "UI Stack & Design System"
-      },
-      {
-        "file": "reference/ui/wire-contract",
-        "label": "UI Wire Contract"
-      }
     ]
   },
   "adapters": [
@@ -238,12 +208,17 @@
           "label": "Boundary & Coverage",
           "order": 1,
           "files": [
+            "reference/adapters/moodle/index",
             "reference/adapters/moodle/support-class-inventory",
             "reference/adapters/moodle/boundary-whitelist",
             "reference/adapters/moodle/api-coverage-inventory",
             "reference/adapters/moodle/shared-namespace-dependencies"
           ],
           "labels": [
+            {
+              "file": "reference/adapters/moodle/index",
+              "label": "Overview, Requirements & Install"
+            },
             {
               "file": "reference/adapters/moodle/support-class-inventory",
               "label": "Support Layer & Anti-Patterns"
@@ -379,7 +354,7 @@
           "labels": [
             {
               "file": "reference/adapters/wordpress/index",
-              "label": "Overview, Support & Data"
+              "label": "Overview, Requirements & Support"
             },
             {
               "file": "reference/adapters/wordpress/routing-surfaces",
@@ -392,6 +367,65 @@
             {
               "file": "reference/adapters/wordpress/configuration",
               "label": "Configuration & Identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "UI",
+      "groups": [
+        {
+          "label": "UI",
+          "order": 1,
+          "files": [
+            "explanation/ui/overview",
+            "explanation/ui/architecture",
+            "tutorials/ui/getting-started",
+            "reference/ui/composition-levels-and-capabilities",
+            "reference/ui/design-system-catalog",
+            "reference/ui/wire-contract"
+          ],
+          "labels": [
+            {
+              "file": "explanation/ui/overview",
+              "label": "Overview, Requirements & Install"
+            },
+            {
+              "file": "explanation/ui/architecture",
+              "label": "Architecture"
+            },
+            {
+              "file": "tutorials/ui/getting-started",
+              "label": "Getting Started"
+            },
+            {
+              "file": "reference/ui/composition-levels-and-capabilities",
+              "label": "Page Composition Contract"
+            },
+            {
+              "file": "reference/ui/design-system-catalog",
+              "label": "UI Stack & Design System"
+            },
+            {
+              "file": "reference/ui/wire-contract",
+              "label": "UI Wire Contract"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Demo Application",
+      "groups": [
+        {
+          "label": "Demo Application",
+          "order": 1,
+          "files": ["reference/demo-standalone/index"],
+          "labels": [
+            {
+              "file": "reference/demo-standalone/index",
+              "label": "Overview, Requirements & Run"
             }
           ]
         }
