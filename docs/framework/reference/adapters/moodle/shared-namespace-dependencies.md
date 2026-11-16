@@ -65,7 +65,7 @@ Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib
 
 The Symfony packages the tree gets transitively can resolve on other lines:
 
-- `symfony/string`, `symfony/type-info` and `symfony/var-dumper` require it on the 7.4 line, not on the 8.x line. On older lines it varies by release.
+- `symfony/string` requires it only on the 7.4 line. `symfony/type-info` requires it on 7.3 and 7.4, not on the 8.x line. `symfony/var-dumper` requires it on the 7.4 line, not on the 8.x line; on the older lines the tree can resolve, only some releases require it.
 - `symfony/var-exporter` requires it on 7.4 and 8.1, not on 8.0. `symfony/event-dispatcher` requires it only from 8.1. `symfony/error-handler` never requires it.
 - Among the contracts packages, only `symfony/service-contracts` requires it, from 3.5. `symfony/dependency-injection` requires `symfony/service-contracts` at `^3.6`.
 
@@ -124,7 +124,7 @@ The polyfills declare classes in `Symfony\Polyfill\*` and define global function
 | `psr/log ^3.0`                                                                                                                  | Direct requirement                                                         | `Psr\Log`                 |
 | `psr/simple-cache ^3.0`                                                                                                         | Direct requirement                                                         | `Psr\SimpleCache`         |
 | `psr/event-dispatcher`                                                                                                          | Through `symfony/event-dispatcher-contracts`                               | `Psr\EventDispatcher`     |
-| `psr/clock`, `psr/http-message`, `psr/http-factory`, `psr/http-client`, `psr/http-server-handler`, `psr/http-server-middleware` | Through `middag-io/framework` (and `nyholm/psr7`, `symfony/http-client`)  | `Psr\Clock`, `Psr\Http\*` |
+| `psr/clock`, `psr/http-message`, `psr/http-factory`, `psr/http-client`, `psr/http-server-handler`, `psr/http-server-middleware` | Through `middag-io/framework` (and `nyholm/psr7`, `symfony/clock`, `symfony/psr-http-message-bridge`) | `Psr\Clock`, `Psr\Http\*` |
 | `psr/cache`                                                                                                                     | Through `middag-io/framework` (`symfony/cache`)                            | `Psr\Cache` (5.2 and 5.3) |
 | `monolog/monolog ^3.0`                                                                                                          | Through `middag-io/framework`                                              | `Monolog` (5.2 and 5.3)   |
 
