@@ -13,4 +13,4 @@ A platform-agnostic PHP framework for building business domains that do not depe
 - **[Explanation](./explanation/)** — architecture, boot lifecycle, the OSS × proprietary boundary.
 - **[How-to](./how-to/)** — task-oriented guides.
 
-Open source under Apache-2.0 — `middag-io/framework`, plus the Moodle and WordPress adapters, and `middag-io/ui`.
+Open source under Apache-2.0 — `middag-io/framework`, plus the Moodle and WordPress adapters, `middag-io/ui` and `middag-io/demo-standalone`. The versioning, platform and guard policy of the whole library family is in [PHP Libraries](/libraries/).
