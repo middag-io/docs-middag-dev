@@ -12,7 +12,7 @@ Status: proposed. The automated checks that keep the OSS libraries free of propr
 | -------------------------------------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------- |
 | An OSS library never imports proprietary code (`middag-io/core`, `middag-io/licensing`, any product namespace) | `ui`, `framework`, `moodle`, `wordpress`, `demo-standalone` | the cross-repository OSS purity job |
 | `ui` has no runtime dependency other than PHP                                                | `ui`                                           | `ui` architecture test                                                 |
-| No host vocabulary in `ui` code, docblocks or schemas                                        | `ui` (`src/` and `schema/`)                    | `ui` host-vocabulary architecture test (to be added, with the `draftitemid` rename) |
+| No host vocabulary in `ui` code, docblocks or schemas                                        | `ui` (`src/` and `schema/`)                    | `ui` host-vocabulary architecture test (to be added, with the `draftitemid` replacement) |
 | No host namespace, global or function in the framework                                       | `framework`                                    | `composer check:portability` (dependency rules plus host-globals scan) |
 | No host adapter directory inside the framework                                               | `framework`                                    | framework architecture test                                            |
 | Each adapter talks to one host only                                                          | `moodle`, `wordpress`                          | each adapter's architecture tests (to be added)                        |
@@ -52,7 +52,10 @@ The purity job runs in the CI of `middag-php-dev-tools`, the library that owns t
 - `src/` and `schema/` carry no host vocabulary, in code, docblocks or schema text: no Moodle or WordPress API name, no host form engine, no host database global, no host capability call, no host file-area field and no host plugin convention.
 - `ui` may carry a markup body produced downstream as opaque data (`RendererOutput::html()`, `RenderTarget::Html`). No `ui` contract produces markup.
 - The guard is a `ui` architecture test that scans `src/` and `schema/`, comments included, against a deny list of host vocabulary. The deny list allows `RenderTarget::Html` and the word `html`.
-- Known violation: `Form/FileValue` is `@api` and has a public `?int $draftitemid` property, whose docblock names the Moodle draft area, and `schema/page-contract.json` and `schema/fragment.json` define a `draftitemid` field. `draftitemid` is a host file-area field. The guard lands in the same change that removes it, so it does not fail on its first run.
+- Known violation: `Form/FileValue` is `@api` and has a public `?int $draftitemid` property, whose docblock names the Moodle draft area, and `schema/page-contract.json` and `schema/fragment.json` define a `draftitemid` field. `draftitemid` is a host file-area field.
+- `draftitemid` is replaced by a host-neutral field in a `1.x` MINOR of `ui`, in the change that resolves [middag-io/middag-php-ui#64](https://github.com/middag-io/middag-php-ui/issues/64). The replacement is direct, with no alias. Only the name of the neutral field is chosen in that change.
+- The host-vocabulary architecture test of `ui` lands in the same change, so it does not fail on its first run.
+- `middag-io/moodle`, `middag-react`, the proprietary React components and the products that read the field follow that change. `middag-io/moodle` maps the neutral field to the Moodle draft area.
 - The framework keeps its own `check:portability` scan, which skips comments because framework docblocks name hosts as examples.
 
 ::: warning Decision required at acceptance: the "no host in `src/`" gate of `ui`
@@ -62,16 +65,6 @@ The purity job runs in the CI of `middag-php-dev-tools`, the library that owns t
 | **A. A `ui` architecture test over `src/` and `schema/`, comments included (recommended)**      | Matches the `ui` rule exactly; runs on every `ui` pull request with no new CI wiring. |
 | B. Reuse the framework's portability scan as a `ui` Composer script                             | Skips docblocks and schemas, so it is weaker than the rule.                    |
 | C. Only the cross-repository purity job                                                         | Checks proprietary namespaces, not host vocabulary; does not run on `ui` pull requests. |
-
-:::
-
-::: warning Decision required at acceptance: `FileValue::$draftitemid`
-
-| Option                                                                                         | Effect                                                                                       |
-| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **A. Rename it to a host-neutral field in the 2.0.0 cut, with no alias (recommended)**          | Breaks the `ui` PHP API and wire contract, `moodle` and any renderer that reads the field; `moodle` maps the neutral field to its draft area. The name is chosen in the change. |
-| B. Keep it and allow `draftitemid` in the deny list                                             | The boundary keeps a known host field in a public contract.                                  |
-| C. Move it out of `ui` into a `moodle` extension of `FileValue`                                 | Breaks the same consumers as A and splits the file value across two libraries.               |
 
 :::
 
