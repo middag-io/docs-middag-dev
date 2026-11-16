@@ -15,7 +15,21 @@ Verified on 2026-11-16 against:
 
 Moodle core vendors a fixed set of third-party libraries under `lib/<name>/` (`public/lib/<name>/` from Moodle 5.1) and registers their namespaces **globally**, for every request, in `core_component::$psr4namespaces`. Moodle's class loader resolves them independently of any plugin's `vendor/autoload.php`. It also requires a short list of function files on every request (`core_component::$composerautoloadfiles`), the way Composer's `autoload.files` does.
 
-From Moodle 5.2, Moodle can also load Composer packages of its own. Its root `composer.json` requires the libraries of the table below at the versions it vendors; 5.3 also requires `symfony/console` and `league/oauth2-server`, which it does not vendor. `core_component::register_autoloader()` requires `{$CFG->root}/vendor/autoload.php` when that file exists. Moodle 4.5, 5.0 and 5.1 declare no runtime package in their root `composer.json` (only `require-dev`) and do not load a root `vendor/autoload.php` from `core_component`.
+From Moodle 5.2, Moodle can also load Composer packages of its own. Its root `composer.json` requires the libraries of the table below at the versions it vendors; 5.3 also requires `symfony/console` and `league/oauth2-server`, which it does not vendor. Moodle 4.5, 5.0 and 5.1 declare no runtime package in their root `composer.json` (only `require-dev`) and do not load a root `vendor/autoload.php` from `core_component`.
+
+`core_component::register_autoloader()` loads the root `vendor/autoload.php` in both 5.2 and 5.3, at a different point of the sequence. `lib/setup.php` sets `$CFG->root` to the directory above `public/`.
+
+- **Moodle 5.2:**
+  1. Registers Moodle's class loader.
+  2. When `$CFG->root` is set and `{$CFG->root}/vendor/autoload.php` exists, requires that file.
+  3. Requires the function files of `$composerautoloadfiles`.
+- **Moodle 5.3:**
+  1. When `dirname(__DIR__, 3) . '/vendor/autoload.php'` exists (the directory above `public/`), requires that file. Moodle's class loader is not registered yet, and this step does not depend on `$CFG->root`.
+  2. Registers Moodle's class loader.
+  3. When `$CFG->root` is set and `{$CFG->root}/vendor/autoload.php` exists, requires that file; `require_once` skips it when step 1 already loaded the same file.
+  4. Requires the function files of `$composerautoloadfiles`.
+
+In 5.3, the `autoload.files` of the root `vendor/` (such as `symfony/deprecation-contracts` `function.php` and the polyfill bootstraps) therefore run before Moodle's class loader exists. In both versions they run before `$composerautoloadfiles`. For class lookups, the order of the `require` calls does not decide the winner: Composer registers its class loader with `prepend` (Composer's default `prepend-autoloader: true`, which Moodle's root `composer.json` does not change), so the root `vendor/` loader sits ahead of Moodle's class loader in both versions.
 
 When this adapter, or a package in its dependency tree, lands in one of those namespaces, PHP loads whichever registration wins. Which one wins depends on bootstrap order (does the consumer plugin require its `vendor/autoload.php` before or after Moodle registers its own loaders?), and that varies by hosting layout: a bundled plugin, a Composer-managed site, or a project-root vendor in a container. A single package's `composer.json` cannot pin it. It is not guaranteed to be this adapter's own `vendor/` copy. The same holds for `Middag\*` classes themselves: a consumer's autoloader cannot unload a class that another autoloader already resolved earlier in the request.
 
@@ -32,38 +46,69 @@ The paths are relative to the Moodle root; from 5.1 every path starts with `publ
 | `Psr\Cache`                                           | `lib/psr/cache/src`                                                      | —      | —      | —      | 3.0.0  | 3.0.0  |
 | `Psr\Clock`                                           | `lib/psr/clock/src`                                                      | 1.0.0  | 1.0.0  | 1.0.0  | 1.0.0  | 1.0.0  |
 | `Psr\EventDispatcher`                                 | `lib/psr/event-dispatcher/src`                                           | 1.0.0  | 1.0.0  | 1.0.0  | 1.0.0  | 1.0.0  |
-| `Psr\Http\Message`                                    | `lib/psr/http-factory/src`, `lib/psr/http-message/src`                   | 1.1.0, 2.0.0 | same | same | same | same |
+| `Psr\Http\Message`                                    | `lib/psr/http-factory/src`, `lib/psr/http-message/src`                   | 1.1.0, 2.0.0 | 1.1.0, 2.0.0 | 1.1.0, 2.0.0 | 1.1.0, 2.0.0 | 1.1.0, 2.0.0 |
 | `Psr\Http\Client`                                     | `lib/psr/http-client/src`                                                | 1.0.3  | 1.0.3  | 1.0.3  | 1.0.3  | 1.0.3  |
 | `Psr\Http\Server`                                     | `lib/psr/http-server-handler/src`, `lib/psr/http-server-middleware/src`  | 1.0.2  | 1.0.2  | 1.0.2  | 1.0.2  | 1.0.2  |
 | `Monolog`                                             | `lib/monolog/src/Monolog`                                                | —      | —      | —      | 3.9.0  | 3.9.0  |
 | `GuzzleHttp`, `GuzzleHttp\Psr7`, `GuzzleHttp\Promise` | `lib/guzzlehttp/*`                                                       | 7.8.1  | 7.9.2  | 7.9.2  | 7.10.0 | 7.10.0 |
 | `PHPMailer\PHPMailer`                                 | `lib/phpmailer/src`                                                      | 6.9.1  | 6.9.3  | 6.9.3  | 6.9.3  | 6.9.3  |
 
-The Guzzle column gives the `guzzlehttp/guzzle` version. The list is not exhaustive; it covers the namespaces relevant to this adapter's dependency tree. No `Symfony\*` namespace is in the `core_component` map of any branch above.
+The `Psr\Http\Message` cells give `psr/http-factory`, then `psr/http-message`. The Guzzle column gives the `guzzlehttp/guzzle` version. The list is not exhaustive; it covers the namespaces relevant to this adapter's dependency tree. No `Symfony\*` namespace is in the `core_component` map of any branch above.
 
 ### Global function: `trigger_deprecation()`
 
-Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib/symfony/deprecation-contracts`; 3.5.0 on 4.5, 3.5.1 on 5.0 and 5.1, 3.6.0 on 5.2 and 5.3) and requires its `function.php` on every request through `$composerautoloadfiles`. The file defines the global function `trigger_deprecation()` only when no copy defines it yet (`function_exists()` guard). This adapter's tree requires the same package (`middag-io/framework` requires `^3.5`, and every Symfony component it uses requires it), so the first copy loaded defines the function for the whole request. Both copies are on the 3.x line.
+Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib/symfony/deprecation-contracts`; 3.5.0 on 4.5, 3.5.1 on 5.0 and 5.1, 3.6.0 on 5.2 and 5.3) and requires its `function.php` on every request through `$composerautoloadfiles`. The file defines the global function `trigger_deprecation()` only when no copy defines it yet (`function_exists()` guard). This adapter's tree always contains the same package: `middag-io/framework` requires it directly (`^3.5`), and `symfony/dependency-injection` and `symfony/routing`, which the adapter requires at `^7.0`, require it in every 7.x and 8.x release. The other Symfony packages of the tree differ by release line:
+
+- Require it on the 7.4 line, not on 8.0: `symfony/cache`, `symfony/http-kernel`, `symfony/messenger`, `symfony/property-info`, `symfony/serializer`, `symfony/string`, `symfony/type-info`, `symfony/validator`, `symfony/var-dumper` and `symfony/var-exporter`. The adapter pins `symfony/http-client` and `symfony/http-foundation` to `^7.0`; both require it on 7.4.
+- Never require it on 7.x or 8.x: `symfony/clock`, `symfony/error-handler`, `symfony/property-access`, `symfony/psr-http-message-bridge` and `symfony/uid`. `symfony/event-dispatcher` requires it only from 8.1.
+- Among the contracts packages, only `symfony/service-contracts` requires it, from 3.5.
+
+The first copy loaded defines the function for the whole request. Both copies are on the 3.x line.
 
 ### Composer packages declared by Moodle 5.2 and 5.3
 
-The root `composer.lock` of 5.2 and 5.3 locks the libraries above at the same versions (`firebase/php-jwt` v6.11.1, `monolog/monolog` 3.9.0, `psr/*` as in the table). It also locks Symfony packages that this adapter's dependency tree contains:
+The root `composer.lock` of 5.2 and 5.3 shares the packages below with this adapter's dependency tree. The tree is the closure of the `require` sections of `middag-php-moodle` `main@89cef44` and `middag-php-framework` `main@5af00e8`, resolved transitively from Packagist over every stable release inside the accepted ranges and installable on PHP 8.2 to 8.5. A version marked _dev_ is locked in `packages-dev`: it reaches the root `vendor/` only when Composer installs development packages (the default of `composer install`, skipped with `--no-dev`).
 
-| Package                            | 5.2     | 5.3     | In this adapter's tree through                                            |
-| ---------------------------------- | ------- | ------- | ------------------------------------------------------------------------- |
-| `symfony/deprecation-contracts`    | v3.6.0  | v3.6.0  | `middag-io/framework` (direct) and every Symfony component                |
-| `symfony/service-contracts`        | —       | v3.7.3  | `symfony/dependency-injection`, `symfony/http-client`                     |
-| `symfony/string`                   | —       | v7.4.15 | `symfony/property-info` (required by `middag-io/framework`)               |
-| `symfony/polyfill-ctype`           | v1.33.0 | v1.37.0 | `symfony/string`, `symfony/http-kernel`, `symfony/serializer`, `symfony/validator` |
-| `symfony/polyfill-intl-grapheme`   | —       | v1.41.0 | `symfony/string`                                                          |
-| `symfony/polyfill-intl-normalizer` | —       | v1.42.0 | `symfony/string`                                                          |
-| `symfony/polyfill-mbstring`        | v1.33.0 | v1.38.2 | `symfony/http-foundation`, `symfony/string`                               |
+| Package                            | 5.2            | 5.3            | In this adapter's tree through                                                                     |
+| ---------------------------------- | -------------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| `monolog/monolog`                  | 3.9.0          | 3.9.0          | `middag-io/framework` (direct)                                                                     |
+| `psr/cache`                        | 3.0.0          | 3.0.0          | `symfony/cache`, `symfony/cache-contracts`                                                         |
+| `psr/clock`                        | 1.0.0          | 1.0.0          | `middag-io/framework` (direct), `symfony/clock`                                                    |
+| `psr/container`                    | 2.0.2          | 2.0.2          | direct; `symfony/dependency-injection`, `symfony/service-contracts`, `symfony/type-info`           |
+| `psr/event-dispatcher`             | 1.0.0          | 1.0.0          | `symfony/event-dispatcher-contracts`                                                               |
+| `psr/http-client`                  | 1.0.3          | 1.0.3          | `middag-io/framework` (direct)                                                                     |
+| `psr/http-factory`                 | 1.1.0          | 1.1.0          | `middag-io/framework` (direct), `nyholm/psr7`                                                      |
+| `psr/http-message`                 | 2.0            | 2.0            | `middag-io/framework` (direct), `nyholm/psr7`, `symfony/psr-http-message-bridge`, the `psr/http-*` |
+| `psr/http-server-handler`          | 1.0.2          | 1.0.2          | `middag-io/framework` (direct), `psr/http-server-middleware`                                       |
+| `psr/http-server-middleware`       | 1.0.2          | 1.0.2          | `middag-io/framework` (direct)                                                                     |
+| `psr/log`                          | 3.0.2          | 3.0.2          | direct; `monolog/monolog` and several Symfony components                                           |
+| `psr/simple-cache`                 | 3.0.0          | 3.0.0          | direct                                                                                             |
+| `paragonie/random_compat`          | —              | v9.99.100      | `symfony/polyfill-uuid` v1.15.0 to v1.19.0 only                                                    |
+| `symfony/deprecation-contracts`    | v3.6.0         | v3.6.0         | `middag-io/framework` (direct) and some Symfony components ([below](#global-function-trigger-deprecation)) |
+| `symfony/service-contracts`        | v3.6.1 _dev_   | v3.7.3         | `symfony/cache`, `symfony/dependency-injection`, `symfony/http-client`                             |
+| `symfony/string`                   | v7.4.4 _dev_   | v7.4.15        | `symfony/property-info` (required by `middag-io/framework`)                                        |
+| `symfony/polyfill-ctype`           | v1.33.0        | v1.37.0        | `symfony/http-kernel`, `symfony/serializer`, `symfony/string`, `symfony/validator`                 |
+| `symfony/polyfill-intl-grapheme`   | v1.33.0 _dev_  | v1.41.0        | `symfony/string`                                                                                   |
+| `symfony/polyfill-intl-normalizer` | v1.33.0 _dev_  | v1.42.0        | `symfony/string`                                                                                   |
+| `symfony/polyfill-mbstring`        | v1.33.0        | v1.38.2        | `symfony/http-foundation`, `symfony/string`, `symfony/validator`, `symfony/var-dumper`             |
+| `symfony/dependency-injection`     | v7.4.5 _dev_   | v7.4.17 _dev_  | direct                                                                                             |
+| `symfony/http-client`              | v7.4.5 _dev_   | v7.4.18 _dev_  | direct                                                                                             |
+| `symfony/event-dispatcher`         | v7.4.4 _dev_   | v7.4.17 _dev_  | `symfony/http-kernel`                                                                              |
+| `symfony/event-dispatcher-contracts` | v3.6.0 _dev_ | v3.7.1 _dev_   | direct; `symfony/event-dispatcher`                                                                 |
+| `symfony/http-client-contracts`    | v3.6.0 _dev_   | v3.7.3 _dev_   | `symfony/http-client`                                                                              |
+| `symfony/translation-contracts`    | v3.6.1 _dev_   | v3.7.1 _dev_   | `middag-io/framework` (direct), `symfony/validator`                                                |
+| `symfony/var-exporter`             | v7.4.0 _dev_   | v7.4.18 _dev_  | `symfony/cache`, `symfony/dependency-injection`                                                    |
+| `symfony/polyfill-php83`           | v1.33.0 _dev_  | v1.41.0 _dev_  | `symfony/clock`, `symfony/http-client`, `symfony/http-foundation`, `symfony/validator`             |
 
-`symfony/deprecation-contracts` is also vendored ([above](#global-function-trigger-deprecation)). The others are neither vendored nor in the `core_component` map: they reach the request through a root `vendor/` installed by Composer, which `register_autoloader()` loads when its `autoload.php` exists.
+"direct" means a requirement of `middag-io/moodle` itself. No other package of either `composer.lock` is in the tree.
 
-`symfony/string` is a component on the Symfony 7.x/8.x line, not a contract or a polyfill. `middag-io/framework` accepts `symfony/property-info` `^7.0 || ^8.0`, and every release of both majors requires `symfony/string` (8.x accepts `^7.4|^8.0`). `symfony/string` 8.x requires PHP 8.4. On PHP 8.4 or later, the adapter's tree can resolve `symfony/string` 8.x while a Moodle 5.3 root `vendor/` holds v7.4.15. Both copies then define classes in `Symfony\Component\String`, and which major loads depends on bootstrap order. Treat a Moodle 5.3 site with a root `vendor/` as a major-mismatch case for this namespace.
+`monolog/monolog`, the `psr/*` packages and `symfony/deprecation-contracts` are also vendored under `public/lib/` at the same versions ([above](#namespaces-moodle-bundles)). The other packages are neither vendored nor in the `core_component` map: they reach the request only through a root `vendor/` installed by Composer, which `register_autoloader()` loads when its `autoload.php` exists ([order above](#the-risk)).
 
-The polyfills declare classes in `Symfony\Polyfill\*` and define global functions (`ctype_*`, `mb_*`, `grapheme_*`) behind `function_exists()` guards, which also skip the definitions when the PHP extension is loaded. As with `trigger_deprecation()`, the first copy loaded defines each function for the whole request; all copies are on the 1.x line.
+`symfony/string` is a component, not a contract or a polyfill. `middag-io/framework` accepts `symfony/property-info` `^7.0 || ^8.0`, and every release of both majors requires `symfony/string`: 7.0 to 7.3 accept `^6.4|^7.0`, 7.4 accepts `^6.4|^7.0|^8.0`, and 8.x accepts `^7.4|^8.0`. `symfony/string` 8.x requires PHP 8.4. The adapter's tree can therefore hold `symfony/string` 6.4, 7.x or 8.x, while a Moodle 5.3 root `vendor/` holds v7.4.15 (5.2 with development packages: v7.4.4). Both copies then define classes in `Symfony\Component\String`, and which one loads depends on bootstrap order. Treat a Moodle site with a root `vendor/` that holds `symfony/string` as a possible major-mismatch case for this namespace. The same applies to `symfony/event-dispatcher` and `symfony/var-exporter`, which the tree can resolve outside the 7.4 line that Moodle locks in `packages-dev`.
+
+`paragonie/random_compat` polyfills `random_bytes()` and `random_int()`, which are native in every PHP version the adapter supports. It enters the tree only when `symfony/polyfill-uuid` resolves to one of the oldest releases that `symfony/uid` accepts.
+
+The polyfills declare classes in `Symfony\Polyfill\*` and define global functions (`ctype_*`, `mb_*`, `grapheme_*`, `json_validate()`) behind `function_exists()` guards, which also skip the definitions when the PHP extension or PHP version already provides them. As with `trigger_deprecation()`, the first copy loaded defines each function for the whole request; all copies are on the 1.x line.
 
 ## This adapter's shared-namespace packages
 
