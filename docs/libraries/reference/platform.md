@@ -4,7 +4,7 @@ title: 'Platform'
 
 # Platform
 
-Status: proposed. The platform every library of the MIDDAG PHP family declares, when its PHP floor rises, and how CI proves it. This page states every platform rule a consumer of the libraries relies on. The PHP platform floor reference of the MIDDAG profile (`docs-middag-ops`) is the internal source behind it; a reader does not need it. Related: [Versioning and compatibility](./versioning-and-compatibility), [Guards](./guards).
+The platform every library of the MIDDAG PHP family declares, when its PHP floor rises, and how CI proves it. This page states every platform rule a consumer of the libraries relies on. The PHP platform floor reference of the MIDDAG profile (`docs-middag-ops`) is the internal source behind it; a reader does not need it. Related: [Versioning and compatibility](./versioning-and-compatibility), [Guards](./guards).
 
 ## Declared platform
 
@@ -79,27 +79,9 @@ Rules:
 
 - A library keeps a job of its own only for a check the shared component cannot run. A platform check that the `highest` job covers is not kept.
 - `expect-majors` lists at least one Symfony package of each library that depends on Symfony, chosen from its own `require`, or from `require-dev` when it has no runtime Symfony dependency.
-
-::: warning Decision required at acceptance: the platform of the demo
-
-| Option | Effect |
-| --- | --- |
-| **A. The demo follows the library recipe: `^8.3`, pin `8.3.0`, its lock regenerated at the pin and its Symfony constraints widened to `^7.4 \|\| ^8.1` (recommended)** | The demo proves both ends of the Symfony range like every library. Its lock, which the Docker image ships, resolves Symfony 7.4. |
-| B. The demo stays an application on the PHP its lock needs (8.4 and later), with no `highest` job | The image keeps Symfony 8.x; the demo is an exception to the declared platform, and nothing in the demo proves the 8.3 end. |
-
-:::
+- The demo follows the library recipe: `^8.3`, pin `8.3.0`, its `composer.lock` regenerated at the pin and its Symfony constraints `^7.4 || ^8.1`. It proves both ends of the Symfony range like every library; the lock its Docker image ships resolves Symfony 7.4.
 
 The shared check also owns caching: the Composer cache, and the Rector, PHPStan and PHP-CS-Fixer caches through its `tool-cache-paths` input (to be released). A library adds no cache step of its own; it passes the directory its tools write to (for example `.cache`), and any other cache it needs is a change to the shared check.
-
-::: warning Decision required at acceptance: where CI caches live
-
-| Option | Effect |
-| --- | --- |
-| **A. The shared check owns every cache: Composer, Rector, PHPStan and PHP-CS-Fixer (recommended)** | One change in `middag-io/actions` speeds up every library at once; a library passes only its cache path. |
-| B. Each library adds its own tool-cache steps | Faster to land per library; each library keeps cache steps of its own. |
-| C. Composer cache only | No change to the shared check; static analysis and code style run cold on every push. |
-
-:::
 
 ## Required checks on `main`
 

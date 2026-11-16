@@ -55,7 +55,7 @@ The ecosystem is **Hexagonal (Ports & Adapters)**, arranged in four rings. Depen
 |--------|--------------------------------------------------------|------------|-----------------|
 | **1. OSS Foundation** | `middag-php-framework`, `middag-php-ui`; with them, outside the rings, `middag-php-demo-standalone` | The **Ports**: contracts, DI, HTTP, query, forms, bus, hooks. The demo is the pillar's runnable example application and proof harness. | `framework` wraps Symfony/PSR/Monolog (not zero-dep — see below). `ui` is pure PHP (`require: php` only). The demo depends on `framework` and `ui`; nothing depends on the demo. |
 | **2. OSS Adapters** | `middag-php-moodle`, `middag-php-wordpress` | The **Adapters**: implement the bridge contracts by talking to `$DB`/`$wpdb`. | Depend on `middag-php-framework` (and `middag-php-ui`) + the platform. Never import proprietary code — they stay OSS. |
-| **3. CORE (internal, proprietary)** | `middag-php-core`, `middag-php-licensing`, `middag-php-dev-tools` | The business engine: governed Signal + outbox, async Job, EAV, multi-tenant (`core`); license lifecycle in the separate `licensing` leaf; build tooling (`dev-tools`). Not free open source. | `core` requires `middag-php-framework`, `middag-php-ui` and `middag-php-licensing`. It does not require the adapters: its host layer under `src/Adapter/<Host>/` uses them, and the product installs the adapter for its host. How `core` declares the adapters in its Composer metadata is the decision below; today they appear only in `require-dev`. Everything outside that host layer programs against the Pillar 1 interfaces. `licensing` is a leaf with no MIDDAG runtime dependency (it does not depend on the framework). `dev-tools` is build-time only (`require-dev` in consumers) and requires only the framework at runtime. |
+| **3. CORE (internal, proprietary)** | `middag-php-core`, `middag-php-licensing`, `middag-php-dev-tools` | The business engine: governed Signal + outbox, async Job, EAV, multi-tenant (`core`); license lifecycle in the separate `licensing` leaf; build tooling (`dev-tools`). Not free open source. | `core` requires `middag-php-framework`, `middag-php-ui` and `middag-php-licensing`. It does not require the adapters: its host layer under `src/Adapter/<Host>/` uses them, and the product installs the adapter for its host. `core` declares both adapters in `suggest`, with the reason "required by `src/Adapter/<Host>/` on that host"; the product still installs and pins the adapter. `conflict` ranges for adapter MINORs that `core` does not support are optional. Everything outside that host layer programs against the Pillar 1 interfaces. `licensing` is a leaf with no MIDDAG runtime dependency (it does not depend on the framework). `dev-tools` is build-time only (`require-dev` in consumers) and requires only the framework at runtime. |
 | **4. Composition Root** | `moodle-local_middag`, `wp-plugin-middag`, `wp-plugin-middag-account` | The real modular monolith: Aggregate Roots, vertical slices. | The only pillar that wires everything: imports framework + core + a specific adapter. |
 
 ### OSS and internal libraries
@@ -66,26 +66,8 @@ The pillars carry two kinds of library, and the difference is a rule, not a labe
 - **Internal (proprietary):** `middag-php-core`, `middag-php-licensing` and `middag-php-dev-tools`. They are not free open source. Their full documentation lives in their own repositories; this hub publishes only their public API ([Documentation publication](/libraries/reference/publication)).
 - **Product features are not in the OSS libraries.** Governed event delivery, async jobs with audit, EAV, multi-tenancy, licensing and every product feature live in the internal libraries or in the products. An OSS library ships the generic seam (a contract, an OSS default), never the product behavior behind it.
 - The libraries share one version family and one lifecycle, separate from the products' ([Versioning and compatibility](/libraries/reference/versioning-and-compatibility)).
+- The demo (`middag-php-demo-standalone`) sits with Pillar 1, outside the dependency rings, as a complete example application. Every `@api` area of `ui` and `framework` (kernel, routes, forms, bus, page contract, Inertia) is exercised by the demo and pinned by a test, with end-to-end tests on the critical flows; its coverage ledger maps each area. The adapters are out of its scope: the demo runs with no host.
 - This hub is the normative architecture of the OSS libraries. A `docs/architecture.md` (or similar) in an OSS repository is a pointer to this page, not a second copy.
-
-::: warning Decision required at acceptance: how core declares the adapters
-
-| Option                                                                                         | Effect                                                                                                         |
-| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **A. Both adapters in `suggest`, with the reason "required by `src/Adapter/<Host>/` on that host" (recommended)** | The Composer metadata says what the host layer needs; the product still installs and pins the adapter. |
-| A + `conflict` ranges for adapter MINORs core does not support                                  | Composer refuses an unsupported adapter MINOR; one more range to keep current per family MINOR.               |
-| B. No declaration (adapters in `require-dev` only)                                              | Nothing in the package tells a product which adapter the host layer needs.                                    |
-
-:::
-
-::: warning Decision required at acceptance: the place and scope of the demo
-
-| Option                                                                                                        | Effect                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **A. With Pillar 1, outside the dependency rings, as a complete example application (recommended)**           | Every `@api` area of `ui` and `framework` (kernel, routes, forms, bus, page contract, Inertia) is exercised by the demo and pinned by a test, with end-to-end tests on the critical flows; its coverage ledger maps each area. The adapters are out of its scope: the demo runs with no host. |
-| B. As its own pillar                                                                                          | A fifth ring that nothing depends on, which the dependency rule does not need.                                 |
-
-:::
 
 ### The boundary invariant
 

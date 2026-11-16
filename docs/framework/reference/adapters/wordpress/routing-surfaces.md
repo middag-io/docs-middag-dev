@@ -45,17 +45,7 @@ WordPress models REST as registration: one `register_rest_route()` call per rout
 
 Current behaviour, until the target rule lands: when the `#[Auth]` lists any capability, `WpRestKernel::authorize()` requires the authenticator's `isAdmin()` (the `administrator` role) instead of checking the listed capabilities, and `AbstractWpRestController` applies the same `isAdmin()` gate.
 
-With the target rule, the REST surface and the admin-page surface (`AbstractWpController::setRequireCapabilities()`) share the same capability semantics: every listed capability is required, with the object id when one is given. They differ in the user checked: the admin pages check the session user (`current_user_can()`), REST checks the resolved user (`user_can()`). The change that lands the target rule must carry tests for a non-administrator who holds the capability (allowed), an administrator without it (denied) and a meta capability with an object id.
-
-::: warning Decision required at acceptance: capability semantics on REST
-
-| Option | Effect |
-| --- | --- |
-| **A. Every listed capability through `user_can()` on the resolved user, with the object id; `requirements` resolved the same way (recommended)** | Same rule as the admin pages and the Moodle adapter; a role check no longer stands in for a capability. Needs a security review before merge, and the WordPress adapter decision record is amended to match. |
-| B. Any one listed capability is enough | Differs from the admin pages and from the Moodle adapter. |
-| C. Keep the administrator-role check | A capability listed in `#[Auth]` is not what the surface checks. |
-
-:::
+With the target rule, the REST surface and the admin-page surface (`AbstractWpController::setRequireCapabilities()`) share the same capability semantics: every listed capability is required, with the object id when one is given. They differ in the user checked: the admin pages check the session user (`current_user_can()`), REST checks the resolved user (`user_can()`). The change that lands the target rule must carry tests for a non-administrator who holds the capability (allowed), an administrator without it (denied) and a meta capability with an object id. That change passes a security review before merge, and the WordPress adapter decision record is amended to match.
 
 `WpRestKernel::handle()`:
 

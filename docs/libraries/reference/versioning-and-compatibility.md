@@ -4,7 +4,7 @@ title: 'Versioning and compatibility'
 
 # Versioning and compatibility
 
-Status: proposed. The version family of the MIDDAG PHP libraries: its members, its lifecycle, what each release may carry, the supported surface and the compatibility matrix of each MAJOR. This page states every rule a consumer of the libraries relies on. ADR-032 of the MIDDAG profile (`docs-middag-ops`) is the internal record behind it; a reader does not need it. Related: [Platform](./platform), [Guards](./guards), [Documentation publication](./publication).
+The version family of the MIDDAG PHP libraries: its members, its lifecycle, what each release may carry, the supported surface and the compatibility matrix of each MAJOR. This page states every rule a consumer of the libraries relies on. ADR-032 of the MIDDAG profile (`docs-middag-ops`) is the internal record behind it; a reader does not need it. Related: [Platform](./platform), [Guards](./guards), [Documentation publication](./publication).
 
 ## The family
 
@@ -56,29 +56,10 @@ The libraries and the products that consume them have separate lifecycles and se
 - Each library keeps an `API-STABILITY.md` that lists its public surface and points to this page for the support rules.
 - The Moodle native-router bridge of `middag-php-moodle` (`RouterBridgeSupport` and the routing placeholder it serves) is internal and not part of the supported surface. Promoting it is an additive change for a family MINOR.
 
-::: warning Decision required at acceptance: the Moodle native-router bridge
-
-| Option                                                                          | Effect                                                                   |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **A. Keep it internal, outside the supported surface (recommended)**            | No consumer calls it; promotion later is additive. The rule above stays. |
-| B. Remove the bridge and its placeholder before `2.0.0`                         | No placeholder code in the stable line; a small removal in the adapter.  |
-| C. Finish it and prove it on a Moodle 5.1+ host before `2.0.0`                  | Larger scope; adds a supported surface with its own tests.               |
-
-:::
-
 ## Extension rule
 
 - A new public surface in any library, including a new adapter surface (for example a diagnostics report or a host CLI command), arrives in a family MINOR. It is additive and changes no existing contract.
-- Such a surface is designed with the product work that needs it. It is not part of the family's target design until a MINOR plans it.
-
-::: warning Decision required at acceptance: new adapter surfaces outside the target design
-
-| Option                                                                               | Effect                                                                       |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| **A. Additive surfaces arrive in a family MINOR, owned by the product that needs them (recommended)** | The target design stays the existing contracts; the WordPress boot-diagnostics request stays with the WordPress product work. |
-| B. Design the WordPress boot-diagnostics surface here and build it with the platform work | Adds a design section (boot versus render scope) to this design.            |
-
-:::
+- Such a surface is designed with the product work that needs it. It is not part of the family's target design until a MINOR plans it. The WordPress boot-diagnostics request stays with the WordPress product work.
 
 ## Compatibility matrix
 
@@ -114,15 +95,4 @@ Rules:
 - The WordPress adapter supports the latest WordPress major and the previous one: today 7.1 and 7.0. The previous major leaves the range 6 months after the release of the next major ([Releases](https://wordpress.org/download/releases/)). WordPress officially supports only its last major release ([Supported versions](https://wordpress.org/documentation/article/supported-versions/)); the previous major is a MIDDAG grace window, not upstream support. Security fixes that WordPress backports to older branches as a courtesy do not count as support.
 - A PHP or Symfony line leaves the range only in a family MAJOR.
 - The matrix is checked in each library's CI from `2.0.0`.
-
-::: warning Decision required at acceptance: database engines of the Moodle adapter
-
-| Option                                                                 | Effect                                                                                                  |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **A. PostgreSQL and MySQL, proven on both in the consumer pipeline (recommended)** | The `@api` SQL helpers of the Moodle adapter carry an engine statement; the proof runs on both engines. |
-| B. MySQL only; PostgreSQL compatible but unsupported                   | Narrower promise; contradicts the engine the products run on by default.                               |
-| C. No engine statement                                                 | The `@api` SQL helpers ship with no stated engine.                                                      |
-
-MariaDB and SQL Server are outside the range under every option until a real consumer needs them.
-
-:::
+- The Moodle adapter supports PostgreSQL and MySQL and is proven on both in the consumer pipeline. Its `@api` SQL helpers carry an engine statement. MariaDB and SQL Server are outside the range until a real consumer needs them.
