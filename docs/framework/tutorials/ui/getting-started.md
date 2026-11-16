@@ -4,7 +4,7 @@ title: 'ui — Getting Started'
 
 # Getting Started with ui
 
-Requires PHP `^8.2`. Install via Composer:
+Requires PHP `^8.3` (8.3, 8.4 and 8.5 are supported; see [Platform](../../reference/family/platform)). Install via Composer:
 
 ```bash
 composer require middag-io/ui
