@@ -34,7 +34,7 @@ This page states the `2.x` line of the library family. Support starts at `2.0.0`
 composer require middag-io/framework
 ```
 
-A project that depends on more than one library of the family declares one `^2.N` range, with the same `N`, for every `middag-php-*` library it requires. A MINOR upgrade inside that range never breaks.
+The libraries of the family share MAJOR.MINOR ([The family](/libraries/reference/versioning-and-compatibility#the-family)). A project that requires more than one of them should declare the same `^2.N` range for each; a MINOR upgrade inside that range never breaks.
 
 ### Dependencies
 
@@ -64,7 +64,7 @@ The platform rules behind these values are in [Platform](/libraries/reference/pl
 - Every type of the framework carries its stability tag at class level. The `@api` surface is the interfaces in the `Contract/` sub-namespace of each concern, plus the exported `@api` classes: value objects, default implementations, base classes, attributes, enums and exceptions.
 - [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md) in the repository lists the public surface and the types other libraries of the family consume.
 - Depend only on `@api` types. When a behavior is reachable only through an `@internal` type, open an issue to have it promoted; a promotion is an additive change for a family MINOR.
-- The framework ships no MIDDAG domain base classes or utility helpers. Entity and value-object bases, formatting helpers and validators of the MIDDAG domain belong to the internal library `middag-io/core`; the framework exposes only the generic `EntityInterface` contract.
+- The framework ships no MIDDAG domain base classes and no MIDDAG domain helpers. Entity and value-object bases, formatting helpers and validators of the MIDDAG domain belong to the internal library `middag-io/core`; for entities, the framework exposes only the generic `EntityInterface` contract. The generic DTO base and utilities in `Shared` are outside this exclusion.
 
 The contract reference is on this hub, one page per topic:
 
@@ -78,8 +78,9 @@ The contract reference is on this hub, one page per topic:
 | `Exception`                                            | [Exception Hierarchy](../reference/exception-hierarchy)                                                                                                         |
 | `Logging`, `Observability`                             | [Logging & Observability](../reference/logging-and-observability)                                                                                               |
 | `Filesystem`, `Mail`, `Security`, `Translation` | [Adapter Port Catalog](../reference/bridge-contracts)                                                                                                       |
+| `Shared`                                               | No curated page. The DTO contract and base, `#[TrustedOutput]`, `SyncResult`, `DebugMode`, `Operator` and the generic utilities (`Arr`, `Debug`, `Environment`, `Inflector`, `Typing`, `Uuid`) are covered by the generated `@api` reference, in progress |
 
-The ports a host adapter implements, including the neutral component identity `HostComponentContextInterface`, are in [Adapter Port Catalog](../reference/bridge-contracts). The reactive seams `HostEventBridgeInterface` and `SignalDispatcherInterface` are in [Hooks — Public Surface & Naming](../reference/hooks-public-surface).
+The ports a host adapter implements, including the neutral component identity `HostComponentContextInterface`, are in [Adapter Port Catalog](../reference/bridge-contracts). The reactive seams `HostEventBridgeInterface` and `SignalDispatcherInterface` are in [Hooks — Public Surface & Naming](../reference/hooks-public-surface). The boot-failure seam `ComponentNameResolverInterface` is in [Bootstrap](./bootstrap-lifecycle).
 
 In progress: the generated reference of the `@api` surface is not published yet ([Documentation publication](/libraries/reference/publication#generated-api-reference)).
 
