@@ -4,7 +4,7 @@ title: 'middag-php-licensing errors'
 
 # Errors
 
-The `@api` exceptions of `middag-php-licensing`, when each one is thrown and what the host does with it. The namespace root is `Middag\Licensing`. Related: [Public API](./public-api).
+The `@api` exceptions and typed refusal enums of `middag-php-licensing` at `v1.15.2`, when each one is thrown and what the host does with it. The namespace root is `Middag\Licensing`. Related: [Public API](./public-api).
 
 ## Rules for every error
 
@@ -15,7 +15,7 @@ The `@api` exceptions of `middag-php-licensing`, when each one is thrown and wha
 
 ## Answers of the licensing instance
 
-`License\Exception\ApiHttpException` (a `RuntimeException`) is the base of every non-success answer of the license, metering and account calls. It keeps the HTTP `status` and the raw `errorBody` for diagnostics. Catching it catches every exception of the table below.
+`License\Exception\ApiHttpException` (a `RuntimeException`) is the base of every non-success answer of the license, metering, account and operator calls. It keeps the HTTP `status` and the raw `errorBody` for diagnostics. Catching it catches every exception of the table below.
 
 | Exception                                   | When                                                                                   | Host action                                                                                  |
 | ------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -27,15 +27,47 @@ The `@api` exceptions of `middag-php-licensing`, when each one is thrown and wha
 | `License\Exception\ApiUnavailableException` | The instance answered with a server error                                              | A license kept from an earlier valid answer still counts until its own expiry |
 | `License\Exception\ApiTransportException`   | The PSR-18 transport failed                                                            | A license kept from an earlier valid answer still counts until its own expiry |
 | `License\Exception\EnrollTokenRejectedException` | Enrollment refused: the token binds nothing. `$refusal` is a `Refusal`, `$rejection` an `EnrollTokenRejection` (`TokenUnknown`, `TokenExpired`, `SiteMismatch`, `TokenReused`, `Unknown`) | Show a generic refusal; log `$rejection` |
-| `License\Exception\EnrollConflictException` | Enrollment conflict. `$conflict` is an `EnrollConflict` (`MaxInstallsReached`, `BindingDeactivated`, `InstallAlreadyEnrolled`, `ProductMismatch`, `Unknown`) | Show a generic refusal; log `$conflict`. It is never a cue to resync |
+| `License\Exception\EnrollConflictException` | Enrollment conflict. `$conflict` is an `EnrollConflict` (`MaxInstallsReached`, `BindingDeactivated`, `InstallAlreadyEnrolled`, `ProductMismatch`, `Unknown`) | Show a generic refusal; log `$conflict`. It is never a cue to resync. On `BindingDeactivated`, `activate()` clears the material of the pair |
 | `License\Exception\AlreadyEnrolledException` | The ingest key of the pair was already issued                                          | `ActivationService` turns it into `IngestKeyAlreadyIssuedException`                         |
-| `Api\Account\Exception\AccountRefusedException` | An account call was refused. `$reason` is an `AccountRefusalReason`; `$licenseIds` lists the candidate licenses when a credential request matches several | With `$licenseIds`, repeat the call with one of them; otherwise show a generic refusal       |
+| `Api\Account\Exception\AccountRefusedException` | An account call, or a channel call of `InstallChannelAdminClient`, was refused. `$reason` is an `AccountRefusalReason`; `$licenseIds` lists the candidate licenses when a credential request matches several | With `$licenseIds`, repeat the call with one of them; otherwise show a generic refusal       |
 
-Any other non-success answer is a plain `ApiHttpException`.
+| `Api\Admin\Exception\ServiceAuthNotConfiguredException` | An operator or account call: the access gateway in front of the instance did not accept the service token and answered with its interactive sign-in instead | Fix the gateway configuration for the service token; not a code change |
+| `Api\Admin\Exception\TokenAlreadyIssuedException` | `EnrollmentTokenClient::issue()`: a current token already exists. `$expiresAt` carries its expiry. The raw token cannot be recovered from this answer | Reuse the token kept when it was first issued, or issue again with `forceReissue` |
+| `Api\Admin\Exception\AdminConflictException` | An operator call conflicts: a revoked or expired license on token issue, no free install, a deactivated binding, no active metering key to rotate, or a rotation race | Log it. A rotation race may be retried |
+| `Api\Admin\Exception\AdminNotFoundException` | An operator call names what does not exist: an unknown license or pair, a pair without a binding, an unknown key id, or no wallet for the pair | Check the identifiers |
+| `Api\Admin\Exception\DomainNotGrantedException` | A wallet or metering-key call: the caller has no grant on the site of the binding of the pair. A service token is trusted on every site | Check which credentials reached the instance |
 
-The refusal catalog `License\Enum\Refusal` is closed: `Expired`, `Revoked`, `Unbound`, `KidRevoked`, `AudMismatch`, `BindingDeactivated`, `RateLimited`, `InstallSiteMismatch`, `ClockSkew`, `InstallNotEnrolled` and `Unknown`. `Expired`, `Revoked` and `BindingDeactivated` retire the pair: its stored licensed manifests and its install material are dropped. On a licensed-manifest call this happens before the exception reaches the host; on a resync, the host passes the exception to `ResyncManifestReconciler::reconcileRefusal()`.
+Any other non-success answer is a plain `ApiHttpException`. Account and operator calls also throw `RateLimitedException`, `ApiUnavailableException` and `ApiTransportException`; the request value objects and `SelfClient::issueCredential()` throw `InvalidArgumentException` for a malformed field.
 
-`AccountRefusalReason` is `PersonRequired`, `ValidationFailed`, `IdempotencyKeyRequired`, `IdempotencyConflict`, `IdempotencyInProgress`, `ProductMismatch`, `ChannelNotAllowed` or `Unknown`. Account calls also throw `RateLimitedException`, `ApiTransportException` and `ApiHttpException`.
+## Typed refusals
+
+A typed refusal is read from a field of the error body into an enum. Its `value` is the wire code, compared byte for byte.
+
+| Enum                                    | Cases and wire values                                                                                                                                                                                                                                                           |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `License\Enum\Refusal`                  | `Expired` (`expired`), `Revoked` (`revoked`), `Unbound` (`unbound`), `KidRevoked` (`kid_revoked`), `AudMismatch` (`aud_mismatch`), `BindingDeactivated` (`binding_deactivated`), `RateLimited` (`rate_limited`), `InstallSiteMismatch` (`install_site_mismatch`), `ClockSkew` (`clock_skew`), `InstallNotEnrolled` (`install_not_enrolled`), `Unknown` (`unknown`) |
+| `License\Enum\EnrollTokenRejection`     | `TokenUnknown` (`token_unknown`), `TokenExpired` (`token_expired`), `SiteMismatch` (`site_mismatch`), `TokenReused` (`token_reused`), `Unknown` (`unknown`)                                                                                                                       |
+| `License\Enum\EnrollConflict`           | `MaxInstallsReached` (`max_installs reached`), `BindingDeactivated` (`binding_deactivated`), `InstallAlreadyEnrolled` (`install_already_enrolled`), `ProductMismatch` (`product_mismatch`), `Unknown` (`unknown`)                                                                 |
+| `Api\Account\Enum\AccountRefusalReason` | `PersonRequired` (`person_required`), `ValidationFailed` (`validation_failed`), `IdempotencyKeyRequired` (`idempotency_key_required`), `IdempotencyConflict` (`idempotency_conflict`), `IdempotencyInProgress` (`idempotency_in_progress`), `ProductMismatch` (`product_mismatch`), `ChannelNotAllowed` (`channel_not_allowed`), `Unknown` (`unknown`) |
+| `License\Enum\EntitlementRefusal`       | `BlockedNoManifest` (`entitlement_blocked_no_manifest`), `BlockedLicense` (`entitlement_blocked_license`), `LimitReached` (`entitlement_limit_reached`). Decided on the host, never sent by the instance                                                                        |
+| `License\Enum\SiteIdReason`             | `Scheme`, `Port`, `Ip`, `Localhost`, `Host`, `Path`. Decided by the library, in that order                                                                                                                                                                                       |
+
+`Refusal`, `EnrollTokenRejection`, `EnrollConflict` and `AccountRefusalReason` read the body themselves (`fromBody()`, `fromWire()`); `EntitlementRefusal::fromCode()` reads a code back. `Expired`, `Revoked` and `BindingDeactivated` retire the pair on a licensed-manifest call, before the exception reaches the host, and on a resync when the host passes the exception to `ResyncManifestReconciler::reconcileRefusal()`: its stored licensed manifests and its install material are dropped.
+
+### Host action per refusal
+
+Only the manifest and resync calls retire a pair by themselves. On a `Refusal` of the validate, update-check, metering or enrollment calls, the host acts as follows:
+
+| Refusal                                           | Host action                                                                                                                                                          |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Revoked`, `Expired`, `Unbound`, `Unknown`        | Stop serving and keep the install material. Serve again when validate answers `active`. A manifest or resync refusal may still retire the pair in the meantime        |
+| `BindingDeactivated`                              | Clear the product from the store (`clear($product)`), then use a new install id before the next activation. The library clears the slot by itself only on the enrollment conflict inside `activate()` |
+| `InstallSiteMismatch`                             | Use a new install id and activate again. No `clear()` is needed: with the new id, `state()` answers `NotActivated` for the old material                             |
+| `InstallNotEnrolled`                              | Activate                                                                                                                                                             |
+| `ClockSkew`, `RateLimited`                        | Retry, as the exceptions above say                                                                                                                                   |
+| `KidRevoked`, `AudMismatch`                       | No specific action: treat as `Unknown`                                                                                                                               |
+
+Do not assume one install id per site or per product. One site may hold several install ids, and one install id may serve several products. A product that gets a new install id needs a new activation, and so does every other product the host moves to the new id.
 
 ## Activation
 
@@ -45,7 +77,7 @@ The refusal catalog `License\Enum\Refusal` is closed: `Expired`, `Revoked`, `Unb
 | `License\Activation\Exception\InstallMaterialUnreadableException` | The store holds material for the product that cannot be opened. `state()` reports it as `ReenrollRequired` |
 | `License\Activation\Exception\IngestKeyAlreadyIssuedException`    | The instance already issued the ingest key of the pair and returns it only once. Only the operator can release it; the retry then repeats the ingest-key step. The state stays `Partial` |
 
-`activate()` also throws the answers of the instance above: `EnrollTokenRejectedException`, `EnrollConflictException`, `InstallSiteMismatchException`, `LicenseForbiddenException`, `ClockSkewException`, `RateLimitedException`, `ApiUnavailableException` and `ApiHttpException`. A failure after enrollment leaves the state `Partial`.
+`activate()` also throws the answers of the instance above: `EnrollTokenRejectedException`, `EnrollConflictException`, `InstallSiteMismatchException`, `LicenseForbiddenException`, `ClockSkewException`, `RateLimitedException`, `ApiUnavailableException` and `ApiHttpException`. A failure after enrollment leaves the state `Partial`. `activate()` and `state()` throw `InvalidArgumentException` for a product outside the identifier format, before the store is read.
 
 ## Manifests and bundles
 
@@ -59,9 +91,17 @@ The refusal catalog `License\Enum\Refusal` is closed: `Expired`, `Revoked`, `Unb
 
 The licensed-manifest calls also throw `LicenseForbiddenException`, `NotEnrolledException`, `ClockSkewException` and `InstallSiteMismatchException`, as above.
 
-### Manifest verification
+### Signature and key verification
 
-A manifest whose signature or claims fail verification, or whose signing key is not in the JWKS after one refresh, raises an exception of `Sso\Exception`. Those types are not `@api`; they extend `RuntimeException`. Nothing is stored and the last valid manifest stays. Catch the `@api` exceptions of this section first: they are `RuntimeException` too, so a catch of `RuntimeException` alone would also take the rollback, binding and refusal cases.
+A signed document whose signature or claims fail verification raises an exception of `Sso\Exception`. These types are `@api`, and `Sso\Exception\SsoException` is their base: catch it to handle any of them.
+
+| Exception                             | When                                                                                                                       |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `Sso\Exception\InvalidJwtException`   | The token or manifest is malformed, or its algorithm, type, key family, issuer, audience, time claims or digest are refused |
+| `Sso\Exception\UnknownKidException`   | Its signing key is not in the JWKS, even after one forced refresh                                                          |
+| `Sso\Exception\JwksFetchException`    | The JWKS could not be fetched                                                                                               |
+
+The manifest verifiers and `Sso\JwtVerifier` throw them. For a manifest, nothing is stored and the last valid manifest stays. `SsoException` extends `RuntimeException`, like the exceptions of the table above: catch the specific ones first, because a catch of `RuntimeException` alone would also take the rollback, binding and refusal cases.
 
 ## Entitlements
 
@@ -78,4 +118,24 @@ A manifest whose signature or claims fail verification, or whose signing key is 
 
 ## Remote support
 
-`RemoteSupport\Exception\TierNotSupportedException`: a support tier needs a scope the host did not declare. The host refuses before the instance would. `$tier` picks the host's own message; the exception message is for logs only.
+| Exception                                                | When                                                                                                                                         |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RemoteSupport\Exception\InvalidSessionTokenException`   | `MagicLinkVerifier::verify()` refuses the support token: malformed, wrong algorithm, type, key family, issuer, audience or role, or a key that cannot be resolved. A key failure is wrapped, with the `Sso\Exception` as previous |
+| `RemoteSupport\Exception\TierNotSupportedException`      | A support tier needs a scope the host did not declare. The host refuses before the instance would. `$tier` picks the host's own message; the exception message is for logs only |
+| `RemoteSupport\Exception\ConsentRequiredException`       | `SessionManager::preflightRedeem()`: the tier needs the tenant consent and the tenant has not given it                                       |
+| `RemoteSupport\Exception\SessionExpiredException`        | The token has expired at preflight, or the instance answers that the session is gone on a heartbeat                                          |
+| `RemoteSupport\Exception\SessionRevokedException`        | The instance answers that the session is gone on a revoke                                                                                     |
+| `RemoteSupport\Exception\CapabilityDeniedException`      | `CapabilityGuard::require()`: the action needs a scope the session does not grant, or the host map does not allow. `$required` and `$sessionId` name them |
+
+The heartbeat and revoke exceptions come from `HttpApiClient`, so the host sees them through the default `AuditReporter`; a host reporter of its own decides what it throws. `SessionManager::activate()` throws `InvalidArgumentException` for a product outside the identifier format.
+
+## Anti-tamper
+
+| Exception                                                 | When                                                                                                                                         |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AntiTamper\Exception\IntegrityManifestInvalidException`  | The integrity manifest is malformed, its signature does not verify, or its key cannot be resolved. `IntegrityReportService` reports it as `sig_invalid`, and `VerifiedIntegrityManifestProvider` answers `null` |
+| `AntiTamper\Exception\IntegrityCheckFailedException`      | `FileIntegrityChecker::check()` cannot read a file of the scope                                                                               |
+| `AntiTamper\Exception\SealedConfigTamperedException`      | `SealedConfigService::get()` cannot open a stored value: a short or malformed blob, a key of the wrong length, or an authentication failure. Treat the value as tampered |
+| `AntiTamper\Exception\SealKeyUnavailableException`        | `CompositeSealKey::derive()` gets a missing or malformed part, or the host store cannot build or keep its seal key. See [Activation](#activation) |
+
+All four extend `RuntimeException`.
