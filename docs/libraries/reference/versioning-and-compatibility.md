@@ -54,8 +54,9 @@ The libraries and the products that consume them have separate lifecycles and se
 ## Supported surface
 
 - Support covers the public surface only: classes, interfaces, enums, attributes and functions tagged `@api`. Anything untagged, or tagged `@internal`, is outside the promise and may change in any release.
-- For `middag-php-licensing`, `middag-php-dev-tools` and `middag-php-demo-standalone`, the rule "no tag means `@internal`" applies; the public surface is what each library documents as public.
+- For `middag-php-licensing` and `middag-php-dev-tools`, the rule "no tag means `@internal`" applies; the public surface is what each library documents as public.
 - Each library keeps an `API-STABILITY.md` that lists its public surface and points to this page for the support rules.
+- `middag-php-demo-standalone` is an example application, not a library. It has no public surface and keeps no `API-STABILITY.md`; nothing in it is meant to be imported by another package.
 - The Moodle native-router bridge of `middag-php-moodle` (`RouterBridgeSupport` and the routing placeholder it serves) is internal and not part of the supported surface. Promoting it is an additive change for a family MINOR.
 
 ## Extension rule
