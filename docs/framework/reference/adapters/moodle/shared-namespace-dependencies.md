@@ -13,9 +13,9 @@ Verified on 2026-11-16 against:
 
 ## The risk
 
-Moodle core vendors a fixed set of third-party libraries under `lib/<name>/` (`public/lib/<name>/` from Moodle 5.1) and registers their namespaces **globally**, for every request, in `core_component::$psr4namespaces`. Moodle's class loader resolves them independently of any plugin's `vendor/autoload.php`.
+Moodle core vendors a fixed set of third-party libraries under `lib/<name>/` (`public/lib/<name>/` from Moodle 5.1) and registers their namespaces **globally**, for every request, in `core_component::$psr4namespaces`. Moodle's class loader resolves them independently of any plugin's `vendor/autoload.php`. It also requires a short list of function files on every request (`core_component::$composerautoloadfiles`), the way Composer's `autoload.files` does.
 
-From Moodle 5.2, Moodle can also load Composer packages of its own. Its root `composer.json` requires the same libraries it vendors, pinned to the vendored versions, plus a few more. `core_component::register_autoloader()` requires `{$CFG->root}/vendor/autoload.php` when that file exists. Moodle 4.5, 5.0 and 5.1 declare no runtime package in their root `composer.json` (only `require-dev`) and do not load a root `vendor/autoload.php` from `core_component`.
+From Moodle 5.2, Moodle can also load Composer packages of its own. Its root `composer.json` requires the libraries of the table below at the versions it vendors; 5.3 also requires `symfony/console` and `league/oauth2-server`, which it does not vendor. `core_component::register_autoloader()` requires `{$CFG->root}/vendor/autoload.php` when that file exists. Moodle 4.5, 5.0 and 5.1 declare no runtime package in their root `composer.json` (only `require-dev`) and do not load a root `vendor/autoload.php` from `core_component`.
 
 When this adapter, or a package in its dependency tree, lands in one of those namespaces, PHP loads whichever registration wins. Which one wins depends on bootstrap order (does the consumer plugin require its `vendor/autoload.php` before or after Moodle registers its own loaders?), and that varies by hosting layout: a bundled plugin, a Composer-managed site, or a project-root vendor in a container. A single package's `composer.json` cannot pin it. It is not guaranteed to be this adapter's own `vendor/` copy. The same holds for `Middag\*` classes themselves: a consumer's autoloader cannot unload a class that another autoloader already resolved earlier in the request.
 
@@ -41,6 +41,10 @@ The paths are relative to the Moodle root; from 5.1 every path starts with `publ
 
 The Guzzle column gives the `guzzlehttp/guzzle` version. The list is not exhaustive; it covers the namespaces relevant to this adapter's dependency tree. No `Symfony\*` namespace is in the `core_component` map of any branch above.
 
+### Global function: `trigger_deprecation()`
+
+Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib/symfony/deprecation-contracts`; 3.5.0 on 4.5, 3.5.1 on 5.0 and 5.1, 3.6.0 on 5.2 and 5.3) and requires its `function.php` on every request through `$composerautoloadfiles`. The file defines the global function `trigger_deprecation()` only when no copy defines it yet (`function_exists()` guard). This adapter's tree requires the same package (`middag-io/framework` requires `^3.5`, and every Symfony component it uses requires it), so the first copy loaded defines the function for the whole request. Both copies are on the 3.x line.
+
 ### Composer packages declared by Moodle 5.2 and 5.3
 
 The root `composer.lock` of 5.2 and 5.3 locks the libraries above at the same versions (`firebase/php-jwt` v6.11.1, `monolog/monolog` 3.9.0, `psr/*` as in the table). It also locks Symfony packages that this adapter's dependency tree contains:
@@ -51,7 +55,7 @@ The root `composer.lock` of 5.2 and 5.3 locks the libraries above at the same ve
 | `symfony/service-contracts`     | —       | v3.7.3  | `symfony/dependency-injection`, `symfony/http-client`            |
 | `symfony/polyfill-mbstring`     | v1.33.0 | v1.38.2 | `symfony/http-foundation`                                        |
 
-These packages are not in the `core_component` map. They are on the request only when the site has a root `vendor/` installed by Composer, through the `vendor/autoload.php` that `register_autoloader()` requires.
+`symfony/deprecation-contracts` is also vendored ([above](#global-function-trigger-deprecation)). The other two are neither vendored nor in the `core_component` map: they reach the request through a root `vendor/` installed by Composer, which `register_autoloader()` loads when its `autoload.php` exists.
 
 ## This adapter's shared-namespace packages
 
