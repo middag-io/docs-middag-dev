@@ -60,6 +60,26 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Dev Tools (internal)",
+      "groups": [
+        {
+          "label": "Dev Tools (internal)",
+          "order": 2,
+          "files": ["reference/dev-tools/index", "reference/dev-tools/public-api"],
+          "labels": [
+            {
+              "file": "reference/dev-tools/index",
+              "label": "Overview, Requirements & Install"
+            },
+            {
+              "file": "reference/dev-tools/public-api",
+              "label": "Public Surface"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
