@@ -51,7 +51,7 @@ The `highest` job:
 - in a library with no Symfony component (`ui`), makes no Symfony assertion: its `expect-majors` is empty. The job still runs on 8.4 and 8.5 without the pin and is still required; it proves only the PHP range;
 - runs the same test suite as the library check.
 
-The library check and the `highest` job come from the shared PHP library check of `middag-io/actions` (`php-library-check`). The `highest` job is a second call of the same component, with these inputs (to be released):
+The library check and the `highest` job come from the shared PHP library check of `middag-io/actions` (`php-library-check`). From `php-library-check` v1.2.0, the default `php-versions` is `["8.3", "8.4", "8.5"]`, so the library check call needs no `php-versions` input. The `highest` job is a second call of the same component, with these inputs:
 
 | Input                 | Value in the `highest` call | Effect                                                                                                 |
 | --------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
