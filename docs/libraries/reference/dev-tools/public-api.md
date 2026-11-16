@@ -28,22 +28,23 @@ The curated public surface of `middag-php-dev-tools`: the gates, the generators 
 
 `check:oss-purity`:
 
+- It scans the five public OSS libraries: `framework`, `ui`, `moodle`, `wordpress` and `demo-standalone`.
 - It scans the `src/` tree of each target. Every target must have that tree with at least one `.php` file.
-- It scans code lines only. Comment lines and docblocks are not scanned, so a docblock may name a host or a product as an example.
-- `--auto` scans every one of the five public OSS libraries (`ui`, `framework`, `moodle`, `wordpress` and `demo-standalone`) under `<root>/libs/middag-php-<name>`. If one of them is missing, the command lists it and exits `1`: a partial checkout never passes.
+- It scans code and the type tags of docblocks. Type tags in docblocks are scanned; free-text comments are not. The scanned tags are `@var`, `@param`, `@return`, `@throws`, `@method`, `@property`, `@extends`, `@implements` and `@mixin`. A free-text comment may name a host or a product as an example. This is the oss-purity exception to the comment rule of [Guards](../guards#what-is-guarded).
+- `--auto` scans each of the five libraries under `<root>/libs/middag-php-<name>`. It fails closed: a known library that is missing, a missing `src/` or a `src/` with no `.php` file exits `1`. There is no skip, so a partial checkout never passes.
 - The deny list lives only in `dev-tools`. It covers the proprietary namespaces and the product namespaces, and it matches them case-insensitively, as PHP resolves namespaces.
 - The purity job runs it in the CI of `dev-tools`, as [Guards](../guards#oss-purity) describes. No OSS library runs it or copies its deny list.
 
 `check:oss-manifest` reads only the production `require` section. A missing or unreadable `composer.json` exits `1`.
 
-`check:api-tags` runs in the CI of a library that has `dev-tools` as a development dependency, against that library's own source.
+`check:api-tags` runs in the CI of a library that has `dev-tools` as a development dependency, against that library's own source. The support rule treats an untagged type as `@internal` ([Supported surface](../versioning-and-compatibility#supported-surface)); `check:api-tags` additionally requires an explicit tag on every type of the libraries that run it.
 
 ## Gates for a product
 
 | Command         | Checks                                                                                                                        |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `check:facades` | The `@method static` list of each facade matches its `@mixin` source. `--classes-root` and `--namespace-root` are required; a missing facade directory exits `1` |
-| `check:lang`    | The language-string keys of every locale match the `en` locale. Any drift exits `2`                                          |
+| `check:lang`    | The language-string keys of every locale match the `en` locale. Any drift exits `2` by default; there is no CI-only mode      |
 
 ## Architecture rules
 
@@ -68,7 +69,7 @@ parameters:
       allowPaths: []
 ```
 
-A Moodle product also includes `vendor/middag-io/dev-tools/src/Adapter/Moodle/PHPStan/rules.neon`. It blocks extension imports of `@internal` framework classes, direct coupling to forbidden framework families, and host form imports outside the configured adapter paths. The product owns the policy file, the namespace, the root path and the allowed paths the ruleset reads.
+A Moodle product also includes `vendor/middag-io/dev-tools/src/Adapter/Moodle/PHPStan/rules.neon`. It blocks extension imports of `@internal` framework classes, direct coupling to forbidden framework families, and host form imports outside the configured adapter paths. The ruleset keys (`middagMoodlePhpstan*`) have no product defaults: the product sets each of them, including the policy file, the namespaces, the root path and the allowed paths, and a missing key fails the analysis.
 
 ## Generated files and the marker
 
@@ -98,7 +99,7 @@ The generated classes extend the base layer of the product, never a fixed produc
 | `service`          | standalone domain services               |
 | `entity_interface` | entity contracts (an interface they extend) |
 
-Every role is required, and each value must be a namespaced fully qualified name. The generated code imports the name and refers to its short form. The `@api` type that reads the map is `Adapter\Moodle\Linkml\MoodleBaseTypes`.
+Every role is required. Each value is a namespaced fully qualified name without a leading backslash, and a role outside this table throws. The generated code imports the name and refers to its short form. The `@api` type that reads the map is `Adapter\Moodle\Linkml\MoodleBaseTypes`.
 
 ```yaml
 extensions:

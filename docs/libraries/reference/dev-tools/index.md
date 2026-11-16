@@ -28,9 +28,10 @@ The library applies the family rule "no tag means `@internal`" ([Supported surfa
 - A class, interface, trait or enum is public only when its docblock carries `@api`.
 - A symbol without the tag is `@internal`, even when it is `public` in PHP. It may change in any release.
 - Only `@api` symbols follow the family versioning rules.
+- The support rule treats an untagged symbol as `@internal`. `check:api-tags` additionally requires an explicit `@api` or `@internal` tag in the libraries that run it ([Public surface](./public-api#gates-for-the-library-family)).
 - The console commands, their options and exit codes, and the configuration keys they read are part of the public surface as [Public surface](./public-api) describes them.
 
-The repository keeps an `API-STABILITY.md` with the list of `@api` types.
+The repository keeps an `API-STABILITY.md` that states the rule "no tag means `@internal`" and lists the `@api` types.
 
 ## Requirements
 
@@ -38,7 +39,7 @@ The repository keeps an `API-STABILITY.md` with the list of `@api` types.
 
 - PHP `^8.3` and `ext-tokenizer`;
 - `middag-io/framework`, read only as metadata (attributes and contracts). `dev-tools` never boots the framework;
-- Symfony Console and the Symfony Finder, HttpClient, Process and Yaml components, in the family Symfony range ([Platform](../platform#declared-platform));
+- Symfony Console and the Symfony Finder, HttpClient, Process and Yaml components, in the family Symfony range `^7.4 || ^8.1` ([Platform](../platform#declared-platform));
 - `opis/json-schema` and `zircote/swagger-php`.
 
 The Moodle commands, such as `generate:statics --adapter=moodle`, also need `middag-io/moodle` in the consuming project. It is suggested, not required.
