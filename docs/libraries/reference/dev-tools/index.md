@@ -10,7 +10,7 @@ It is an **internal library: proprietary, not free open source**. It is a member
 
 This section:
 
-- **[Public surface](./public-api)**: the gates, the generators and their configuration, and the PHPStan rules a consumer uses.
+- **[Public surface](./public-api)**: the gates, the generators and their configuration, the PHPStan rules a consumer uses, and the index of the `@api` types.
 
 ## Who uses it
 
@@ -31,7 +31,7 @@ The library applies the family rule "no tag means `@internal`" ([Supported surfa
 - The support rule treats an untagged symbol as `@internal`. `check:api-tags` additionally requires an explicit `@api` or `@internal` tag in the libraries that run it ([Public surface](./public-api#gates-for-the-library-family)).
 - The console commands, their options and exit codes, and the configuration keys they read are part of the public surface as [Public surface](./public-api) describes them.
 
-The repository keeps an `API-STABILITY.md` that states the rule "no tag means `@internal`" and lists the `@api` types.
+The repository keeps an `API-STABILITY.md` that states the rule "no tag means `@internal`". It carries no `@api` list: the [type index](./public-api#type-index) on this hub lists the `@api` types.
 
 ## Requirements
 

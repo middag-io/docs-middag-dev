@@ -69,7 +69,15 @@ parameters:
       allowPaths: []
 ```
 
-A Moodle product also includes `vendor/middag-io/dev-tools/src/Adapter/Moodle/PHPStan/rules.neon`. It blocks extension imports of `@internal` framework classes, direct coupling to forbidden framework families, and host form imports outside the configured adapter paths. The ruleset keys (`middagMoodlePhpstan*`) have no product defaults: the product sets each of them, including the policy file, the namespaces, the root path and the allowed paths, and a missing key fails the analysis.
+A Moodle product also includes `vendor/middag-io/dev-tools/src/Adapter/Moodle/PHPStan/rules.neon`. It blocks extension imports of `@internal` framework classes, direct coupling to forbidden framework families, and host form imports outside the configured adapter paths. Two keys are required and have no product default: `middagMoodlePhpstanPluginNamespace` and `middagMoodlePhpstanFrameworkNamespace`. The product sets both, and a missing one fails the analysis. The other keys keep the defaults of the ruleset unless the product overrides them:
+
+- `middagMoodlePhpstanPluginRoot`, the current working directory;
+- `middagMoodlePhpstanExtensionsPathNeedle`, `/classes/extensions/`;
+- `middagMoodlePhpstanLegacyPathNeedle`, `/legacy/`;
+- `middagMoodlePhpstanAllowedMformPathNeedles`, `middagMoodlePhpstanIgnoredMformPathNeedles` and `middagMoodlePhpstanForbiddenMformSymbols`, the form lists;
+- `middagMoodlePhpstanPolicyFile`, `null`.
+
+Known exception, pending removal: when `middagMoodlePhpstanPolicyFile` is `null`, the framework-usage rule falls back to the `framework-extension-policy.php` bundled with the ruleset, and that file still names product classes. A product that does not want that policy sets its own policy file.
 
 ## Generated files and the marker
 
@@ -121,3 +129,21 @@ extensions:
 - The output is neutral Markdown. It renders the same on GitHub and in VitePress, and it uses no site-specific markup.
 - The front matter carries only `title` and `description`. A generated-file header comment opens each page; do not edit a generated page by hand.
 - Each term heading follows its own anchor line, so existing links to a term keep resolving. A deprecated or removed term opens with a blockquote that says so.
+
+## Type index
+
+Every type of `middag-php-dev-tools` that carries `@api` at `v1.17.0`, by namespace. The namespace root is `Middag\DevTools`. A type that is not on this list is `@internal` by the rule "no tag means `@internal`". The repository's `API-STABILITY.md` states that rule and carries no `@api` list, so this list is the reference.
+
+| Namespace | Types |
+| --- | --- |
+| `Adapter\Moodle\Build` | `AccessRenderer`, `CapabilityGenerator`, `MoodleTaskRenderer` |
+| `Adapter\Moodle\Linkml` | `ExtensionsConfig`, `MoodleArtifactRenderer`, `MoodleBaseTypes` |
+| `Adapter\Moodle\Statics` | `EventClassRenderer`, `StaticsCollector`, `StaticsRenderer`, `StaticsWriter`, `WriteOutcome` |
+| `Build\Bridge` | `BridgeMethodsConfig`, `BridgeMethodsReport` |
+| `Build\Contract` | `ServiceIdProviderInterface` |
+| `Build\Facade` | `FacadeBuildConfig`, `FacadeBuildOrchestrator`, `FacadeBuildReport`, `FacadeTestRenderer` |
+| `Build\Linkml` | `DddGenerator`, `DocsShared`, `ExtensionsGenerator` |
+| `Build\Linkml\Extensions` | `ArtifactWriter`, `ExtensionTypeResolver`, `ManualBlockAuditor`, `ModuleAnnotationParser` |
+| `Check` | `ExtensionsRunner`, `VigimValidator` |
+| `Check\Linkml` | `TermsAlignmentValidator`, `TermsValidator` |
+| `Vigim\Config` | `DddConfigSchema` |
