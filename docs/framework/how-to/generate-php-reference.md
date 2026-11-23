@@ -31,7 +31,7 @@ A local run is for checking the output only. The output is never committed: keep
 
 ## 3. Publish on each release
 
-CI/CD generates the reference on each release, from the released tag, and publishes it as a versioned docs payload through the docs proxy ([`worker-ts-middag-docs-proxy`](https://github.com/middag-io/worker-ts-middag-docs-proxy)):
+CI/CD generates the reference on each release, from the released tag, and publishes it as a versioned docs payload through the MIDDAG docs proxy:
 
 | Library | Bucket                | Reaches this hub                                                    |
 | ------- | --------------------- | ------------------------------------------------------------------- |
