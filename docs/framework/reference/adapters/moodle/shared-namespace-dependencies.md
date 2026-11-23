@@ -9,7 +9,7 @@ Reference for the Composer dependencies of `middag-io/moodle` whose PHP namespac
 Verified on 2026-11-16 against:
 
 - `middag-php-moodle` tag `v1.17.1` (`4d0a935`; `composer.json`, `src/`, `tests/`, `bin/`), `middag-php-framework` tag `v1.20.2` (`6833bc7`; `composer.json`) for the packages the adapter gets through the framework, and `middag-php-ui` tag `v1.8.2` (`composer.json`, which requires PHP only).
-- The Moodle stable branches of the supported range, in the upstream repository [`moodle/moodle`](https://github.com/moodle/moodle): `MOODLE_405_STABLE@69ef83ad2948` (4.5), `MOODLE_501_STABLE@939b25ee6be4` (5.1), `MOODLE_502_STABLE@5ce15767f3ab` (5.2) and `MOODLE_503_STABLE@cfe123f26fc7` (5.3), plus `MOODLE_500_STABLE@2d62d8b15891` (5.0, best effort). In each branch: the `$psr4namespaces` map of `core_component` (`lib/classes/component.php` on 4.5 and 5.0, `public/lib/classes/component.php` from 5.1), the bundled versions in `thirdpartylibs.xml` (`lib/` on 4.5 and 5.0, `public/lib/` from 5.1), and the root `composer.json` and `composer.lock`.
+- The Moodle stable branches of the supported range, in the upstream repository [`moodle/moodle`](https://github.com/moodle/moodle): `MOODLE_405_STABLE@69ef83ad2948` (4.5), `MOODLE_501_STABLE@939b25ee6be4` (5.1), `MOODLE_502_STABLE@5ce15767f3ab` (5.2) and `MOODLE_503_STABLE@cfe123f26fc7` (5.3), plus `MOODLE_500_STABLE@2d62d8b15891` (5.0, now outside the supported range). In each branch: the `$psr4namespaces` map of `core_component` (`lib/classes/component.php` on 4.5 and 5.0, `public/lib/classes/component.php` from 5.1), the bundled versions in `thirdpartylibs.xml` (`lib/` on 4.5 and 5.0, `public/lib/` from 5.1), and the root `composer.json` and `composer.lock`.
 
 ## The risk
 
