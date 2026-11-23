@@ -53,7 +53,7 @@ All are available on the 4.5 floor except the gated rows in the table above. The
 | C02 | Deprecation            | The framework has its own deprecation model, independent of Moodle's `debugging()`                                             |
 | C03 | Search (global search) | Global-search indexing is the extension's responsibility, through `\core_search\base` directly                                 |
 
-## `@api` / `@internal` classification
+## `@api` / `@internal` classification {#api-internal-classification}
 
 Every class in `src/` carries an explicit stability tag. The default for the host domain surface is `@api`: extensions and external plugins consume the typed wrappers directly, so treating them as internal would be fiction. A class opts out with an explicit `@internal` tag.
 

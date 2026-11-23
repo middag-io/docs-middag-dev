@@ -27,7 +27,7 @@ WordPress models REST as registration: one `register_rest_route()` call per rout
 - `addController($class)` collects classes; `register()` resolves each and, when it implements `Http/Contract/RestControllerInterface`, calls `registerRoutes($namespace)` with `{component}/{version}`.
 - The controller registers its own routes, usually through `AbstractWpRestController::route()` (see [Controller Bases](./controller-bases#rest-base)).
 
-### Declarative: `RestRouteAttributeRegistrar` + `WpRestKernel`
+### Declarative: `RestRouteAttributeRegistrar` + `WpRestKernel` {#declarative-restrouteattributeregistrar-wprestkernel}
 
 - Controllers declare routes with the framework `#[Route]` attribute (Symfony route shape). The registrar loads them through the framework `RouteLoaderInterface` and registers one WordPress route per Symfony route. A route without methods defaults to `GET`.
 - `Http/Routing/RestPathTranslator` (`@internal`) rewrites Symfony placeholders into WordPress named groups: `/organizations/{id}` with `['id' => '\d+']` becomes `/organizations/(?P<id>\d+)`; a placeholder without a requirement becomes `[^/]+`.

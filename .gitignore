@@ -242,3 +242,9 @@ skills-lock.json
 # Puxada do docs proxy por `npm run docs:prebuild`; reproduzível a cada build,
 # nunca versionada.
 docs/injected/
+
+# Nimbus site build (scripts/build-site.mjs): assembled content source,
+# generated navigation overrides and the preset's staging and cache.
+/site-content/
+/site-navigation.json
+/.middag-docs/

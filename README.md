@@ -132,6 +132,43 @@ private proxy deployment.
 | `docs:build`      | `docs:prebuild`, then build the static site to `docs/.vitepress/dist` |
 | `docs:preview`    | Serve the built site locally                                          |
 | `docs:available`  | Read-only discovery: list repos/versions in the proxy and diff against the allowlist |
+| `site:build`      | Nimbus build (see below): `docs:prebuild`, assemble, build with `@middag-io/nimbus-preset` in strict mode, check `dist/` |
+| `site:build:nofetch` | `site:build` against the already-injected tree (skips the proxy fetch) |
+| `site:preview`    | Serve the Nimbus `dist/` locally                                      |
+
+## Nimbus site build (migration in progress)
+
+The site is moving from VitePress to Nimbus (`@middag-io/nimbus-preset`). Until
+the cut-over, production still deploys the VitePress build; the Nimbus build
+runs next to it on every pull request and is deployed to a preview branch.
+It needs Node 24.
+
+`npm run site:build` runs [`scripts/build-site.mjs`](scripts/build-site.mjs):
+
+1. fetches the injected channels (`docs:prebuild`);
+2. copies `docs/` and `docs/injected/{repo}/{segment}/` into `site-content/`
+   (gitignored), mounted at the site root by
+   [`middag-docs.config.ts`](middag-docs.config.ts), so every page keeps its URL;
+3. runs the publish guard over the assembled tree;
+4. writes landing pages where a directory has none (`/{repo}/`,
+   `/libraries/reference/`), marks older channels `searchable: false`, keeps the
+   dots of channel URLs (`/middag-react/0.30/`) and turns `{#id}` heading ids
+   into anchors;
+5. turns each axis's `nav.json` and the channel manifests into navigation order
+   and labels (`site-navigation.json`, gitignored);
+6. builds into `dist/` in strict mode (any preset warning fails);
+7. adds an empty anchor with the old VitePress id before every heading whose
+   Nimbus id differs, so deep links from outside keep working, and checks
+   `dist/`: home built from `docs/index.md`, no `/index/` route, search index
+   present, `_redirects` (copied from `site-public/` by the preset's
+   `publicDir`) sends `/sitemap.xml` to `/sitemap-index.xml`, every internal
+   link and anchor resolves, and every URL of the live sitemap snapshot
+   (`test/fixtures/live-sitemap-urls.txt`) has a page or a redirect.
+
+[`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) runs the
+format check, the tests and `site:build` on pull requests from this repository,
+and deploys the Nimbus build to the Pages branch alias `nimbus` of the
+`docs-middag-dev` project on push to the migration branch or by manual dispatch.
 
 ## Publishing a library / version to the hub
 
