@@ -29,7 +29,7 @@ The frontend can inherit the active Moodle theme's brand color.
 | Read   | `ThemeSupport::getBrandColor()` reads `$PAGE->theme->settings->brandcolor` and returns it only if it is a well-formed CSS color (hex, `rgb()`/`rgba()`/`hsl()`/`hsla()` with numeric arguments, or a plain identifier); otherwise `null` |
 | Gate   | `ThemeSupport::isInheritanceEnabled()` reads the `inherit_theme_colors` setting of the `core` extension (`{prefix}core_inherit_theme_colors`; see [Settings & Config Keys](./settings-and-config-keys)) |
 | Inject | `ThemeSupport::getCssInjection()` returns `:root { --brand: <color>; }` for the consumer to place in the page head, or `null` when inheritance is off or no valid color exists. A host whose stylesheets read another variable overrides `brandCssVariable()` (the MIDDAG product uses `--middag-brand`) |
-| Share  | `ThemeSupport::buildTheme()` feeds `brandColor` and `inherit` into the Inertia shared props (`InertiaSharedProps`)                                                                      |
+| Share  | Nothing: the brand color reaches the frontend only through the injected CSS rule. The `theme` shared prop (`InertiaSharedProps`) is a bare `middag-io/ui` `SharedTheme` (`appearance`, `strings`) and carries no color or inheritance flag |
 | Map    | The consumer's design tokens (`--primary` and siblings) reference the brand variable when inheritance is on; off means the product's own fixed theme applies                            |
 
 The color validation matters: the value is interpolated into inline `<style>` content.

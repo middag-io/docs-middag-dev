@@ -50,7 +50,7 @@ Pass the default every time you read: `OptionSupport::get()` hands its own defau
 
 ## 3. Add a settings page
 
-`Settings\SettingsPageRegistrar` turns a tree of value objects (tabs, then sections, then fields) into WordPress Settings API calls: `add_settings_section()` for each section, and `register_setting()` with a sanitizer and `add_settings_field()` for each field. It does not add the menu entry or print the page. You do both, with the WordPress functions.
+`Settings\SettingsPageRegistrar` turns a tree of value objects (tabs, then sections, then fields) into WordPress Settings API calls: `add_settings_section()` for each section, and `register_setting()` with a sanitizer and `add_settings_field()` for each field. It does not add the menu entry or print the page. You do both, with the WordPress functions. Its constructor needs no argument: every parameter has a default.
 
 ### Describe the tabs
 
@@ -134,7 +134,7 @@ add_action('admin_init', static function (): void {
 });
 ```
 
-`register($page, $optionGroup, $tabs, $capability = 'manage_options')` registers every field of `$tabs` under one option group. The sample gives each tab its own group, with a new registrar for each tab: a second `register()` call on the same registrar registers the tabs of the first call again. On save, WordPress writes every option of the submitted group, and an option that is not in the form is saved as an empty value (`''`, `0` or `[]` with the default sanitizers). With one group for all tabs, saving one tab would clear the fields of the others.
+`register($page, $optionGroup, $tabs, $capability = 'manage_options')` registers every field of `$tabs` under one option group. Use one option group per tab: call `register()` once per tab, each with its own `$optionGroup`, as the sample does. Use a new registrar for each call: a second `register()` call on the same registrar registers the tabs of the first call again. On save, WordPress writes every option of the submitted group, and an option that is not in the form is saved as an empty value (`''`, `0` or `[]` with the default sanitizers). With one group for all tabs, saving one tab would clear the fields of the others.
 
 ### Add the menu entry and the page
 

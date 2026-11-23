@@ -62,10 +62,12 @@ The consumer builds it once at boot and injects it through its own container. **
 | `Admin/AdminRouteRegistrar` | `componentName()` | menu slug `{component}`, submenu `{component}-{suffix}` |
 | `Http/Routing/PublicRouteRegistrar` | `componentName()` | query var `{component}_route` |
 | `Cron/CronRegistrar` | `componentName()` | `cron_schedules` keys `{component}_{interval}` |
-| `Http/Inertia/InertiaAdapter` | `componentName()`, `assetVersion()` | mount node `{component}-app`, CSRF nonce action `{component}_inertia` (shared as `csrfToken`), asset version for skew detection |
+| `Http/Inertia/InertiaAdapter` | `componentName()`, `assetVersion()` | mount node `{component}-app`, CSRF nonce action `{component}_inertia` (shared as `csrf_token`), asset version for skew detection |
 | `Mail/EmailSender` | `basePath()` | email templates under `{basePath}/templates/emails/`, before the theme fallback |
 
 `InertiaAdapter` writes the framework's static Inertia configuration on each `render()`. That is safe because wp-admin serves one component per request; its own shared props, mount node, nonce action and asset version stay on the instance.
+
+`InertiaAdapter` adds the WordPress nonce of that action to every render as the `csrf_token` prop, unless a shared or local prop already sets `csrf_token`. Since 1.18.0 the key is `csrf_token`, the same key the framework uses; the former `csrfToken` key is gone, with no alias. The client sends the nonce back in the `X-WP-Nonce` header (or a `_wpnonce` body field), and `Http/Security/CsrfGuard` verifies it on `POST`, `PUT`, `PATCH` and `DELETE`. A missing or invalid nonce gets `403`, not `419`. The framework's `VerifyCsrfMiddleware` does not run on this pipeline.
 
 ## Configuration resolution
 

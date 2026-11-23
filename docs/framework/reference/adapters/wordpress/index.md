@@ -21,7 +21,7 @@ Developers of a WordPress plugin built on `middag-io/framework`, and developers 
 | Package             | `middag-io/wordpress` ([middag-php-wordpress](https://github.com/middag-io/middag-php-wordpress)), Apache-2.0 |
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, within the PHP versions the WordPress version supports; with the `json` extension   |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires (contracts and polyfills keep their own ranges)       |
-| Sibling libraries   | `middag-io/framework`, on the family MAJOR (`^2.0` on `2.x`); `middag-io/ui` comes with the framework         |
+| Sibling libraries   | `middag-io/framework` `^1.22` on the `1.x` line, then the family MAJOR (`^2.0` on `2.x`); `middag-io/ui` comes with the framework |
 | WordPress           | 7.0 and 7.1 (the latest major and the previous one); the CI runs the integration suite on each                |
 
 ```bash
