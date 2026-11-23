@@ -25,8 +25,8 @@ This page states the `2.x` line of the library family. Support starts at `2.0.0`
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, within the PHP versions the Moodle version supports; with the `json` extension   |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires (contracts and polyfills keep their own ranges)    |
 | Sibling libraries   | `middag-io/framework` and `middag-io/ui`, on the family MAJOR (`^2.0` on `2.x`)                            |
-| Moodle              | 4.5 (PHP 8.3), 5.1, 5.2 and 5.3 (PHP 8.3 and 8.4); 5.0 as best effort, with no support promise              |
-| Database engines    | PostgreSQL, MySQL and MariaDB, as supported by the Moodle version; SQL Server is not tested and Oracle is not tested yet |
+| Moodle              | 4.5 (PHP 8.3), 5.1, 5.2 and 5.3 (PHP 8.4, tested; PHP 8.3 expected, not tested)                             |
+| Database engines    | PostgreSQL, MySQL and MariaDB, as supported by the Moodle version; SQL Server and Oracle are outside the range |
 
 ```bash
 composer require middag-io/moodle
@@ -72,7 +72,7 @@ In progress: the generated reference of the `@api` surface, with signatures and 
 ## Changelog, decisions and help
 
 - [`CHANGELOG.md`](https://github.com/middag-io/middag-php-moodle/blob/main/CHANGELOG.md) records every release; [Releases](https://github.com/middag-io/middag-php-moodle/releases) carry the tags.
-- release-please cuts every release from Conventional Commits; there are no manual tags. The adapter shares MAJOR.MINOR with the rest of the family: a family MINOR or MAJOR goes out in every library, and a PATCH carries fixes only ([Lifecycle](/libraries/reference/versioning-and-compatibility#lifecycle)).
+- release-please cuts every release from Conventional Commits; there are no manual tags. The adapter shares only the MAJOR with the rest of the family: its MINOR and PATCH releases are its own, and its supported Moodle versions belong to it ([Lifecycle](/libraries/reference/versioning-and-compatibility#lifecycle)).
 - The decision records behind these pages live in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
 - Questions and bugs: [issues of `middag-php-moodle`](https://github.com/middag-io/middag-php-moodle/issues). Security reports: [`SECURITY.md`](https://github.com/middag-io/middag-php-moodle/blob/main/SECURITY.md); do not open a public issue for a vulnerability.
 
