@@ -40,11 +40,9 @@ Also in `src/Support/`:
 - `CacheSupportPsr16`: the PSR-16 view of the plugin cache.
 - `TaskDefinitionBuilder` and `CrudConventionResolver` (`@internal` helpers).
 
-The legacy `moodle-local_middag` plugin had 38 wrappers (snake_case, for example `db_support`, `di_bridge_support`). Every one of them has a PascalCase counterpart above; `CompletionSupport`, `CronSupport`, `ThemeSupport` and `UserFieldSupport` were added during the OSS extraction.
-
 ## Facades belong to the consumer
 
-The legacy plugin made facade consumption mandatory: every wrapper had a generated mirror facade, and importing the `support` namespace directly was an anti-pattern. This adapter ships no per-class facades. Facades are generated inside the **consumer** plugin (`{component}\facade\...`) by the consumer's own build tooling; the adapter provides only the generic mechanism (`Runtime\Facade\AbstractFacade`, `Runtime\Loader\FacadeLoader`).
+This adapter ships no per-class facades. Facades are generated inside the **consumer** plugin (`{component}\facade\...`) by the consumer's own build tooling; the adapter provides only the generic mechanism (`Runtime\Facade\AbstractFacade`, `Runtime\Loader\FacadeLoader`).
 
 Consequence: importing `Middag\Moodle\Support\*` directly is not an anti-pattern for code that depends on this package. The facade-bypass anti-pattern below applies only inside a consumer that has adopted a facade convention.
 

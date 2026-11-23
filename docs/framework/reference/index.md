@@ -40,13 +40,6 @@ Information-oriented API and contract detail, grouped by topic (see the sidebar 
 ## Reactive & Hook Model
 
 - [Hooks — Public Surface & Naming](./hooks-public-surface)
-- [Hooks, Filters & Signal Dispatch](./signal-hook-legacy-mechanics)
-
-## Legacy & Historical
-
-- [Composer Portability Audit (Historical)](./portability-audit-historical)
-- [Repository Persistence Families](./repository-persistence-families)
-- [Shortcode Processing (Historical)](./shortcode-legacy-detail)
 
 ## By concern
 

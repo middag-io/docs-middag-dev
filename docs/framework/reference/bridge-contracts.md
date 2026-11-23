@@ -8,11 +8,20 @@ The interfaces a host adapter (Moodle, WordPress, or a future host) implements t
 
 ## Rules every port follows
 
-- **A host enters only through an adapter.** Only adapter packages call host APIs; the framework calls none (enforced by `composer check:portability`, see [Composer Portability Audit](./portability-audit-historical)).
+- **A host enters only through an adapter.** Only adapter packages call host APIs; the framework calls none (enforced by `composer check:portability`, see [Portability gate](#portability-gate)).
 - **Every port has an OSS default or is optional.** The framework runs standalone with no adapter installed; an adapter only overrides a default. The standalone runtime is described in [Standalone Runtime](./standalone-runtime).
 - **The consumer owns the composition root.** The product (or a standalone app) chooses the bootstrap, the adapter and the bindings. The OSS libraries ship no composition root of their own.
 - **No product identity in the libraries.** Component name, asset version and base path reach the adapter at runtime through `HostComponentContextInterface`; defaults are neutral.
 - **Adapters never import proprietary code.** Governed concerns live in proprietary packages downstream, which build on the same ports; an adapter is only ever handed what it must deliver to the host.
+
+## Portability gate
+
+`composer check:portability` runs two checks, and `composer check` (run by the framework's CI workflow) includes it:
+
+- **Namespace axis, `deptrac.yaml`.** The `Framework` layer may depend only on `Ui`, `Symfony`, `Psr`, `Monolog`, `Nyholm`, `Doctrine`, `League` and `Sentry`. A `Host` layer collects any Moodle or WordPress namespace (`core\`, `core_`, `mod_`, `local_`, `block_`, `tool_`, `WP_`, `Automattic\`), and no layer may depend on it. Deptrac runs with `--fail-on-uncovered`.
+- **Host-globals axis, `bin/portability-scan.php`.** Scans `src/` line by line for Moodle globals (`global $CFG`, `$DB`, `$USER`, ...), `use` of Moodle namespaces, Moodle and WordPress host functions, hard-coded absolute paths, `$CFG->dirroot`/`wwwroot`/`dataroot`, and `require`/`include` statements. Exits 1 on any hit.
+
+The acceptance floor is zero violations on both axes, with no exceptions allowlist.
 
 ## Contract table
 

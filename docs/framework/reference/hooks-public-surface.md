@@ -4,7 +4,7 @@ title: 'Hooks — Public Surface and Naming'
 
 # Hooks — Public Surface and Naming
 
-Reference for the WordPress-style filter/action hooks `middag-io/framework` ships, which members are extension API and which are wiring, and how hook names are formed across the ecosystem. Backs [FW-007](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-007-signal-hook-reactive-model.md). For the legacy signal mechanics and the governed engine that is not shipped here, see [Hooks, Filters & Signal Dispatch](./signal-hook-legacy-mechanics).
+Reference for the WordPress-style filter/action hooks `middag-io/framework` ships, which members are extension API and which are wiring, and how hook names are formed across the ecosystem. Backs [FW-007](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-007-signal-hook-reactive-model.md).
 
 ## What the framework ships
 
@@ -38,6 +38,7 @@ Present on the concrete `HookManager` and deliberately absent from the interface
 
 - **Ordering.** Callbacks run by ascending priority, then registration order within a priority.
 - **No exception swallowing.** `doAction` and `applyFilters` wrap no try/catch around callbacks. A callback's exception propagates like any PHP exception; a listener that must not break its caller handles its own failures (`HookManagerTest::testDoActionDoesNotSwallowCallbackExceptions`, `::testApplyFiltersDoesNotSwallowCallbackExceptions`).
+- **Which failures travel with the caller.** The test is not "hook versus service" but whether the step composes what the caller was promised (a return value or a documented mandatory side effect). A filter is always part of that contract. An action is lateral by default, and lateral never means suppressed: the registering code decides whether its own failure may bubble up. Boot-time isolation of a failing module is a separate rule, described in [Kernel Boot Lifecycle](./kernel-boot-lifecycle).
 - **Re-entrancy is not blocked.** As in WordPress, a listener breaks a loop itself: detach with `removeAction()` before re-dispatching and re-attach after, or refuse re-entry with `doingAction($tag)`.
 - **Slow-callback warning.** Each callback is timed; one slower than the threshold (default 100 ms, `0` disables) logs a PSR-3 `warning` through the injected logger.
 - **Profiling.** With a `ProfileCollectorInterface` attached, every fired tag is recorded under category `hook` with its kind (`action` or `filter`) and duration. See [Logging & observability](./logging-and-observability).

@@ -4,7 +4,7 @@ title: 'Framework — Rendering Mode Selection & Anti-Patterns'
 
 # Rendering Mode Selection & Anti-Patterns
 
-Reference for how `middag-io/framework` picks between a server-rendered host page, an Inertia SPA response, and a pure JSON API response — and the anti-patterns to avoid on any of the three. Backs [FW-005](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-005-multi-mode-rendering-model.md). Provenance: legacy vault ADR-803 (2026-04-05).
+Reference for how `middag-io/framework` picks between a server-rendered host page, an Inertia SPA response, and a pure JSON API response — and the anti-patterns to avoid on any of the three. Backs [FW-005](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-005-multi-mode-rendering-model.md).
 
 ## Mode selection
 

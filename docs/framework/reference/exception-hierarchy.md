@@ -4,7 +4,7 @@ title: 'framework — Exception Hierarchy: Status Codes, Layer Matrix & Anti-Pat
 
 # Exception Hierarchy: Status Codes, Layer Matrix & Anti-Patterns
 
-Reference for the typed exception hierarchy in `middag-io/framework` — the status-code table, per-layer throw restrictions and anti-patterns to avoid. Backs [FW-010](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-010-typed-exception-hierarchy.md). Provenance: legacy vault ADR-706 (2026-04-05).
+Reference for the typed exception hierarchy in `middag-io/framework` — the status-code table, per-layer throw restrictions and anti-patterns to avoid. Backs [FW-010](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-010-typed-exception-hierarchy.md).
 
 ## Class hierarchy and status codes
 
@@ -76,19 +76,3 @@ Any 500-class exception (infrastructure or persistence) must never expose techni
 - Exposing a stack trace in an API response.
 - Wrapping a native exception without preserving `previous`.
 - A `MiddagValidationException` thrown with no `errors` array attached — the form resolver has nothing to map back onto the offending field.
-
-## History note
-
-The hierarchy was reconstructed from the `moodle-local_middag` legacy vault (`ADR-706`/`ref-706`), where classes used snake_case names under a `middag_` prefix (e.g. `middag_persistence_exception`). The framework's current PascalCase classes are a verbatim rename — the shape, the status-code map and the layer restrictions carried over unchanged.
-
-| Legacy class (ADR-706) | Current class |
-|---|---|
-| `middag_exception` (abstract, `@api`) | `MiddagException` |
-| `middag_domain_exception` (`@api`) | `MiddagDomainException` |
-| `middag_validation_exception` (`@api`) | `MiddagValidationException` |
-| `middag_not_found_exception` (`@api`) | `MiddagNotFoundException` |
-| `middag_infrastructure_exception` (`@api`) | `MiddagInfrastructureException` |
-| `middag_persistence_exception` (`@api`) | `MiddagPersistenceException` |
-| `middag_authentication_exception` (`@api`) | `MiddagAuthenticationException` |
-| `middag_authorization_exception` (`@api`) | `MiddagAuthorizationException` |
-| `middag_lifecycle_violation_exception` (`@internal`) | `MiddagLifecycleViolationException` |

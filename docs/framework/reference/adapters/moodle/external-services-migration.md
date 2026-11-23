@@ -32,33 +32,3 @@ Including `MOODLE_OFFICIAL_MOBILE_SERVICE` in a definition's `services` array pu
 | Forgetting `self::validate_parameters()`                              | A security defect, not a style issue                                                 |
 | `type: 'read'` for an operation that changes state                    | Moodle lets a `read` call through without a sesskey; any mutation must be `write`    |
 | Renaming a published function                                         | Breaks every client already calling it, including the mobile app                     |
-
-## Consumer section: legacy migration (MIDDAG product)
-
-This section describes the MIDDAG Moodle plugin (`local_middag`), not the adapter. It is kept here as the worked migration example.
-
-Part of the product's externals predate the generated convention and are still being migrated per extension:
-
-| Extension   | Status                  |
-| ----------- | ----------------------- |
-| `core`      | New style (migrated)    |
-| `helpdesk`  | Legacy                  |
-| `trilha`    | Legacy                  |
-| `studyplan` | Legacy                  |
-
-Legacy shape: the external class lives at `classes/extensions/{slug}/legacy/classes/external.php`, is declared by hand in `legacy/db/services.php`, sometimes under an older namespace (`mtool_*`), outside the generation pipeline. The new-style class is a dedicated `{slug}_external` at `classes/extensions/{slug}/{slug}_external.php`.
-
-| Step | Action                                                                                         |
-| ---: | ---------------------------------------------------------------------------------------------- |
-|    1 | Move the external class out of `legacy/`                                                       |
-|    2 | Rename the namespace to the current convention                                                 |
-|    3 | Declare the function through `getServiceDefinitions()` with a `ServiceDefinition`              |
-|    4 | Remove `legacy/db/services.php`                                                                |
-|    5 | Regenerate `db/services.php`                                                                   |
-|    6 | Keep the public function name (`local_middag_{name}`) so existing clients do not break         |
-
-Step 6 is the one mistake with real blast radius. Adding a new external under `legacy/` is not allowed: `legacy/` is migration debt, not a place to grow.
-
----
-
-Decision records: MDL-007 and MDL-016 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

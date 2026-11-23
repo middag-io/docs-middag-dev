@@ -4,7 +4,7 @@ title: 'framework — Attribute Routing & Auth Model Reference'
 
 # Attribute Routing & Auth Model
 
-Reference for `middag-io/framework`'s `#[Route]`/`#[Auth]` attribute model: controller shapes, the parameter resolver chain, the auth pipeline, and CSRF. Backs [FW-002](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-002-attribute-routing-controller-auth-model.md). Provenance: legacy vault ADR-801 (routing and controller model, 2026-04-04) and ADR-301 (auth contracts, 2026-03-29), merged into one mechanism.
+Reference for `middag-io/framework`'s `#[Route]`/`#[Auth]` attribute model: controller shapes, the parameter resolver chain, the auth pipeline, and CSRF. Backs [FW-002](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-002-attribute-routing-controller-auth-model.md).
 
 ## Attribute usage
 

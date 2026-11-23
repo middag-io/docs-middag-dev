@@ -4,7 +4,7 @@ title: 'framework — Inertia Protocol: Shared Props, SPA-Safe Redirects & Parti
 
 # Inertia Protocol: Shared Props, SPA-Safe Redirects & Partial Reloads
 
-Reference for `middag-io/middag-php-framework`'s Inertia bridge (`Http/Inertia/`): shared props, SPA-safe redirects, asset versioning, the partial-reload wire format, and the legacy-to-current component mapping. Backs [FW-006](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-006-inertia-spa-bridge.md). Provenance: legacy vault ADR-804 (2026-04-04).
+Reference for `middag-io/middag-php-framework`'s Inertia bridge (`Http/Inertia/`): shared props, SPA-safe redirects, asset versioning, the partial-reload wire format. Backs [FW-006](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-006-inertia-spa-bridge.md).
 
 ## Server-side placement
 
@@ -50,18 +50,6 @@ The kernel also upgrades a `302` returned from an unsafe method to `303`, becaus
 ## Partial reloads
 
 The client sends `X-Inertia-Partial-Component` together with `X-Inertia-Partial-Data` (keys to include) or `X-Inertia-Partial-Except` (keys to drop). The response honours them only when the partial component matches the rendered component, and filters shared and page props server-side. `X-Inertia-Reset` lists merge props the client should replace rather than merge. This is the mechanism `middag-io/ui`'s `Table` block relies on for server-side sort, filter and pagination without a full reload.
-
-## Component reference (legacy → current)
-
-| Legacy component (ADR-804) | Current file |
-|---|---|
-| `inertia_adapter` (static facade) | `Http/Inertia/InertiaAdapter.php` |
-| `inertia_factory` | `Http/Inertia/InertiaFactory.php` |
-| `inertia_manager` (shared props) | `Http/Inertia/InertiaManager.php` |
-| `inertia_response` | `Http/Inertia/InertiaResponse.php` |
-| `inertia_version_manager` | `Http/Inertia/InertiaVersionManager.php` |
-| `inertia_field_mapper` | `Form/Renderer/InertiaFieldMapper.php` |
-| — (net-new, protocol v3) | `Http/Inertia/DeferProp.php`, `Http/Inertia/MergeProp.php`, `Http/Inertia/OptionalProp.php` |
 
 ## Protocol version 3
 

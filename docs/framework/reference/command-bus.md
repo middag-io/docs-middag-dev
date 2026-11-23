@@ -51,10 +51,6 @@ The framework also defines the retry seam, all `@api` under [`Bus/Retry`](https:
 
 The transport is meant for a standalone PHP host, wired through [`StandaloneKernel`](./standalone-runtime). Under Moodle or WordPress it would open a second database connection, create a table outside `install.xml`/`dbDelta` (invisible to backup, restore and uninstall) and ignore the host's table prefix. The framework cannot know which host it runs on, so refusing the transport on those hosts is the host side's job.
 
-## Dispatch API history
-
-The legacy decision (vault ADR-705, 2026-03-29) specified two methods, `dispatch()` for sync and `dispatch_async()` for async, while its reference companion described a static `command_bus::handle()`/`dispatch_async()` facade. Neither shipped. The code converged on one `dispatch()` call, with routing deciding sync or async, and on camelCase `toPayload()`/`fromPayload()` instead of PHP `serialize()` or a generic JSON encoding of the object.
-
 ## Boundary of governed jobs
 
 This package ships no `AttemptStoreInterface` implementation, and its bundled transports do not attach `AttemptStamp`. The persisted store, retry history, correlation and job lifecycle belong to the host side, for example `middag-php-core` and its host adapters. A command dispatched through this framework is therefore not automatically a persisted job aggregate, and this page does not define job fields, states or database behavior for the OSS bus.

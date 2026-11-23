@@ -72,18 +72,4 @@ src/Domain/Group/
 | The folders follow Moodle's capability areas because the types mirror Moodle objects. Everything else in the adapter stays concern-first (`Database/`, `Http/`, `Settings/`, `Support/`, …) |
 | A new folder is admitted only for a genuinely distinct native Moodle mechanism, never because a folder has grown to some file count                                           |
 
-The legacy `moodle-local_middag` plugin organized its boundary by technical type (`adapter/`, `contract/`, `service/`, `definition/`, `dto/`, `entity/`, `enum/`, `settings/`, `form/`, `support/`). In the adapter those roles map as follows:
-
-| Legacy folder | Adapter location                                                                                                 |
-| ------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `adapter/`    | The concern that owns the port (`Security/`, `Logging/`, `Database/`, `Translation/`, `Output/`, …)               |
-| `contract/`   | The owning concern's `Contract/` (`Security/Contract/`, `Privacy/Contract/`, `Domain/<Subsystem>/Contract/`, …)   |
-| `service/`    | `Domain/<Subsystem>/*Service` (`UserService`, `MessageService`, `AdhocService`, `ScheduledService`, …)            |
-| `definition/` | `Definition/` (`*Definition`, see [Static Generation](./adapters/moodle/statics-generation))                     |
-| `dto/`, `entity/` | `Domain/<Subsystem>/`                                                                                        |
-| `enum/`       | `Domain/<Subsystem>/Enum/`, `Security/Enum/`, `Settings/Enum/`, `Shared/Enum/`                                    |
-| `settings/`   | `Settings/` and `Settings/Type/` (see [Settings & Config Keys](./adapters/moodle/settings-and-config-keys))       |
-| `form/`       | `Form/` (`MformRenderer`)                                                                                        |
-| `support/`    | `Support/` (see [Support Layer](./adapters/moodle/support-class-inventory))                                      |
-
 Decision record: MDL-002 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

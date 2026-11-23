@@ -163,38 +163,11 @@
       {
         "label": "Reactive & Hook Model",
         "order": 6,
-        "files": ["reference/hooks-public-surface", "reference/signal-hook-legacy-mechanics"],
+        "files": ["reference/hooks-public-surface"],
         "labels": [
           {
             "file": "reference/hooks-public-surface",
             "label": "Hooks — Public Surface & Naming"
-          },
-          {
-            "file": "reference/signal-hook-legacy-mechanics",
-            "label": "Hooks, Filters & Signal Dispatch"
-          }
-        ]
-      },
-      {
-        "label": "Legacy & Historical",
-        "order": 7,
-        "files": [
-          "reference/portability-audit-historical",
-          "reference/repository-persistence-families",
-          "reference/shortcode-legacy-detail"
-        ],
-        "labels": [
-          {
-            "file": "reference/portability-audit-historical",
-            "label": "Composer Portability Audit (Historical)"
-          },
-          {
-            "file": "reference/repository-persistence-families",
-            "label": "Repository Persistence Families"
-          },
-          {
-            "file": "reference/shortcode-legacy-detail",
-            "label": "Shortcode Processing (Historical)"
           }
         ]
       }
