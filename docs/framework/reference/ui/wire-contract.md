@@ -8,7 +8,7 @@ This page describes the JSON that [`middag-php-ui`](https://github.com/middag-io
 
 ## Envelopes and version
 
-Two envelopes go on the wire. Both implement [`ContractEnvelopeInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Envelope/Contract/ContractEnvelopeInterface.php), which holds the single `VERSION` constant (currently `'1'`). Each serialized envelope carries it as `version`, so a full page and a partial update can never disagree on the contract version.
+Two envelopes go on the wire. Both implement [`ContractEnvelopeInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Envelope/Contract/ContractEnvelopeInterface.php), which holds the single `VERSION` constant (currently `'2'`, since 1.13.0). Each serialized envelope carries it as `version`, so a full page and a partial update can never disagree on the contract version. The same value is the `x-contract-version` of every schema bundle, including the shared props bundle described in [Shared props](#shared-props).
 
 | Envelope | Use | Required keys | Optional keys |
 | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ A `PageContract` is built from five layers:
 | Regions | `layout.regions` | Named slots, each an ordered list of blocks. `CrudBuilder` uses `content`, and `aside` for `show`. |
 | Blocks | `BlockDescriptor` | A typed widget: `type`, `key`, `data`, with optional `variant`, `title`, `subtitle`, `actions`, `meta`, `poll`, `deferred` and `remember`. |
 
-`entities` maps an entity type to a route pattern; blocks resolve entity references against it. `resources` (`PageResources`) carries user preferences, a capability map, feature flags, the current identity and branding.
+`entities` maps an entity type to a route pattern; blocks resolve entity references against it. `resources` ([`PageResources`](https://github.com/middag-io/middag-php-ui/blob/main/src/Page/PageResources.php)) carries only `featureFlags` (a map of booleans, always emitted, `{}` when empty) and an optional `branding`. Since 1.13.0 it no longer carries `user`, `capabilities` or `preferences`, and `UserPreferences` is removed: identity, capabilities, theme and locale travel in the [shared props](#shared-props).
 
 ### Open vocabulary
 
@@ -71,7 +71,7 @@ The form DSL itself lives in the framework. A host renderer that cannot consume 
 
 A `region` fragment carries a [`RegionUpdate`](https://github.com/middag-io/middag-php-ui/blob/main/src/Region/RegionUpdate.php) with a mode from `RegionUpdateMode`: `replace`, `append`, `prepend` and `update` read `blocks`; `remove` reads `keys`.
 
-[`ActionResult`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/ActionResult.php) is the server's answer to a mutation. It carries `success`, notifications, an optional redirect, validation errors keyed by field (the reserved `_` key holds form-level errors), and two ways to update the view: `refreshBlocks` lists block keys the client re-fetches (pull), and `fragments` carries ready pieces to swap in (push). A [`ResourcePatch`](https://github.com/middag-io/middag-php-ui/blob/main/src/Page/ResourcePatch.php) on a fragment or an action result updates preferences, capabilities or feature flags without resending `PageResources`.
+[`ActionResult`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/ActionResult.php) is the server's answer to a mutation. It carries `success`, notifications, an optional redirect, validation errors keyed by field (the reserved `_` key holds form-level errors), and two ways to update the view: `refreshBlocks` lists block keys the client re-fetches (pull), and `fragments` carries ready pieces to swap in (push). A [`ResourcePatch`](https://github.com/middag-io/middag-php-ui/blob/main/src/Page/ResourcePatch.php) on a fragment or an action result updates the feature flags without resending `PageResources`. It carries only `featureFlags`; an empty patch serializes to `{}`. The client merges it into its current resources.
 
 ## Actions
 
@@ -88,23 +88,65 @@ An [`Action`](https://github.com/middag-io/middag-php-ui/blob/main/src/Action/Ac
 
 The contract carries authorization and translation as data and never resolves them:
 
-- **Authorization.** `Action`, `NavigationNode` and `CrudBuilder` accept a `capability` string. It is an opaque token that the host adapter maps to its own permission check. `PageResources` and `ResourcePatch` carry a capability map of booleans the server has already evaluated.
+- **Authorization.** `Action`, `NavigationNode` and `CrudBuilder` accept a `capability` string. It is an opaque token that the host adapter maps to its own permission check. The tokens the current user holds travel as a list of strings in the `auth` slot of the [shared props](#shared-props) (`SharedAuth.capabilities`); `PageResources` and `ResourcePatch` no longer carry a capability map.
 - **Translation.** [`Translatable`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/ValueObject/Translatable.php) serializes a `key`, a host i18n `domain` and optional `params`. The client resolves it with the host's i18n tool. Entity data stays a plain string; the client tells the two apart by type (object to resolve, string to print).
 
-Navigation is built through [`NavigationRegistryInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Navigation/Contract/NavigationRegistryInterface.php): modules register groups, sections and items during boot, and the registry filters by capability and serializes the tree for the client. Hosts register against the registry instead of exposing their own navigation callbacks.
+Navigation is built through [`NavigationRegistryInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Navigation/Contract/NavigationRegistryInterface.php): modules register groups, sections and items during boot, and the registry filters by capability and serializes the tree for the client. Hosts register against the registry instead of exposing their own navigation callbacks. Since 1.13.0, `build()` returns a [`NavigationTree`](#navigation-tree) value object instead of an array.
+
+## Shared props
+
+[`SharedProps`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/ValueObject/SharedProps.php) (new in 1.13.0) describes the props shared with every page, next to the page contract. It is the root of its own schema bundle, `shared-props.json`. The root is open (`additionalProperties: true`), so hosts and products can add their own keys, such as `middag.*`; the typed slots stay strict. Every slot is optional. A slot left `null` is omitted from the wire, except `scope`, which is always emitted.
+
+| Slot | Type | Carries |
+| --- | --- | --- |
+| `auth` | [`SharedAuth`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/ValueObject/SharedAuth.php) | The authenticated user, as one flat object: the `Identity` keys `id` (string), `name`, and optional `email`, `avatarUrl` and `roles` (a list of strings, omitted when empty); then `capabilities` (a list of strings, always emitted) and an optional `logoutUrl`. `id`, `name` and `capabilities` are required. |
+| `theme` | [`SharedTheme`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/ValueObject/SharedTheme.php) | An optional `appearance` (`ThemeMode`: `light`, `dark`, `system`) and `strings`, a map of string overrides for the client, always emitted and `{}` when empty. |
+| `flash` | [`FlashMessages`](https://github.com/middag-io/middag-php-ui/blob/main/src/Shared/ValueObject/FlashMessages.php) | One-shot messages for the next render: a flat map with at most one string per key. The only keys are `success`, `error`, `info` and `warning`. |
+| `errors` | [`FormErrors`](#form-errors) | The validation errors of the current request. |
+| `csrf_token` | string | A CSRF token. |
+| `locale` | string | The current locale. |
+| `scope` | object | An open object that describes the current scope. Always emitted, `{}` when empty. |
+| `navigation` | [`NavigationTree`](#navigation-tree) | The navigation payload. |
+
+`ui` defines these shapes only. Which values a host puts in each slot is up to the host adapter.
+
+`FlashMessages` emits only the keys that carry text: a `null`, empty or whitespace-only value is dropped, and an empty set serializes to `{}`. `FlashMessages::fromArray()` builds the set from a raw map, such as a session flash bag; it drops keys other than the four above and values that are not strings, instead of rejecting them.
+
+The `errors` slot does not cover the `X-Inertia-Error-Bag` header.
+
+### Navigation tree
+
+[`NavigationTree`](https://github.com/middag-io/middag-php-ui/blob/main/src/Navigation/NavigationTree.php) always emits its three keys:
+
+| Key | Carries |
+| --- | --- |
+| `tree` | The main list of [`NavigationNode`](https://github.com/middag-io/middag-php-ui/blob/main/src/Navigation/NavigationNode.php). |
+| `activeKey` | The dot-notation key of the active node. The empty string `''` means that no node is active. |
+| `footer` | The secondary list of `NavigationNode`, shown at the bottom. |
+
+The constructor rejects a `tree` or `footer` that is not a list of `NavigationNode`. A `NavigationNode` requires `key` and `label` and has the optional `icon`, `href`, `badge`, `children` and the flags `active`, `drilldown`, `collapsible` and `defaultOpen` (emitted only when true). Since 1.13.0 it also has four optional fields, typed as open strings that the client interprets: `entityType`, `badgeVariant`, `statusColor` and `target` (an HTML link target, such as `_blank`). Each is omitted when unset.
+
+### Form errors
+
+[`FormErrors`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/FormErrors.php) maps a field name to a [`FieldError`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/FieldError.php): one message (a string) or a list of messages (an array of strings). The reserved key `_` carries errors for the whole form, and dotted keys such as `address.zip` target nested fields. An empty set serializes to `{}` (since 1.13.0). The same shape types the `errors` of the shared props and of an `ActionResult`; `ActionResult` omits `errors` when there are none.
+
+### Empty maps
+
+Since 1.13.0, an empty map goes on the wire as a JSON object `{}`, never as an empty array `[]`. This applies to `PageResources.featureFlags`, an empty `ResourcePatch`, `FormErrors`, `FlashMessages`, `SharedTheme.strings` and `SharedProps.scope`.
 
 ## Published schemas
 
-The PHP value objects are the source of truth. Each wire value object and enum declares a hand-authored `jsonSchema()` next to its `jsonSerialize()`. [`SchemaRegistry`](https://github.com/middag-io/middag-php-ui/blob/main/src/Schema/SchemaRegistry.php) (`@internal`) bundles them into two JSON Schema draft 2020-12 files under [`schema/`](https://github.com/middag-io/middag-php-ui/tree/main/schema):
+The PHP value objects are the source of truth. Each wire value object and enum declares a hand-authored `jsonSchema()` next to its `jsonSerialize()`. [`SchemaRegistry`](https://github.com/middag-io/middag-php-ui/blob/main/src/Schema/SchemaRegistry.php) (`@internal`) bundles them into three JSON Schema draft 2020-12 files under [`schema/`](https://github.com/middag-io/middag-php-ui/tree/main/schema):
 
 | File | Root | `$id` |
 | --- | --- | --- |
 | `page-contract.json` | `PageContract` | `https://ui-docs.middag.io/schemas/page-contract.json` |
 | `fragment.json` | `Fragment` | `https://ui-docs.middag.io/schemas/fragment.json` |
+| `shared-props.json` | `SharedProps` | `https://ui-docs.middag.io/schemas/shared-props.json` |
 
 Each bundle declares `x-contract-version` (the envelope `VERSION`), a `$ref` to its root and every type under `$defs`. `@middag-io/ui-contracts` ships the TypeScript types and zod schemas that `@middag-io/ui-contracts-codegen` generates from these files.
 
-The schemas are strict. Every value object is `additionalProperties: false`, and discriminated unions such as `ActionTarget` use `oneOf` on a `kind` const. The only open objects are passthrough bags: a block's `data` and `meta`, layout `meta`, a fragment's `payload`, `Translatable` and route `params`, a column's `options` and `formatOptions`, and `UserPreferences`. The form schema tree (`FormSchemaNode` and its node types) is registered but not yet referenced from the page tree; the `form_panel` block payload stays a passthrough.
+The schemas are strict. Every value object is `additionalProperties: false`, except the `SharedProps` root and the `FormErrors` map (field name to `FieldError`), and discriminated unions such as `ActionTarget` use `oneOf` on a `kind` const. The only open objects are the `SharedProps` root, its `scope`, and passthrough bags: a block's `data` and `meta`, layout `meta`, a fragment's `payload`, `Translatable` and route `params`, and a column's `options` and `formatOptions`. The form schema tree (`FormSchemaNode` and its node types) is registered but not yet referenced from the page tree; the `form_panel` block payload stays a passthrough.
 
 ### Drift gate
 
@@ -139,4 +181,4 @@ On the client, `@middag-io/ui-contracts` keeps the control enums strict and lets
 
 The contract does not guarantee that a particular host or client renders every block type, layout or shell; that is the client registry's job. Rendering, HTTP transport and host wiring live in `middag-io/framework`, the host adapters and the client. See [Page composition contract](./composition-levels-and-capabilities) for the builder levels and [ui architecture](../../explanation/ui/architecture) for the package boundaries.
 
-Verified against `middag-php-ui/main@d58693b` (release 1.12.0) on 2026-11-23.
+Verified against `middag-php-ui@2352184` (tag `v1.13.0`, release 1.13.0) on 2026-11-23.

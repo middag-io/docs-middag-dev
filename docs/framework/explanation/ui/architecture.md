@@ -37,12 +37,12 @@ The library's `src/` is organized by **UI concern**, each a top-level directory:
 | `Envelope/` | The response envelope around a contract. |
 | `Form/` | The form model — `FieldDefinition`, `Group`, form state and renderer contracts. |
 | `Inspector/` | Detail/inspector view contracts. |
-| `Navigation/` | Navigation nodes and registries. |
+| `Navigation/` | Navigation nodes, the `NavigationTree` payload and registries. |
 | `Page/` | The page contract entry points and page metadata. |
 | `Region/` | Page regions and fragments (partial updates). |
 | `Schema/` | `SchemaRegistry` — the single source of truth for the emitted JSON schemas. `@internal`: it supports schema export inside the package. |
 | `Table/` | Tables and the CRUD builder. |
-| `Shared/` | Cross-cutting `Enum/` (closed catalogs), `ValueObject/` (readonly value objects), `Concerns/` (shared traits; `Concerns/ProvidesJsonSchema` is `@internal`). |
+| `Shared/` | Cross-cutting `Enum/` (closed catalogs), `ValueObject/` (readonly value objects, including the shared props `SharedProps`, `SharedAuth`, `SharedTheme` and `FlashMessages`), `Concerns/` (shared traits; `Concerns/ProvidesJsonSchema` and `Concerns/AssertsStringList` are `@internal`). |
 
 Inside each concern, `@api` interfaces live in a `Contract/` sub-namespace (suffix `Interface`), fluent builders return `static` and produce value objects, and leaf value objects are `final readonly`. A value object paired with a dedicated `*Interface` extension seam may be `readonly` (non-`final`).
 
