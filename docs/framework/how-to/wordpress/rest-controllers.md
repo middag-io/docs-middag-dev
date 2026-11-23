@@ -229,7 +229,7 @@ const response = await fetch(`${acmeNotes.root}notes/5`, {
 
 A script that uses the `wp-api-fetch` package gets this header without extra code.
 
-::: info `#[Nonce]` is for the admin surface
+::: info The Nonce attribute is for the admin surface
 The adapter's `Security\Attribute\Nonce` attribute is read by the admin HTTP kernel (`WpHttpKernel`), which serves wp-admin pages. The REST kernel does not read it. On REST, the `wp_rest` nonce above is the only nonce check. See [Routing Surfaces](../../reference/adapters/wordpress/routing-surfaces#admin).
 :::
 

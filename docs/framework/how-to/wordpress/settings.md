@@ -126,7 +126,7 @@ $builder->register(SettingsPageRegistrar::class)
 $builder->register(SettingsPage::class)->setAutowired(true)->setPublic(true);
 ```
 
-::: warning `SettingsRegistrar` is `@internal`
+::: warning SettingsRegistrar is internal
 `Settings\SettingsRegistrar` is tagged `@internal`, but `SettingsPageRegistrar` requires it. Name it only here, to construct `SettingsPageRegistrar`, and do not call it from your own code: it may change in any release.
 :::
 

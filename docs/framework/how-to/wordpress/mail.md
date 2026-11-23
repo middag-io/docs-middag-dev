@@ -4,7 +4,7 @@ title: 'wordpress adapter — Mail'
 
 # Send email through `wp_mail`
 
-**Goal:** send email from your plugin through WordPress's `wp_mail()`, either as framework `Mail` messages or from PHP templates that a theme can override.
+**Goal:** send email from your plugin through WordPress's `wp_mail()`, either as framework `Mail` messages or from PHP templates in your plugin, with the active theme as a fallback.
 
 **Prerequisites:**
 

@@ -169,7 +169,7 @@ What the connection adapter does with each call:
 
 Parameters are passed to `$wpdb->prepare()`. Use named placeholders (`:user` with the key `user`) or positional `?`, never both in one statement. An `int` or `bool` value is bound as `%d`, a `float` as `%f`, anything else as `%s`. A failed query, insert, update or delete throws `WordPressDatabaseException` with `$wpdb->last_error` in the message.
 
-`QueryBuilder::on($connection, $table)` is the framework's fluent query builder (`where()`, `orderBy()`, `paginate()`, `insert()`, `update()`, `upsert()`, ...). It runs on the same connection, so it uses the same prepared statements and the same dialect.
+`QueryBuilder::on($connection, $table)` is the framework's SQL query builder, `Middag\Framework\Persistence\Query\QueryBuilder`. The adapter's own `Middag\WordPress\Persistence\QueryBuilder` is a different class: it builds `WP_Query` reads over posts and is covered in [Repositories](./repositories#_2-build-wp-query-reads-with-the-query-builder). The framework builder is fluent (`where()`, `orderBy()`, `paginate()`, `insert()`, `update()`, `upsert()`, ...). It runs on the same connection, so it uses the same prepared statements and the same dialect.
 
 ## 4. Use framework models, if you want them
 
