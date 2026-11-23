@@ -32,7 +32,7 @@ Its place in the architecture is in [OSS and internal libraries](../../explanati
 The demo ships a React bundle built from `ui/`:
 
 - **What builds it:** Vite with `@vitejs/plugin-react`. `npm ci && npm run build:host` (`vite.config.custom.ts`) writes the app entry (`app.js`, `style.css` and hashed chunks) to `public/build`.
-- **What it uses:** React 19, the Inertia React client and the OSS renderer `@middag-io/react` (`^0.45.4`, installed from the public npm registry with no token); `ui/src/app/register.ts` registers its shells, layouts and blocks plus the demo's own extensions.
+- **What it uses:** React 19, the Inertia React client and the OSS renderer `@middag-io/react` (`^0.46.1`, installed from the public npm registry with no token); `ui/src/app/register.ts` registers its shells, layouts and blocks plus the demo's own extensions.
 - **From source:** `composer serve` runs the PHP built-in server on `public/`, so it serves `/build/app.js` and `/build/style.css` once the bundle is built.
 - **The Docker image** builds the bundle in a Node stage and copies it into `public/build`, so a bare `docker run` serves the complete, styled application.
 
@@ -42,8 +42,8 @@ The demo ships a React bundle built from `ui/`:
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, with the `pdo` and `pdo_sqlite` extensions                                       |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires; the `composer.lock` its Docker image ships resolves Symfony 7.4 |
-| Sibling libraries   | `middag-io/framework` `^1.20.4` and `middag-io/ui` `^1.10.1` (`composer.json`)                             |
-| Renderer            | `@middag-io/react` `^0.45.4` (`ui/package.json`), from the public npm registry                              |
+| Sibling libraries   | `middag-io/framework` `^1.21` and `middag-io/ui` `^1.11` (`composer.json`)                             |
+| Renderer            | `@middag-io/react` `^0.46.1` (`ui/package.json`), from the public npm registry                              |
 | Host                | none: no Moodle and no WordPress; the host ranges of the adapters do not apply                                                                                                        |
 | Database            | SQLite, in a file or in memory                                                                              |
 
