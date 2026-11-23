@@ -28,7 +28,7 @@ A controller has one default renderer. A specific route can override it per call
 
 ### Host widgets live only in adapter renderers
 
-Host form widgets exist only inside renderers that ship with a host adapter, never in this framework's `Form/` code. The Moodle adapter's `MformRenderer` (`middag-php-moodle`, `src/Form/MformRenderer.php`) implements the same `FormRendererInterface` and maps the schema onto `MoodleQuickForm` through `MformFieldMapper`. The WordPress adapter ships no form renderer of its own and uses the framework's `InertiaRenderer`.
+Host form widgets exist only inside renderers that ship with a host adapter, never in this framework's `Form/` code. The Moodle adapter's `MformRenderer` (`middag-php-moodle`, `src/Form/MformRenderer.php`) implements the same `FormRendererInterface` and maps the schema onto `MoodleQuickForm` through `MformFieldMapper`. Since `middag-io/moodle` 1.23.0 it shows a field error given as a ui `FieldMessage` (or its array form) by its `message`, alone or inside a list. The WordPress adapter ships no form renderer of its own and uses the framework's `InertiaRenderer`.
 
 Nothing in this framework checks the boundary automatically; each adapter keeps its host-specific types inside its own renderer files.
 

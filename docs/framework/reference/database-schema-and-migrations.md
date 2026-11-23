@@ -79,7 +79,7 @@ final class MiddagItemsSchema {}
 
 ## DDL adapters
 
-[`SchemaBuilderAdapterInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Database/Contract/SchemaBuilderAdapterInterface.php) (`@api`) turns descriptors into DDL: `createTable()`, `dropTable()`, `addColumn()`, `dropColumn()`, `addIndex()`, `dropIndex()`, `tableExists()`, `columnExists()`.
+[`SchemaBuilderAdapterInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Database/Contract/SchemaBuilderAdapterInterface.php) (`@api`) turns descriptors into DDL: `createTable()`, `dropTable()`, `addColumn()`, `dropColumn()`, `addIndex()`, `dropIndex()`, `tableExists()`, `columnExists()` and, since framework 1.23.0, `indexExistsOnColumns()`. `indexExistsOnColumns(string $tableName, array $columns)` returns true when the table has an index of any name or uniqueness over exactly the given ordered columns, and false for an absent table. A custom adapter must implement it. `IndexIntrospectionInterface` is removed; type against `SchemaBuilderAdapterInterface`.
 
 | Implementation | Target |
 | --- | --- |
@@ -97,8 +97,8 @@ WordPress owns its schema through `dbDelta()`, and the WordPress adapter ships n
 | Method | Behaviour |
 | --- | --- |
 | `install()` | Creates every described table that does not exist yet. Idempotent. |
-| `upgrade(int $oldVersion)` | Creates missing tables, adds columns present in a descriptor but absent from the live table, then calls `onUpgrade($oldVersion)`. |
-| `onUpgrade(int $oldVersion)` (protected) | Override point for anything else: index changes, renames, data moves. |
+| `upgrade(int $oldVersion)` | Creates missing tables, adds columns present in a descriptor but absent from the live table, adds descriptor indexes that have no live index over the same ordered columns (since 1.23.0), then calls `onUpgrade($oldVersion)`. |
+| `onUpgrade(int $oldVersion)` (protected) | Override point for anything else: index changes and removals, renames, data moves. |
 | `getInstalledVersion()` / `setInstalledVersion(int)` | Read and persist the schema version through the tracker. |
 
 There is no `down()`: migrations only move forward. The base pass never drops a table, a column or an index; removals and renames are explicit code in `onUpgrade()`. DDL failures surface as `MiddagPersistenceException`.
@@ -109,4 +109,4 @@ There is no `down()`: migrations only move forward. The base pass never drops a 
 
 `ConnectionInterface::transaction(callable)` is the connection-level primitive. The domain-facing boundary is `TransactionManagerInterface` (`executeAtomic()`, `executeGraceful()`), implemented by host adapters; the one-aggregate-per-transaction rule is described in [Active Record (Eloquent Compatibility)](./active-record-eloquent-compatibility).
 
-Verified against `middag-php-framework/main@c9daec5` on 2026-11-04.
+Verified against `middag-php-framework/main@c9daec5` on 2026-11-04; the DDL adapter and `upgrade()` index rows against tag `v1.24.0` (`49b344e`) on 2026-11-23.

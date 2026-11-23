@@ -43,7 +43,7 @@ The demo ships a React bundle built from `ui/`:
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, with the `pdo` and `pdo_sqlite` extensions                                       |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires; the `composer.lock` its Docker image ships resolves Symfony 7.4 |
-| Sibling libraries   | `middag-io/framework` `^1.22` and `middag-io/ui` `^1.13` (`composer.json`)                             |
+| Sibling libraries   | `middag-io/framework` `^1.24` and `middag-io/ui` `^1.14` (`composer.json`)                             |
 | Renderer            | `@middag-io/react` `^0.48.0` (`ui/package.json`), from the public npm registry                              |
 | Host                | none: no Moodle and no WordPress; the host ranges of the adapters do not apply                                                                                                        |
 | Database            | SQLite, in a file or in memory                                                                              |
