@@ -29,7 +29,7 @@ Rules:
 
 ## Raising the floor
 
-- The floor is never lower than the lowest PHP version with official support (active or security) on php.net, the PHP minimum of the Symfony range or the PHP minimum of any dependency. On `2.x` it is PHP 8.3.
+- The floor is never lower than the PHP minimum of the Symfony range or the PHP minimum of any dependency. On `2.x` it is PHP 8.3. A PHP version that loses security support on php.net stays the floor until the next MAJOR drops it.
 - A platform floor (the lowest PHP version or the lowest Symfony line) rises only in a MAJOR. Support for a new PHP version or a new Symfony LTS line is added in a MINOR, once CI runs it.
 - The next MAJOR (`3.0`) raises the Symfony floor to the next Symfony LTS line once it is released, and drops the PHP versions that no longer receive security support.
 - A newly required PHP extension counts as a floor change, because the host must install it.

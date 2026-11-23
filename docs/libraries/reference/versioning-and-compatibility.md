@@ -27,7 +27,7 @@ The internal MIDDAG libraries, such as `middag-io/core`, are not open source and
 - **`2.0.0` is the first supported release of every library in the family.** Support, as defined below, starts there.
 - **Releases before `2.0.0` are pre-stable and unsupported.** They carry no compatibility promise, no deprecation cycle, no security line and no maintenance branch. A breaking change may ship in a MINOR.
 - **The cut to `2.0.0` is clean.** There is no upgrade path from a pre-stable release and no `UPGRADING` file before `2.0.0`. The `UPGRADING` file starts at `2.0.0` and states that stable support applies from that release on. The `CHANGELOG` continues across the cut.
-- **`2.0.0` ships when the libraries are stable enough to carry full support**: deprecation before removal, SemVer and the previous-MAJOR line. It has no fixed date.
+- **`2.0.0` ships when the libraries are stable enough to carry full support**: deprecation before removal where possible, SemVer and the previous-MAJOR line. It has no fixed date.
 - `middag-php-demo-standalone` stays on `0.x` until the family cut and joins the family at `2.0.0`. It is an example application: only its latest release is supported.
 
 From `2.0.0`:
@@ -77,7 +77,7 @@ Each MAJOR of the family publishes one matrix. The matrix is the support floor a
 | PHP                      | 8.3, 8.4 and 8.5                                                                          |
 | Symfony                  | `^7.4 \|\| ^8.1`                                                                          |
 | Sibling libraries        | `^2.N` (each library requires its siblings at the lowest MINOR it needs)                 |
-| Moodle (`middag-io/moodle`) | 4.5 (PHP 8.3), 5.1, 5.2 and 5.3 (PHP 8.4, tested; PHP 8.3 expected, not tested) |
+| Moodle (`middag-io/moodle`) | 4.5 (PHP 8.3), 5.1, 5.2 and 5.3 (PHP 8.4; PHP 8.3 expected, not installed in CI) |
 | WordPress (`middag-io/wordpress`) | 7.0 and 7.1 (the latest major and the previous one), on the PHP versions each one supports |
 | Database engines (`middag-io/moodle`) | PostgreSQL, MySQL and MariaDB, as supported by the Moodle version in range |
 
@@ -99,5 +99,5 @@ Rules:
 - The WordPress adapter supports the latest WordPress major and the previous one: today 7.1 and 7.0. The previous major leaves the range 6 months after the release of the next major ([Releases](https://wordpress.org/download/releases/)). WordPress officially supports only its last major release ([Supported versions](https://wordpress.org/documentation/article/supported-versions/)); the previous major is a MIDDAG grace window, not upstream support. Security fixes that WordPress backports to older branches as a courtesy do not count as support.
 - A platform floor (the lowest PHP version or the lowest Symfony line) rises only in a MAJOR. Support for a new PHP version or a new Symfony LTS line is added in a MINOR, once CI runs it.
 - The next MAJOR (`3.0`) raises the Symfony floor to the next Symfony LTS line once it is released, and drops the PHP versions that no longer receive security support.
-- Each library's CI checks the cells marked as tested above. A host version is checked where [Platform](./platform#recipe-per-library) lists a job for it.
+- Each library's CI checks the PHP and Symfony rows above. A host version is checked where [Platform](./platform#recipe-per-library) lists a job for it.
 - The Moodle adapter supports PostgreSQL, MySQL and MariaDB and is proven on all three by its Engines workflow. Its `@api` SQL helpers carry an engine statement. SQL Server and Oracle are outside the range.
