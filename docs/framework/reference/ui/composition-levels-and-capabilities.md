@@ -8,7 +8,7 @@ The [`middag-php-ui` page contract](https://github.com/middag-io/middag-php-ui/b
 
 ## Contract shape
 
-`PageContract` serializes a version, a shell, page metadata, and a layout. It can also include resources, notifications, and entity route patterns. The layout contains named regions; each region holds typed block descriptors. [`BlockDescriptor`](https://github.com/middag-io/middag-php-ui/blob/main/src/Block/BlockDescriptor.php) serializes a `type`, `key`, and `data`, with optional presentation, actions, polling, deferral, and remembered state.
+`PageContract` serializes a version, a shell, page metadata, and a layout. It can also include notifications and entity route patterns. The layout contains named regions; each region holds typed block descriptors. [`BlockDescriptor`](https://github.com/middag-io/middag-php-ui/blob/main/src/Block/BlockDescriptor.php) serializes a `type`, `key`, and `data`, with optional presentation, actions, polling, deferral, and remembered state.
 
 | Level | Verified PHP entry point | Scope |
 | --- | --- | --- |
@@ -29,6 +29,10 @@ $page = PageBuilder::page('segments.index')
 ```
 
 `region()` accepts block descriptors or a callback using `RegionBuilder`. `PageBuilder::build()` returns `PageContract`. The PHP contract does not by itself guarantee that a particular host or React renderer supports every block type.
+
+### Builders are a call surface
+
+`BlockBuilder`, `RegionBuilder` and `RegionBuilderInterface` are meant to be called: type-hint them, instantiate `RegionBuilder` and call their methods. Do not implement `RegionBuilderInterface` in your own code. From 2.0.0, a MINOR release may add a method or an optional parameter to these three types, which can break a class that implements the interface. You may extend `BlockBuilder` or `RegionBuilder` only without declaring or overriding members: a subclass that declares a method may fail to load after a MINOR adds a method with the same name. [`API-STABILITY.md`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md#builders-are-a-call-surface) is the normative text.
 
 ## Optional capabilities in the PHP contract
 
