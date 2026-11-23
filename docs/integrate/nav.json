@@ -1,0 +1,42 @@
+{
+  "label": "Integrate with MIDDAG",
+  "howTo": {
+    "items": [
+      {
+        "file": "how-to/distribute-as-composer-package",
+        "label": "Distribute as a Composer Package"
+      },
+      {
+        "file": "how-to/routes-capabilities-shortcodes-widgets",
+        "label": "Routes, Capabilities, Shortcodes & Widgets"
+      }
+    ]
+  },
+  "reference": {
+    "groups": [
+      {
+        "label": "Extension API",
+        "order": 0,
+        "files": [
+          "reference/extension-contract",
+          "reference/signals-and-hooks",
+          "reference/items-and-metadata",
+          "reference/tenant",
+          "reference/jobs-and-operations",
+          "reference/errors"
+        ],
+        "labels": [
+          { "file": "reference/extension-contract", "label": "Extension Contract" },
+          { "file": "reference/signals-and-hooks", "label": "Signals & Hooks" },
+          { "file": "reference/items-and-metadata", "label": "Items & Metadata" },
+          { "file": "reference/tenant", "label": "Tenant" },
+          { "file": "reference/jobs-and-operations", "label": "Jobs & Operations" },
+          { "file": "reference/errors", "label": "Errors" }
+        ]
+      }
+    ]
+  },
+  "explanation": {
+    "items": [{ "file": "explanation/overview", "label": "Integrating with MIDDAG" }]
+  }
+}

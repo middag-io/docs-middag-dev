@@ -39,7 +39,7 @@ Rules:
 - `middag-php-demo-standalone` is an example application with no public surface, so it keeps no `API-STABILITY.md`.
 - The OSS libraries are documented once, here. Architecture, reference and guides of an OSS library are not kept in its repository: a page such as `docs/architecture.md` in an OSS repository is a short pointer to the matching page of this hub, never a second normative copy.
 - The other internal libraries are not published on this hub. Their documentation stays in their repositories.
-- Of `middag-php-core`, this hub publishes one curated section with only the API that products and third-party extensions code against: those types, their contracts and their errors. Being tagged `@api` alone does not qualify a type. Internal design, internal operations and decision records stay in the repository.
+- Of `middag-php-core`, this hub publishes one curated section, [Integrate with MIDDAG](/integrate/), with only the API that products and third-party extensions code against: those types, their contracts and their errors. Being tagged `@api` alone does not qualify a type. Internal design, internal operations and decision records stay in the repository.
 - `docs.middag.io` is the single site of every MIDDAG product, aggregated like this hub. A product keeps no site of its own.
 - The products follow the same split: product developer documentation (public API, integration) is published here when its channel opens; user and administrator guides go to `docs.middag.io`.
 

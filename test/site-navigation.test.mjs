@@ -108,5 +108,5 @@ test('sectionOverrides orders the existing top-level sections and keeps other ke
     existing,
     base: { 'c/framework': { label: 'F' } },
   })
-  assert.deepEqual(out, { 'c/framework': { label: 'F', order: 1 }, 'c/about.md': { order: 5 } })
+  assert.deepEqual(out, { 'c/framework': { label: 'F', order: 1 }, 'c/about.md': { order: 6 } })
 })
