@@ -10,3 +10,9 @@ docs/injected/
 # fight hand-written docs (list markers, table padding, prose wrapping).
 *.md
 *.mdx
+
+# Nimbus site build outputs (scripts/build-site.mjs).
+site-content/
+site-navigation.json
+.middag-docs/
+dist/

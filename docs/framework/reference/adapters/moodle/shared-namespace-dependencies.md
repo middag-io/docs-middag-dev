@@ -55,7 +55,7 @@ The paths are relative to the Moodle root; from 5.1 every path starts with `publ
 
 The `Psr\Http\Message` cells give `psr/http-factory`, then `psr/http-message`. The Guzzle column gives the `guzzlehttp/guzzle` version. The list is not exhaustive; it covers the namespaces relevant to this adapter's dependency tree. No `Symfony\*` namespace is in the `core_component` map of any branch above.
 
-### Global function: `trigger_deprecation()`
+### Global function: `trigger_deprecation()` {#global-function-trigger-deprecation}
 
 Every Moodle version in range also vendors `symfony/deprecation-contracts` (`lib/symfony/deprecation-contracts`; 3.5.0 on 4.5, 3.5.1 on 5.0 and 5.1, 3.6.0 on 5.2 and 5.3) and requires its `function.php` on every request through `$composerautoloadfiles`. The file defines the global function `trigger_deprecation()` only when no copy defines it yet (`function_exists()` guard). This adapter's tree always contains the same package: `middag-io/framework` requires it directly (`^3.5`). The adapter and the framework require their Symfony components at `^7.4 || ^8.1`, so each of them resolves on the 7.4 line or on 8.1 and later:
 
