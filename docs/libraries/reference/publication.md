@@ -40,7 +40,7 @@ Rules:
 - The OSS libraries are documented once, here. Architecture, reference and guides of an OSS library are not kept in its repository: a page such as `docs/architecture.md` in an OSS repository is a short pointer to the matching page of this hub, never a second normative copy.
 - The other internal libraries are not published on this hub. Their documentation stays in their repositories.
 - Of `middag-php-core`, this hub publishes one curated section with only the API that products and third-party extensions code against: those types, their contracts and their errors. Being tagged `@api` alone does not qualify a type. Internal design, internal operations and decision records stay in the repository.
-- `docs.middag.io` is the single site of every MIDDAG product, aggregated like this hub. A product keeps no site of its own; ADR-029 of the MIDDAG profile records the site.
+- `docs.middag.io` is the single site of every MIDDAG product, aggregated like this hub. A product keeps no site of its own.
 - The products follow the same split: product developer documentation (public API, integration) is published here when its channel opens; user and administrator guides go to `docs.middag.io`.
 
 ## Generated API reference
@@ -48,7 +48,7 @@ Rules:
 - On this hub, generated API reference covers only the `@api` surface of an OSS library and, for `middag-php-core`, only the types of its curated section: the types, signatures and docblocks a consumer codes against. Untagged and `@internal` types are not published here.
 - The library generates it from its source and publishes it as a versioned docs payload through the docs proxy, like any aggregated channel. The hub never commits generated reference and never edits it.
 - Generated reference complements the curated section of `middag-php-core`; it does not replace it. The curated section explains contracts and errors; the generated reference lists signatures.
-- ADR-015 of the MIDDAG profile records this rule; the [Generate PHP reference docs](/framework/how-to/generate-php-reference) guide follows it. The choice of generator (the tool clause of ADR-015) is outside this page.
+- The [Generate PHP reference docs](/framework/how-to/generate-php-reference) guide follows this rule. The choice of generator is outside this page.
 
 ## PHP-React correspondence map
 

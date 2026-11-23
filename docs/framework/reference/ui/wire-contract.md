@@ -102,7 +102,7 @@ The PHP value objects are the source of truth. Each wire value object and enum d
 | `page-contract.json` | `PageContract` | `https://ui-docs.middag.io/schemas/page-contract.json` |
 | `fragment.json` | `Fragment` | `https://ui-docs.middag.io/schemas/fragment.json` |
 
-Each bundle declares `x-contract-version` (the envelope `VERSION`), a `$ref` to its root and every type under `$defs`. `@middag-io/react` generates its TypeScript types and zod schema from these files.
+Each bundle declares `x-contract-version` (the envelope `VERSION`), a `$ref` to its root and every type under `$defs`. `@middag-io/ui-contracts` ships the TypeScript types and zod schemas that `@middag-io/ui-contracts-codegen` generates from these files.
 
 The schemas are strict. Every value object is `additionalProperties: false`, and discriminated unions such as `ActionTarget` use `oneOf` on a `kind` const. The only open objects are passthrough bags: a block's `data` and `meta`, layout `meta`, a fragment's `payload`, `Translatable` and route `params`, a column's `options` and `formatOptions`, and `UserPreferences`. The form schema tree (`FormSchemaNode` and its node types) is registered but not yet referenced from the page tree; the `form_panel` block payload stays a passthrough.
 
