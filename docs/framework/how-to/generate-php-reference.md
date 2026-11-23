@@ -4,7 +4,7 @@ title: 'Generate PHP Reference Docs'
 
 # Generate PHP Reference Docs
 
-How a PHP library of the MIDDAG ecosystem generates and publishes its reference documentation: class signatures, method parameters, return types and inheritance trees. The decision behind it is ADR-015 of the MIDDAG operations documentation; what this hub publishes is in [Documentation publication](/libraries/reference/publication#generated-api-reference).
+How a PHP library of the MIDDAG ecosystem generates and publishes its reference documentation: class signatures, method parameters, return types and inheritance trees. What this hub publishes is in [Documentation publication](/libraries/reference/publication#generated-api-reference).
 
 ## Tooling
 

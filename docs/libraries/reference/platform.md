@@ -4,7 +4,7 @@ title: 'Platform'
 
 # Platform
 
-The platform every library of the MIDDAG PHP family declares, when its PHP floor rises, and how CI proves it. This page states every platform rule a consumer of the libraries relies on. The PHP platform floor reference of the MIDDAG profile (`docs-middag-ops`) is the internal source behind it; a reader does not need it. Related: [Versioning and compatibility](./versioning-and-compatibility), [Guards](./guards).
+The platform every library of the MIDDAG PHP family declares, when its PHP floor rises, and how CI proves it. This page states every platform rule a consumer of the libraries relies on. Related: [Versioning and compatibility](./versioning-and-compatibility), [Guards](./guards).
 
 ## Declared platform
 
@@ -48,42 +48,42 @@ The `highest` job:
 
 - removes the platform pin before `composer update` (by unsetting `config.platform.php` or by overriding it for the run), so Composer resolves on the real PHP of the runner;
 - in a library that depends on a Symfony component, **asserts that its Symfony packages resolve to 8.x**: the packages listed in its `expect-majors` ([recipe per library](#recipe-per-library)). A green run that resolved Symfony 7.4 does not pass;
-- in a library with no Symfony component (`ui`), makes no Symfony assertion: its `expect-majors` is empty. The job still runs on 8.4 and 8.5 without the pin and is still required; it proves only the PHP range;
-- runs the same test suite as the library check.
+- in a library with no Symfony component (`ui`), makes no Symfony assertion: its `expect-majors` is empty. The job still runs on 8.4 and 8.5 without the pin; it proves only the PHP range;
+- runs the library's test suite (the demo leaves out its `api-coverage` group in this job).
 
-The library check and the `highest` job come from the shared PHP library check of `middag-io/actions` (`php-library-check`). From `php-library-check` v1.2.0, the default `php-versions` is `["8.3", "8.4", "8.5"]`, so the library check call needs no `php-versions` input. The `highest` job is a second call of the same component, with these inputs:
+The library check and the `highest` job come from the shared PHP library check of `middag-io/actions` (`php-library-check`), a composite action called as a step. The PHP matrix lives in the library's own workflow, and each matrix cell passes its `php-version` to the action. The `highest` run calls the same action again on PHP 8.4 and 8.5: a second job (`php-library-check-highest`) in most libraries, extra entries of the same matrix in `ui`. It uses these inputs:
 
 | Input                 | Value in the `highest` call | Effect                                                                                                 |
 | --------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `php-versions`        | `["8.4", "8.5"]`            | Symfony 8.x needs PHP 8.4 or later, so 8.3 stays in the library check only                             |
+| `php-version`         | `8.4` and `8.5` (matrix)    | Symfony 8.x needs PHP 8.4 or later, so 8.3 stays in the library check only                             |
 | `dependency-versions` | `highest`                   | Runs `composer update` instead of `composer install`                                                   |
 | `unset-platform-php`  | `true`                      | Unsets `config.platform.php` before the install, so the PHP of the runner constrains the resolution     |
 | `expect-majors`       | `<vendor>/<package>:<major>` items | Each listed package must be installed at that major version, or the job fails. Empty means no assertion |
 
 ### Recipe per library
 
-Every library runs the library check on `["8.3", "8.4", "8.5"]` and the `highest` job on `["8.4", "8.5"]`. The table lists what differs.
+Every library runs the library check on `["8.3", "8.4", "8.5"]` and the `highest` job at least on `["8.4", "8.5"]`. The table lists what differs.
 
 | Library                      | Call form                                                                                                                              | `expect-majors` of `highest`                                    | Own jobs, next to the shared check                                                                                                                  |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `middag-php-ui`              | reusable workflow                                                                                                                      | empty                                                           | none                                                                                                                                                |
-| `middag-php-framework`       | reusable workflow                                                                                                                      | `symfony/dependency-injection:8`, `symfony/http-kernel:8`       | none                                                                                                                                                |
-| `middag-php-moodle`          | reusable workflow                                                                                                                      | `symfony/dependency-injection:8`, `symfony/http-client:8`, `symfony/http-foundation:8`, `symfony/messenger:8`, `symfony/psr-http-message-bridge:8`, `symfony/routing:8` | `stan-matrix`: PHPStan against the Moodle stubs of each Moodle version in range (4.5, 5.1, 5.2 and 5.3). `engines`: installs Moodle 4.5, 5.1, 5.2 and 5.3 on PostgreSQL, MySQL and MariaDB and runs the SQL of every `DbSupport` helper. The `platform` job leaves; `highest` replaces it |
-| `middag-php-wordpress`       | reusable workflow                                                                                                                      | `symfony/dependency-injection:8`, `symfony/http-foundation:8`, `symfony/psr-http-message-bridge:8`, `symfony/routing:8` | `wordpress-matrix`: PHPStan against the WordPress stubs of the latest major and the previous one (`~7.1.0` and `~7.0.0`). `wordpress-integration`: the integration suite (`tests/Integration`) on a real WordPress of each supported major (the newest patch of 7.0 and 7.1, checksum verified), on PHP 8.3 with a MySQL 8.4 service. The unit suite runs in the shared check |
-| `middag-php-demo-standalone` | reusable workflow; installs from its committed `composer.lock`                                                                         | `symfony/dotenv:8`                                              | the Docker image build with a smoke test (no push), and the end-to-end tests                                                                        |
-| `middag-php-core`            | composite action, in a matrix job of its own: its tests need a Redis service, which a reusable workflow cannot take from its caller | `symfony/dependency-injection:8`                                | `stan-matrix`: PHPStan against the Moodle stubs of each Moodle version in range |
-| other internal libraries     | reusable workflow, recorded in each repository | per library | the OSS purity job runs in one of them ([Guards](./guards#oss-purity)) |
+| `middag-php-ui`              | composite action in a PHP matrix job                                                                                                   | empty                                                           | none                                                                                                                                                |
+| `middag-php-framework`       | composite action in a PHP matrix job                                                                                                   | `symfony/dependency-injection:8`, `symfony/http-kernel:8`       | none                                                                                                                                                |
+| `middag-php-moodle`          | composite action in a PHP matrix job                                                                                                   | `symfony/dependency-injection:8`, `symfony/http-client:8`, `symfony/http-foundation:8`, `symfony/messenger:8`, `symfony/psr-http-message-bridge:8`, `symfony/routing:8` | `stan-matrix`: PHPStan against the Moodle stubs of each Moodle version in range (4.5, 5.1, 5.2 and 5.3) and of 5.0, kept as best effort. `engines`: installs Moodle 4.5, 5.1, 5.2 and 5.3 on PostgreSQL, MySQL and MariaDB and runs the SQL of every `DbSupport` helper. |
+| `middag-php-wordpress`       | composite action in a PHP matrix job                                                                                                   | `symfony/dependency-injection:8`, `symfony/http-foundation:8`, `symfony/psr-http-message-bridge:8`, `symfony/routing:8` | `wordpress-matrix`: PHPStan against the WordPress stubs of the latest major and the previous one (`~7.1.0` and `~7.0.0`). `wordpress-integration`: the integration suite (`tests/Integration`) on a real WordPress of each supported major (the newest patch of 7.0 and 7.1, checksum verified), on PHP 8.3 with a MySQL 8.4 service. The unit suite runs in the shared check |
+| `middag-php-demo-standalone` | composite action in a PHP matrix job; installs from its committed `composer.lock`                                                                       | `symfony/dotenv:8`, `symfony/console:8`, `symfony/doctrine-messenger:8`, `symfony/event-dispatcher:8`, `symfony/filesystem:8`, `symfony/finder:8`, `symfony/lock:8`, `symfony/var-dumper:8` | the UI type check and lint, the Docker image build with a smoke test (no push), and the end-to-end tests                                                                        |
+| `middag-php-core`            | composite action in a PHP matrix job, with a Redis service its tests need | `symfony/dependency-injection:8`, `symfony/http-client:8`, `symfony/uid:8`, `symfony/psr-http-message-bridge:8`, `symfony/redis-messenger:8` | `stan-matrix`: PHPStan against the Moodle stubs of each Moodle version in range (4.5, 5.1, 5.2 and 5.3) and of 5.0, kept as best effort |
+| other internal libraries     | composite action in a PHP matrix job, recorded in each repository | per library | the OSS purity job runs in one of them ([Guards](./guards#oss-purity)) |
 
 Rules:
 
 - A library keeps a job of its own only for a check the shared component cannot run. A platform check that the `highest` job covers is not kept.
 - `expect-majors` lists at least one Symfony package of each library that depends on Symfony, chosen from its own `require`, or from `require-dev` when it has no runtime Symfony dependency.
-- The demo follows the library recipe: `^8.3`, pin `8.3.0`, its `composer.lock` regenerated at the pin and its Symfony constraints `^7.4 || ^8.1`. It proves both ends of the Symfony range like every library; the lock its Docker image ships resolves Symfony 7.4.
+- The demo follows the library recipe: `^8.3`, pin `8.3.0`, its `composer.lock` regenerated at the pin and its Symfony constraints `^7.4 || ^8.1`. It runs the same Symfony jobs as every library; the lock its Docker image ships resolves Symfony 7.4.
 
-The shared check also owns caching: the Composer cache, and the Rector, PHPStan and PHP-CS-Fixer caches through its `tool-cache-paths` input (to be released). A library adds no cache step of its own; it passes the directory its tools write to (for example `.cache`), and any other cache it needs is a change to the shared check.
+The shared check also owns caching: the Composer cache, and the Rector, PHPStan and PHP-CS-Fixer caches through its `tool-cache-paths` input. A library adds no cache step of its own; it passes the directory its tools write to (for example `.cache`), and any other cache it needs is a change to the shared check.
 
 ## Required checks on `main`
 
-- The family window check is required on `main` of every library.
-- The library check and the `highest` job are required on `main` of every library, with the branch up to date before merge.
+- The family window check is required on `main` of every library, with the branch up to date before merge.
+- The library check and the `highest` job run on every pull request; they are not required checks.
 - A library adds a required check only through the organization ruleset, so every library has the same required checks.
