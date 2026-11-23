@@ -18,7 +18,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@middag-io/docs-proxy-client": "^0.2.0"
+    "@middag-io/docs-proxy-client": "^0.6.0"
   },
   "devDependencies": {
     "@middag-io/nimbus-preset": "^1.5.0",

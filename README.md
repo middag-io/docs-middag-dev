@@ -146,9 +146,9 @@ npm run docs:build      # prebuild (fetch docs) + full site build into dist/
 npm run docs:preview    # serve dist/ locally
 ```
 
-The `docs:prebuild` step reaches the **public** docs proxy anonymously; no
-`DOCS_PROXY_TOKEN` is needed. Set `DOCS_PROXY_TOKEN` only when targeting a
-private proxy deployment.
+The `docs:prebuild` step reaches the **public** docs proxy anonymously and
+fails if `DOCS_PROXY_TOKEN` is set: this hub is never built from the private
+deployment.
 
 ## Scripts
 
@@ -176,6 +176,19 @@ the `channels` to publish (order is display order; the first is the default):
   }
 }
 ```
+
+`kinds` (optional, default `["docs"]`) names the artifact kinds pulled for
+the repo: `docs` (Markdown pages) and `xref` (generated API reference HTML).
+Any other kind fails the build. An `xref` channel is staged byte for byte in
+`.xref/{repo}/{segment}/` (gitignored), copied after the site build to
+`dist/api/{repo}/{segment}/` without any rewrite, and linked from an "API
+reference" page in the docs channel (or from the repo landing for an
+xref-only repo, e.g. `"kinds": ["xref"]`). The link check skips `dist/api/**`;
+a light check requires each copied tree to have an HTML `index.html`.
+
+The prebuild uses `fetchHub` and `assertPublicTarget` from
+`@middag-io/docs-proxy-client`: this public hub refuses to run when
+`DOCS_PROXY_TOKEN` is set or the proxy is not `https://docs-proxy.middag.dev`.
 
 Channel selectors: `latest` (the newest version in the proxy manifest),
 `MAJOR.MINOR.x` (highest retained patch of that line), or an exact `X.Y.Z` pin.

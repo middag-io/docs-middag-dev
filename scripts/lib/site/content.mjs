@@ -9,7 +9,8 @@
  */
 import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { hasKind } from './api.mjs'
 
 /** Top-level entries of docs/ that are not own-authored content. */
 export const NON_CONTENT_DIRS = Object.freeze(['.vitepress', 'injected', 'public'])
@@ -18,8 +19,10 @@ export const NON_CONTENT_DIRS = Object.freeze(['.vitepress', 'injected', 'public
 export const CHANNELS_FILE = '_channels.json'
 
 /**
- * Copy docs/ (minus NON_CONTENT_DIRS) and every injected channel into `outDir`.
- * Returns the injected repos with their parsed channel manifests.
+ * Copy docs/ (minus NON_CONTENT_DIRS) and every injected docs channel into
+ * `outDir`. Returns the injected repos with their parsed channel manifests:
+ * `channels` holds the channels that carry docs (the ones with pages),
+ * `allChannels` every resolved channel, xref-only ones included.
  */
 export async function assembleContent({ docsDir, injectedDir, outDir }) {
   await rm(outDir, { recursive: true, force: true })
@@ -38,14 +41,20 @@ export async function assembleContent({ docsDir, injectedDir, outDir }) {
     const manifestPath = join(injectedDir, entry.name, CHANNELS_FILE)
     if (!existsSync(manifestPath)) continue
     const manifest = parseChannels(await readFile(manifestPath, 'utf8'), entry.name)
-    for (const channel of manifest.channels) {
+    const docsChannels = manifest.channels.filter((channel) => hasKind(channel, 'docs'))
+    for (const channel of docsChannels) {
       await cp(
         join(injectedDir, entry.name, channel.segment),
         join(outDir, entry.name, channel.segment),
         { recursive: true },
       )
     }
-    repos.push({ repo: entry.name, ...manifest })
+    repos.push({
+      repo: entry.name,
+      ...manifest,
+      channels: docsChannels,
+      allChannels: manifest.channels,
+    })
   }
 
   return repos.sort((a, b) => a.repo.localeCompare(b.repo))
@@ -77,6 +86,7 @@ export function parseChannels(text, repo) {
 /** Write `text` to `path` only when no file is there yet. Returns true when written. */
 export async function writeIfMissing(path, text) {
   if (existsSync(path)) return false
+  await mkdir(dirname(path), { recursive: true })
   await writeFile(path, text, 'utf8')
   return true
 }

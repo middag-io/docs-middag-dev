@@ -8,14 +8,16 @@
  *   2. assemble docs/ and docs/injected/{repo}/{segment}/ into site-content/;
  *   3. publish guard over the assembled tree (decisions/, internal/, adr/, madr/);
  *   4. generated landing pages where a directory has none (/{repo}/,
- *      /libraries/reference/);
+ *      /libraries/reference/), and an "API reference" page in every docs
+ *      channel that also declares xref;
  *   5. `searchable: false` on every page of a non-default channel, so search
  *      lists each page once; dotted channel routes pinned; VitePress-only
  *      syntax (`{#id}` headings, `layout: home`) turned into Markdown;
  *   6. navigation overrides (site-navigation.json) from nav.json and the
  *      channel manifests;
  *   7. the preset build, in strict mode: any warning fails it;
- *   8. post-build: VitePress heading ids kept as anchors, structural checks (dist/_redirects comes from site-public/
+ *   8. the API reference (xref) staged in .xref/ copied to dist/api/{repo}/{segment}/;
+ *   9. post-build: VitePress heading ids kept as anchors, structural checks (dist/_redirects comes from site-public/
  *      through the preset's publicDir), offline link check with anchors, and
  *      the sitemap snapshot mapping.
  *
@@ -30,6 +32,16 @@ import { parseArgs, promisify } from 'node:util'
 
 import { assertTreePublishable } from './lib/publish-guard.mjs'
 import { assembleContent, writeIfMissing } from './lib/site/content.mjs'
+import {
+  API_PAGE,
+  apiChannels,
+  apiHref,
+  apiPage,
+  checkApiDist,
+  copyApiReference,
+  hasKind,
+  isApiPath,
+} from './lib/site/api.mjs'
 import { preserveLegacyAnchors } from './lib/site/anchors.mjs'
 import { readDocDates, stampLastUpdated } from './lib/site/git-dates.mjs'
 import { checkDist, mapSitemapUrls, parseRedirects } from './lib/site/dist.mjs'
@@ -54,6 +66,8 @@ export const CONTENT_PATH = 'site-content'
 export const NAVIGATION_FILE = 'site-navigation.json'
 export const SITE_ORIGIN = 'https://docs.middag.dev'
 export const SITEMAP_SNAPSHOT = 'test/fixtures/live-sitemap-urls.txt'
+/** Where the prebuild stages the xref payloads (see scripts/fetch-injected-docs.mjs). */
+export const XREF_PATH = '.xref'
 
 /**
  * Link-check exceptions, exact page and href. The theme's 404 page has a
@@ -82,17 +96,23 @@ export function firstHeading(markdown) {
 /** Landing pages for repos and directories that have no index.md of their own. */
 export async function writeLandings(contentDir, repos, log) {
   for (const repo of repos) {
+    const docsLinks = repo.channels.map((c) => ({
+      label: channelLabel(c),
+      // Root-absolute: a relative link would be rewritten to the slugified
+      // route, and channel routes keep their dots (see prepareChannels).
+      href: `/${repo.repo}/${c.segment}/`,
+    }))
+    const apiLinks = apiChannels([repo]).map(({ segment, channel }) => ({
+      label: `API reference: ${channelLabel(channel)}`,
+      href: apiHref(repo.repo, segment),
+    }))
     const written = await writeIfMissing(
       join(contentDir, repo.repo, 'index.md'),
       landingPage({
         title: repo.label,
-        intro: 'Published documentation channels:',
-        // Root-absolute: a relative link would be rewritten to the slugified
-        // route, and channel routes keep their dots (see prepareChannels).
-        links: repo.channels.map((c) => ({
-          label: channelLabel(c),
-          href: `/${repo.repo}/${c.segment}/`,
-        })),
+        intro:
+          docsLinks.length > 0 ? 'Published documentation channels:' : 'Published API reference:',
+        links: [...docsLinks, ...apiLinks],
       }),
     )
     if (written) log(`landing: /${repo.repo}/`)
@@ -111,6 +131,38 @@ export async function writeLandings(contentDir, repos, log) {
     if (written) log('landing: /libraries/reference/')
   }
 }
+
+/**
+ * An "API reference" page in every docs channel that also declares xref, so
+ * the channel sidebar links to its generated reference. Returns the count.
+ */
+export async function writeApiPages(contentDir, repos) {
+  let written = 0
+  for (const repo of repos) {
+    for (const channel of repo.channels.filter((c) => hasKind(c, 'xref'))) {
+      const path = join(contentDir, repo.repo, channel.segment, API_PAGE)
+      if (await writeIfMissing(path, apiPage(repo.label, repo.repo, channel))) written += 1
+    }
+  }
+  return written
+}
+
+/** Navigation overrides for the generated API reference pages: last in their channel. */
+export function apiPageOverrides(repos) {
+  const overrides = {}
+  for (const repo of repos) {
+    for (const channel of repo.channels.filter((c) => hasKind(c, 'xref'))) {
+      overrides[`${CONTENT_PATH}/${repo.repo}/${channel.segment}/${API_PAGE}`] = {
+        label: 'API reference',
+        order: API_PAGE_ORDER,
+      }
+    }
+  }
+  return overrides
+}
+
+/** Sidebar order of the API reference page inside a channel: after every curated page. */
+const API_PAGE_ORDER = 9999
 
 /** A path segment that the content layer would route unchanged. */
 export const isSlugSafe = (segment) => /^[a-z0-9_-]+$/.test(segment)
@@ -180,7 +232,10 @@ export async function convertVitepressSyntax(contentDir) {
 /** Build the navigation overrides for the assembled tree. */
 export async function buildNavigation(contentDir, repos) {
   const existing = (relativePath) => existsSync(join(contentDir, relativePath))
-  let overrides = channelOverrides({ contentPath: CONTENT_PATH, repos })
+  let overrides = {
+    ...channelOverrides({ contentPath: CONTENT_PATH, repos }),
+    ...apiPageOverrides(repos),
+  }
   for (const entry of await readdir(contentDir, { withFileTypes: true })) {
     const navFile = join(contentDir, entry.name, 'nav.json')
     if (!entry.isDirectory() || !existsSync(navFile)) continue
@@ -206,14 +261,23 @@ async function runPreset(root, log) {
   return result
 }
 
-/** Post-build: legacy anchors, structural checks, link check, sitemap mapping. */
-export async function finishDist({ root, log }) {
+/**
+ * Post-build: legacy anchors, then the API reference copy (after the anchors,
+ * so the generated HTML is never rewritten), structural checks, link check,
+ * sitemap mapping.
+ */
+export async function finishDist({ root, log, repos = [] }) {
   const distDir = join(root, 'dist')
   const legacy = await preserveLegacyAnchors(distDir)
   log(`anchors: ${legacy.anchors} VitePress heading id(s) kept on ${legacy.pages} page(s)`)
+  const copied = await copyApiReference({ xrefDir: join(root, XREF_PATH), distDir, repos })
+  log(`api reference: ${copied} xref channel(s) copied to dist/api/`)
   // The assembled home page, after `layout: home` was turned into Markdown.
   const homeHeading = firstHeading(await readFile(join(root, CONTENT_PATH, 'index.md'), 'utf8'))
-  const violations = await checkDist(distDir, { homeHeading })
+  const violations = [
+    ...(await checkDist(distDir, { homeHeading })),
+    ...(await checkApiDist(distDir, repos)),
+  ]
   if (violations.length > 0) throw new Error(`dist/ was refused:\n- ${violations.join('\n- ')}`)
   const rules = parseRedirects(await readFile(join(distDir, '_redirects'), 'utf8'))
 
@@ -221,6 +285,7 @@ export async function finishDist({ root, log }) {
     origin: SITE_ORIGIN,
     rules,
     ignore: LINK_CHECK_IGNORE,
+    skip: isApiPath,
   })
   log(
     `links: ${links.pages} page(s), ${links.links} internal link(s), ${links.anchors} anchor(s) checked`,
@@ -264,6 +329,7 @@ export async function buildSite({ root = ROOT, fetch = true, log = () => {} } = 
   assertTreePublishable(contentDir, { source: `${CONTENT_PATH}/ (assembled tree)` })
 
   await writeLandings(contentDir, repos, log)
+  log(`api reference: ${await writeApiPages(contentDir, repos)} channel page(s)`)
   const { hidden, pinned } = await prepareChannels(contentDir, repos)
   log(`channels: ${hidden} page(s) kept out of search, ${pinned} route(s) pinned`)
   const stamped = await stampLastUpdated(contentDir, await readDocDates(root))
@@ -276,7 +342,7 @@ export async function buildSite({ root = ROOT, fetch = true, log = () => {} } = 
   log(`navigation: ${Object.keys(navigation).length} override(s)`)
 
   const result = await runPreset(root, log)
-  const checks = await finishDist({ root, log })
+  const checks = await finishDist({ root, log, repos })
   return { pages: result.pageCount, ...checks }
 }
 

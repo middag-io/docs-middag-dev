@@ -236,6 +236,8 @@ skills-lock.json
 # Puxada do docs proxy por `npm run docs:prebuild`; reproduzível a cada build,
 # nunca versionada.
 docs/injected/
+# API reference (xref) payloads, staged by the prebuild and copied to dist/api/.
+/.xref/
 
 # Nimbus site build (scripts/build-site.mjs): assembled content source,
 # generated navigation overrides and the preset's staging and cache.

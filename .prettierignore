@@ -3,6 +3,7 @@ package-lock.json
 
 # Aggregated content — never touch what a library's own repo owns.
 docs/injected/
+.xref/
 
 # Hand-authored prose. Prettier reflows/reformats markdown in ways that
 # fight hand-written docs (list markers, table padding, prose wrapping).

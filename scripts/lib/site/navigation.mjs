@@ -21,6 +21,7 @@ export const SECTION_ORDER = Object.freeze([
   'libraries',
   'integrate',
   'middag-react',
+  'middag-php-wordpress',
   'infra-terraform',
   'about.md',
 ])

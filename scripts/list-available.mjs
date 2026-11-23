@@ -1,133 +1,110 @@
 #!/usr/bin/env node
 /**
- * list-available.mjs — discovery tool (read-only, via the docs proxy).
+ * list-available.mjs — discovery tool (read-only, via the public docs proxy).
  *
- * Answers "what can I publish, and what is already published?" WITHOUT any R2 /
- * S3 credentials — everything comes from the proxy's public discovery endpoints:
- *   GET /?list=true          -> every key; repo = first path segment
- *   GET /{repo}?list=true    -> every key; versions from docs/{version}/
- *   GET /{repo}/manifest.json -> { latest }
+ * Answers "what can I publish, and what is already published?" without any R2
+ * credentials. Repos come from the root listing; versions come, per kind, from
+ * a listing scoped to `{kind}/` (never a whole-repo listing: xref payloads
+ * would push it past the proxy's key cap), plus `manifest.json` for `latest`.
+ * Everything else (channel resolution, version parsing) is the shared client
+ * logic `fetchHub` uses at build time, so this report and the build agree.
  *
- * It then diffs that against hub.config.json (the publish allowlist) and prints,
- * per repo: the newest version, retained versions, and which channels this hub
- * currently publishes (resolved to concrete versions). Repos present in R2 but
- * absent from hub.config.json are flagged as available-but-unpublished.
- *
- * Publishing stays a deliberate act: this tool only REPORTS — it never edits
- * hub.config.json. Override the proxy host with DOCS_PROXY_BASE_URL; set
- * DOCS_PROXY_TOKEN to read the private deployment.
+ * It diffs the result against hub.config.json and prints, per repo, the newest
+ * version, the retained versions of each kind, and the channels and kinds the
+ * hub publishes. It never edits hub.config.json. Like the prebuild, it reads
+ * the public proxy anonymously and refuses DOCS_PROXY_TOKEN.
  */
+import {
+  DocsProxyClient,
+  DocsProxyError,
+  PUBLIC_PROXY_ORIGIN,
+  assertPublicTarget,
+  reposFromKeys,
+  resolveChannel,
+  versionsFromKeys,
+} from '@middag-io/docs-proxy-client'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { HUB_KINDS, allowedOrigins } from './fetch-injected-docs.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const HUB_CONFIG = resolve(ROOT, 'hub.config.json')
-const BASE_URL = process.env.DOCS_PROXY_BASE_URL ?? 'https://docs-proxy.middag.dev'
-const TOKEN = process.env.DOCS_PROXY_TOKEN
-const KIND = 'docs'
-
-async function proxyGet(url) {
-  const res = await fetch(url, {
-    headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {},
-  })
-  if (!res.ok) throw new Error(`GET ${url} -> HTTP ${res.status}`)
-  return res
-}
-
-async function listKeys(path = '') {
-  const res = await proxyGet(`${BASE_URL}/${path}?list=true`)
-  const keys = await res.json()
-  if (!Array.isArray(keys)) throw new Error(`${path || '/'}: ?list=true not an array`)
-  return keys
-}
-
-/** Repos present in the bucket = unique first path segment across all keys. */
-function reposFromKeys(keys) {
-  const set = new Set()
-  for (const k of keys) {
-    const seg = k.split('/')[0]
-    if (seg) set.add(seg)
-  }
-  return [...set].sort()
-}
-
-/** Retained doc versions for a repo, oldest→newest. */
-function versionsFromKeys(keys) {
-  const set = new Set()
-  for (const k of keys) {
-    const m = k.match(new RegExp(`^${KIND}/([^/]+)/`))
-    if (m) set.add(m[1])
-  }
-  return [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-}
-
-async function manifestLatest(repo) {
-  try {
-    const res = await proxyGet(`${BASE_URL}/${repo}/manifest.json`)
-    return (await res.json())?.latest ?? null
-  } catch {
-    return null
-  }
-}
-
-/** Resolve a channel selector against retained versions (mirror of prebuild). */
-function resolveChannel(selector, versions, latest) {
-  if (selector === 'latest') return latest ?? versions[versions.length - 1] ?? null
-  if (selector.endsWith('.x')) {
-    const line = selector.slice(0, -2)
-    const hits = versions.filter((v) => v === line || v.startsWith(`${line}.`))
-    return hits[hits.length - 1] ?? null
-  }
-  return versions.includes(selector) ? selector : null
-}
 
 async function readAllowlist() {
   try {
-    const cfg = JSON.parse(await readFile(HUB_CONFIG, 'utf8'))
-    return cfg.repos ?? {}
+    return JSON.parse(await readFile(HUB_CONFIG, 'utf8')).repos ?? {}
   } catch {
     return {}
   }
 }
 
-async function main() {
-  const allow = await readAllowlist()
-  const rootKeys = await listKeys()
-  const repos = reposFromKeys(rootKeys)
+async function manifestLatest(client, repo) {
+  try {
+    return (await client.fetchManifest(repo))?.latest ?? null
+  } catch (error) {
+    if (error instanceof DocsProxyError && error.status === 404) return null
+    throw error
+  }
+}
 
-  console.log(`docs proxy: ${BASE_URL}${TOKEN ? ' (authenticated)' : ' (anonymous)'}`)
+/** Retained versions of each hub kind, from listings scoped to `{kind}/`. */
+async function versionsByKind(client, repo) {
+  const out = {}
+  for (const kind of HUB_KINDS) {
+    const keys = await client.listRepo(repo, { prefix: `${kind}/` })
+    out[kind] = versionsFromKeys(keys, kind)
+  }
+  return out
+}
+
+function printPublished(meta, versions, latest) {
+  const kinds = meta?.kinds ?? ['docs']
+  const channels = meta?.channels ?? []
+  const primary = versions[kinds[0]] ?? []
+  const resolved = channels.map(
+    (sel) => `${sel}→${resolveChannel(sel, primary, latest) ?? 'UNRESOLVED'}`,
+  )
+  console.log(`  label: ${meta?.label ?? '(repo name)'}`)
+  console.log(`  kinds: ${kinds.join(', ')}`)
+  console.log(`  channels: ${resolved.join(', ') || '(none)'}`)
+  if (latest && !channels.includes('latest')) {
+    console.log(`  note: newest (${latest}) is NOT on a "latest" channel here.`)
+  }
+}
+
+async function main() {
+  const baseUrl = process.env.DOCS_PROXY_BASE_URL ?? PUBLIC_PROXY_ORIGIN
+  assertPublicTarget({
+    baseUrl,
+    token: process.env.DOCS_PROXY_TOKEN,
+    allowedOrigins: allowedOrigins(baseUrl),
+  })
+  const client = new DocsProxyClient(baseUrl)
+  const allow = await readAllowlist()
+  const repos = reposFromKeys(await client.listRepo(''))
+
+  console.log(`docs proxy: ${baseUrl} (anonymous)`)
   console.log(
     `repos in bucket: ${repos.length} | published in hub.config.json: ${Object.keys(allow).length}\n`,
   )
 
   for (const repo of repos) {
-    const keys = await listKeys(repo)
-    const versions = versionsFromKeys(keys)
-    const latest = await manifestLatest(repo)
+    const versions = await versionsByKind(client, repo)
+    const latest = await manifestLatest(client, repo)
     const published = repo in allow
-
-    const head = published ? '● PUBLISHED' : '○ available (not in hub.config.json)'
-    console.log(`${repo}  —  ${head}`)
+    console.log(`${repo}  —  ${published ? '● PUBLISHED' : '○ available (not in hub.config.json)'}`)
     console.log(`  latest: ${latest ?? '(no manifest)'}`)
-    console.log(`  retained (${versions.length}): ${versions.join(', ')}`)
-
+    for (const kind of HUB_KINDS) {
+      const list = versions[kind]
+      if (list.length > 0) console.log(`  ${kind} (${list.length}): ${list.join(', ')}`)
+    }
     if (published) {
-      const meta = allow[repo]
-      const label = meta?.label ?? repo
-      const channels = meta?.channels ?? []
-      const resolved = channels.map((sel) => {
-        const v = resolveChannel(sel, versions, latest)
-        return `${sel}→${v ?? 'UNRESOLVED'}`
-      })
-      console.log(`  label: ${label}`)
-      console.log(`  channels: ${resolved.join(', ') || '(none)'}`)
-      if (latest && !channels.includes('latest')) {
-        console.log(`  note: newest (${latest}) is NOT on a "latest" channel here.`)
-      }
+      printPublished(allow[repo], versions, latest)
     } else {
+      const kinds = HUB_KINDS.filter((k) => versions[k].length > 0)
       console.log(
-        `  to publish: add "${repo}": { "label": "…", "channels": ["latest"] } to hub.config.json`,
+        `  to publish: add "${repo}": { "label": "…", "channels": ["latest"], "kinds": ${JSON.stringify(kinds)} } to hub.config.json`,
       )
     }
     console.log('')
