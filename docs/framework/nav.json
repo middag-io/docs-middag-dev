@@ -342,6 +342,59 @@
               "label": "Configuration & Identity"
             }
           ]
+        },
+        {
+          "label": "Tutorial & How-to",
+          "order": 2,
+          "files": [
+            "tutorials/wordpress/getting-started",
+            "how-to/wordpress/rest-controllers",
+            "how-to/wordpress/persistence",
+            "how-to/wordpress/repositories",
+            "how-to/wordpress/hooks",
+            "how-to/wordpress/cron",
+            "how-to/wordpress/mail",
+            "how-to/wordpress/settings",
+            "how-to/wordpress/diagnostics"
+          ],
+          "labels": [
+            {
+              "file": "tutorials/wordpress/getting-started",
+              "label": "Getting Started"
+            },
+            {
+              "file": "how-to/wordpress/rest-controllers",
+              "label": "How-to: REST Controllers & Routes"
+            },
+            {
+              "file": "how-to/wordpress/persistence",
+              "label": "How-to: Persistence"
+            },
+            {
+              "file": "how-to/wordpress/repositories",
+              "label": "How-to: Repositories"
+            },
+            {
+              "file": "how-to/wordpress/hooks",
+              "label": "How-to: Hooks"
+            },
+            {
+              "file": "how-to/wordpress/cron",
+              "label": "How-to: Cron"
+            },
+            {
+              "file": "how-to/wordpress/mail",
+              "label": "How-to: Mail"
+            },
+            {
+              "file": "how-to/wordpress/settings",
+              "label": "How-to: Settings & Definitions"
+            },
+            {
+              "file": "how-to/wordpress/diagnostics",
+              "label": "How-to: Boot Diagnostics"
+            }
+          ]
         }
       ]
     }
