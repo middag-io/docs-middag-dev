@@ -59,7 +59,7 @@ A `dense_table` block carries a table definition plus the current page of rows. 
 
 ### Forms
 
-A `form_panel` block carries `action`, a lowercase `method`, a `schema` (a list of form schema nodes), `values`, `errors` and `meta`; `BlockBuilder::formPanel()` defaults `errors` to an empty object and `meta.validation` to `both`, and adds `steps` and `multiStep` for a multi-step form. Each `schema` entry is either a [`FormSchemaNodeInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/Contract/FormSchemaNodeInterface.php) value object (`FormFieldNode`, `FormGroupNode`, `FormSectionNode`, `FormHeaderNode`), serialized by the builder, or a plain array, passed through unchanged. A file field's value is a [`FileValue`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/FileValue.php) (or a list of them), on the wire either a bare URL or an object with `url` and optional `name`, `size`, `type`, `id` and `uploadToken`. `uploadToken` is a string: an opaque reference to a pending upload, issued by the host's upload endpoint and sent back with the form. It is not the file id (`id`). `ui` and the client only carry it; the host adapter maps it to its own storage.
+A `form_panel` block carries `action`, a lowercase `method`, a `schema` (a list of form schema nodes), `values`, `errors` and `meta`; `BlockBuilder::formPanel()` defaults `errors` to an empty object and `meta.validation` to `both`, and adds `steps` and `multiStep` for a multi-step form. Each `schema` entry is a [`FormSchemaNodeInterface`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/Contract/FormSchemaNodeInterface.php) value object (`FormFieldNode`, `FormGroupNode`, `FormSectionNode`, `FormHeaderNode`), serialized by the builder; a loose array raises a `TypeError` (since 1.12.0). A file field's value is a [`FileValue`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/FileValue.php) (or a list of them), on the wire either a bare URL or an object with `url` and optional `name`, `size`, `type`, `id` and `uploadToken`. `uploadToken` is a string: an opaque reference to a pending upload, issued by the host's upload endpoint and sent back with the form. It is not the file id (`id`). `ui` and the client only carry it; the host adapter maps it to its own storage.
 
 A pending file upload travels as [`FileValue`](https://github.com/middag-io/middag-php-ui/blob/main/src/Form/FileValue.php): its `uploadToken` is a **string** that the host's upload endpoint issues and the adapter maps to its own storage. It is never a numeric host id.
 
@@ -116,8 +116,27 @@ The schemas are strict. Every value object is `additionalProperties: false`, and
 | `tests/Schema/SchemaRoundtripTest.php` | Serializer output validates against the schema, including required keys and discriminator strictness. |
 | `tests/Envelope/ContractEnvelopeInterfaceTest.php` | Page and fragment share one version constant. |
 
+## Evolution rules
+
+The wire JSON follows the same SemVer rules as the PHP `@api` surface ([`API-STABILITY.md`](https://github.com/middag-io/middag-php-ui/blob/main/API-STABILITY.md#the-wire-contract) is the normative text):
+
+- Adding an optional key or a new `$def` is additive and ships in a MINOR. Clients ignore keys they do not know.
+- Adding a discriminator value (`kind`, `type`) is additive and ships in a MINOR. Clients treat an unknown value as unsupported and degrade that element instead of rejecting the whole payload.
+- Removing or renaming a key, removing an enum value, changing a type or making a key required is a breaking change: it ships in a MAJOR and raises `ContractEnvelopeInterface::VERSION` and `x-contract-version`.
+
+### Enum evolution
+
+Whether an enum can grow in a MINOR depends on what the client does with a value it does not know.
+
+| Kind | Enums | Unknown value on the client | Add a value | Remove or rename a value |
+| --- | --- | --- | --- | --- |
+| Control | `HttpMethod` (also the form `submitMethod`), `ActionTargetKind`, `FragmentKind`, `RegionUpdateMode`, `RenderTarget`, `ConditionOperator` (the condition `operator`), `documentScope` | Rejected: these values drive behavior, so the contract does not guess | MAJOR | MAJOR |
+| Open | `ActionIntent`, `NotificationLevel`, `ThemeMode`, `ValueFormat`, `ColumnVariant`, `FilterType`, `ChartType`, `FormComponent`, `FieldType` | Reaches the renderer, which falls back to a safe default | MINOR | MAJOR |
+
+On the client, `@middag-io/ui-contracts` keeps the control enums strict and lets an unknown value of an open enum through to the renderer, typed as a plain string. The `@middag-io/react` renderer shows an action with an unknown `ActionIntent` in the destructive (danger) style.
+
 ## What the contract does not cover
 
 The contract does not guarantee that a particular host or client renders every block type, layout or shell; that is the client registry's job. Rendering, HTTP transport and host wiring live in `middag-io/framework`, the host adapters and the client. See [Page composition contract](./composition-levels-and-capabilities) for the builder levels and [ui architecture](../../explanation/ui/architecture) for the package boundaries.
 
-Verified against `middag-php-ui/main@8602bb179816ed2c51c633855535a985792abb72` on 2026-11-04.
+Verified against `middag-php-ui/main@d58693b` (release 1.12.0) on 2026-11-23.
