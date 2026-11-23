@@ -35,7 +35,7 @@ The library's `src/` is organized by **UI concern**, each a top-level directory:
 | `Condition/` | The `Condition` value object (field visibility/requirement rules). |
 | `EditablePanel/` | The editable side-panel descriptor that an action of kind `panel` opens. |
 | `Envelope/` | The response envelope around a contract. |
-| `Form/` | The form model — `FieldDefinition`, `Group`, form state and renderer contracts. |
+| `Form/` | The form model — `FieldDefinition`, `Group`, form state, validation errors (`FormErrors`, `FieldMessage`, `FormErrorBags`) and renderer contracts. |
 | `Inspector/` | Detail/inspector view contracts. |
 | `Navigation/` | Navigation nodes, the `NavigationTree` payload and registries. |
 | `Page/` | The page contract entry points and page metadata. |
