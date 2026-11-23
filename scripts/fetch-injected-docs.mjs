@@ -1,207 +1,110 @@
 #!/usr/bin/env node
 /**
- * fetch-injected-docs.mjs — hub pre-build step (build-time aggregation).
+ * fetch-injected-docs.mjs — hub pre-build step (ADR-016 Build-Time Aggregation).
  *
- * Reads hub.config.json (an ALLOWLIST: nothing is published unless declared),
- * then for each repo pulls the `docs` artifact of every declared CHANNEL from
- * the MIDDAG docs proxy (the Cloudflare R2 edge gateway) and writes the files
- * under docs/injected/{repo}/{segment}/ so VitePress compiles them into the
- * static multi-version site. The injected/ tree is gitignored — reproduced on
- * every build, never committed.
+ * Reads hub.config.json (an ALLOWLIST: nothing is published unless declared)
+ * and hands it to `fetchHub` from `@middag-io/docs-proxy-client/hub`, which
+ * resolves every declared CHANNEL of every repo against the MIDDAG docs proxy
+ * and downloads the artifact KINDS the repo declares:
  *
- * A CHANNEL is a version selector:
- *   "latest" -> resolves to manifest.latest (the newest published in R2)
- *   "0.30.x" -> resolves to the highest retained 0.30.* version
- *   "0.20.0" -> an exact pin
- * Its URL SEGMENT is: "latest" stays "latest"; "0.30.x" -> "0.30"; an exact
- * version stays as-is. Docs are served at /{repo}/{segment}/** (see the
- * VitePress `rewrites`), giving versioned URLs like /middag-react/0.30/forms.
+ *   - `docs` (default) -> docs/injected/{repo}/{segment}/, root-absolute links
+ *     in Markdown rewritten to /{repo}/{segment}/…;
+ *   - `xref` (API reference HTML) -> .xref/{repo}/{segment}/, byte for byte;
+ *     scripts/build-site.mjs copies it to dist/api/{repo}/{segment}/ after the
+ *     site build. Never rewritten, never compiled as a page.
  *
- * Publishing is intentional by design: a version appears ONLY when added to a
- * channel here — that deliberate edit is the operational publish step.
+ * Both trees are gitignored and rebuilt from scratch on every run. Channel
+ * selectors: "latest", a line "0.30.x" (segment "0.30") or an exact pin. Only
+ * `docs` and `xref` are accepted in `kinds`; anything else fails the build.
  *
- * Internal decision records are refused: before a channel is downloaded, every
- * key and destination path goes through scripts/lib/publish-guard.mjs; a path
- * under decisions/, internal/, adr/ or madr/ fails the build.
+ * Internal decision records are refused before anything is written: every
+ * key and destination goes through the client's publish guard (decisions/,
+ * internal/, adr/, madr/; docs-middag-ops#66).
  *
- * Auth: the private proxy needs a bearer token in DOCS_PROXY_TOKEN (a Cloudflare
- * Access service token). The public deployment ignores it. Override the host
- * with DOCS_PROXY_BASE_URL when testing; DOCS_HUB_CONFIG and DOCS_INJECTED_DIR
- * override the allowlist file and the output tree (used by the tests).
+ * This is the PUBLIC hub. `assertPublicTarget` fails closed before any request
+ * when DOCS_PROXY_TOKEN is set or the base URL is not the public proxy
+ * (https://docs-proxy.middag.dev). A loopback origin is also accepted, for the
+ * local fake proxy the tests run; a token never is. DOCS_PROXY_BASE_URL,
+ * DOCS_HUB_CONFIG, DOCS_INJECTED_DIR and DOCS_XREF_DIR override the defaults.
  */
-import { DocsProxyClient } from '@middag-io/docs-proxy-client'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import {
+  DocsProxyClient,
+  PUBLIC_PROXY_ORIGIN,
+  assertPublicTarget,
+} from '@middag-io/docs-proxy-client'
+import { fetchHub } from '@middag-io/docs-proxy-client/hub'
+import { readFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { assertChannelPublishable } from './lib/publish-guard.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const HUB_CONFIG = resolve(process.env.DOCS_HUB_CONFIG ?? resolve(ROOT, 'hub.config.json'))
-const INJECTED_DIR = resolve(process.env.DOCS_INJECTED_DIR ?? resolve(ROOT, 'docs', 'injected'))
 
-const BASE_URL = process.env.DOCS_PROXY_BASE_URL ?? 'https://docs-proxy.middag.dev'
-const TOKEN = process.env.DOCS_PROXY_TOKEN // undefined => anonymous (public proxy)
-const KIND = 'docs'
+/** Artifact kinds this public hub publishes. */
+export const HUB_KINDS = Object.freeze(['docs', 'xref'])
 
-const client = new DocsProxyClient(BASE_URL, TOKEN)
+/** Staging root of the xref payloads, relative to the repo root (gitignored). */
+export const XREF_DIR = '.xref'
 
-/** Parse hub.config.json into [[repo, {label, channels}], ...]. */
-async function readHubConfig() {
-  const cfg = JSON.parse(await readFile(HUB_CONFIG, 'utf8'))
-  return Object.entries(cfg.repos ?? {})
-}
+const LOOPBACK_HOSTS = Object.freeze(['127.0.0.1', 'localhost', '[::1]'])
 
-async function proxyGet(url) {
-  const res = await fetch(url, {
-    headers: TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {},
-  })
-  if (!res.ok) throw new Error(`docs-proxy GET ${url} -> HTTP ${res.status}`)
-  return res
-}
-
-/** Every object key under a repo (proxy taxonomy: /{repo}/{kind}/{version}/…). */
-async function listRepoKeys(repo) {
-  const res = await proxyGet(`${BASE_URL}/${repo}?list=true`)
-  const keys = await res.json()
-  if (!Array.isArray(keys)) throw new Error(`${repo}: ?list=true not an array`)
-  return keys
-}
-
-/** Retained doc versions for a repo, oldest→newest (numeric-aware). */
-function docVersions(keys) {
-  const set = new Set()
-  for (const k of keys) {
-    const m = k.match(/^docs\/([^/]+)\//)
-    if (m) set.add(m[1])
-  }
-  return [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-}
-
-/** URL segment for a channel selector: latest→latest, 0.30.x→0.30, exact→exact. */
-function channelSegment(selector) {
-  if (selector === 'latest') return 'latest'
-  return selector.endsWith('.x') ? selector.slice(0, -2) : selector
-}
-
-/** Resolve a channel selector to a concrete retained version, or null. */
-function resolveChannel(selector, versions, latest) {
-  if (selector === 'latest') return latest ?? versions[versions.length - 1] ?? null
-  if (selector.endsWith('.x')) {
-    const line = selector.slice(0, -2) // "0.30"
-    const hits = versions.filter((v) => v === line || v.startsWith(`${line}.`))
-    return hits[hits.length - 1] ?? null
-  }
-  return versions.includes(selector) ? selector : null // exact pin
-}
-
-/**
- * Rewrite root-absolute links inside an injected Markdown file so they carry the
- * package + channel context. Source docs author links as if at the site root
- * (e.g. "/getting-started"); the hub serves them under /{repo}/{segment}/ (see
- * the VitePress `rewrites`) — without this, every in-package link 404s. Covers
- * Markdown links, inline HTML href, and YAML frontmatter `link:` fields.
- * External (http(s):, //), anchor (#) and relative (./) links are untouched.
- */
-function rewriteLinks(markdown, repo, segment) {
-  const prefix = `/${repo}/${segment}/`
-  return markdown
-    .replace(/\]\(\/(?!\/)([^)]*)\)/g, `](${prefix}$1)`)
-    .replace(/href="\/(?!\/)([^"]*)"/g, `href="${prefix}$1"`)
-    .replace(/^---\n[\s\S]*?\n---/, (block) =>
-      block.replace(/(\blink:\s*['"]?)\/(?!\/)/g, `$1${prefix}`),
-    )
-}
-
-/** Download one channel's docs into docs/injected/{repo}/{segment}/. */
-async function downloadChannel(repo, selector, version, segment, keys) {
-  const prefix = `${KIND}/${version}/`
-  const files = keys.filter((k) => k.startsWith(prefix)).map((k) => k.slice(prefix.length))
-  if (files.length === 0) {
-    throw new Error(`${repo}@${version}: no ${KIND} files under ${prefix}`)
-  }
-  // Refuse the whole channel before writing anything.
-  assertChannelPublishable({ repo, selector, version, segment, files })
-
-  const outDir = join(INJECTED_DIR, repo, segment)
-  await mkdir(outDir, { recursive: true })
-
-  let count = 0
-  for (const file of files) {
-    const res = await proxyGet(`${BASE_URL}/${repo}/${KIND}/${version}/${file}`)
-    const dest = join(outDir, file)
-    await mkdir(dirname(dest), { recursive: true })
-    if (file.endsWith('.md')) {
-      await writeFile(dest, rewriteLinks(await res.text(), repo, segment), 'utf8')
-    } else {
-      await writeFile(dest, Buffer.from(await res.arrayBuffer()))
+/** Origins the public target guard accepts for `baseUrl`: the public proxy, plus loopback. */
+export function allowedOrigins(baseUrl) {
+  try {
+    const url = new URL(baseUrl)
+    if (url.protocol === 'http:' && LOOPBACK_HOSTS.includes(url.hostname)) {
+      return [PUBLIC_PROXY_ORIGIN, url.origin]
     }
-    count++
+  } catch {
+    // An invalid URL is reported by assertPublicTarget itself.
   }
-  return count
+  return [PUBLIC_PROXY_ORIGIN]
+}
+
+/** Refuse a repo entry whose `kinds` names anything but docs or xref. */
+export function assertHubKinds(config) {
+  for (const [repo, entry] of Object.entries(config.repos ?? {})) {
+    for (const kind of entry?.kinds ?? ['docs']) {
+      if (!HUB_KINDS.includes(kind)) {
+        throw new Error(
+          `hub.config.json repos["${repo}"]: kind "${kind}" is not published by this hub ` +
+            `(allowed: ${HUB_KINDS.join(', ')})`,
+        )
+      }
+    }
+  }
 }
 
 async function main() {
-  const repos = await readHubConfig()
-  if (repos.length === 0) {
+  const baseUrl = process.env.DOCS_PROXY_BASE_URL ?? PUBLIC_PROXY_ORIGIN
+  const token = process.env.DOCS_PROXY_TOKEN
+  // Fail closed before reading anything else: a public build never carries a token.
+  assertPublicTarget({ baseUrl, token, allowedOrigins: allowedOrigins(baseUrl) })
+
+  const configPath = resolve(process.env.DOCS_HUB_CONFIG ?? resolve(ROOT, 'hub.config.json'))
+  const config = JSON.parse(await readFile(configPath, 'utf8'))
+  assertHubKinds(config)
+  if (Object.keys(config.repos ?? {}).length === 0) {
     console.log('[inject] hub.config.json has no repos — nothing to fetch.')
     return
   }
 
-  // Always rebuild injected/ from scratch — reproducible, never committed.
-  await rm(INJECTED_DIR, { recursive: true, force: true })
-  await mkdir(INJECTED_DIR, { recursive: true })
-
-  console.log(`[inject] proxy ${BASE_URL}${TOKEN ? ' (authenticated)' : ' (anonymous)'}`)
-
-  for (const [repo, meta] of repos) {
-    const label = meta?.label ?? repo
-    const selectors = meta?.channels ?? []
-    if (selectors.length === 0) {
-      console.warn(`[inject] ${repo}: no channels declared — skipping.`)
-      continue
-    }
-
-    const keys = await listRepoKeys(repo)
-    const versions = docVersions(keys)
-    let latest = null
-    try {
-      latest = (await client.fetchManifest(repo))?.latest ?? null
-    } catch {
-      // Manifest optional; fall back to newest retained for "latest".
-    }
-
-    const resolved = []
-    for (const selector of selectors) {
-      const version = resolveChannel(selector, versions, latest)
-      const segment = channelSegment(selector)
-      if (!version) {
-        console.warn(`[inject] ${repo}: channel "${selector}" resolves to nothing — skipping.`)
-        continue
-      }
-      console.log(`[inject] ${repo} ${selector} -> ${version} (/${repo}/${segment}/)`)
-      const count = await downloadChannel(repo, selector, version, segment, keys)
-      resolved.push({ selector, segment, version })
-      console.log(`[inject]   wrote ${count} file(s)`)
-    }
-
-    if (resolved.length === 0) {
-      console.warn(`[inject] ${repo}: no channels resolved — nothing written.`)
-      continue
-    }
-
-    // Channel manifest consumed by scripts/build-site.mjs to build the nav,
-    // sidebars and version switcher. defaultSegment = first declared channel.
-    await writeFile(
-      join(INJECTED_DIR, repo, '_channels.json'),
-      JSON.stringify({ label, defaultSegment: resolved[0].segment, channels: resolved }, null, 2),
-      'utf8',
-    )
-  }
-
-  console.log('[inject] done.')
+  const outDir = resolve(process.env.DOCS_INJECTED_DIR ?? resolve(ROOT, 'docs', 'injected'))
+  const xrefDir = resolve(process.env.DOCS_XREF_DIR ?? resolve(ROOT, XREF_DIR))
+  console.log(`[inject] proxy ${baseUrl} (anonymous)`)
+  const result = await fetchHub({
+    client: new DocsProxyClient(baseUrl),
+    config,
+    outDir,
+    kindDirs: { xref: xrefDir },
+    log: (message) => console.log(`[inject] ${message}`),
+  })
+  const files = Object.values(result.repos).reduce((sum, repo) => sum + repo.files, 0)
+  console.log(`[inject] done: ${Object.keys(result.repos).length} repo(s), ${files} file(s).`)
 }
 
-main().catch((err) => {
-  console.error(`[inject] FAILED: ${err.message}`)
-  process.exitCode = 1
-})
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error(`[inject] FAILED: ${err.message}`)
+    process.exitCode = 1
+  })
+}

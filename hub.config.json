@@ -2,7 +2,13 @@
   "repos": {
     "middag-react": {
       "label": "MIDDAG React",
-      "channels": ["latest", "0.30.x", "0.20.x"]
+      "channels": ["latest", "0.30.x", "0.20.x"],
+      "kinds": ["docs", "xref"]
+    },
+    "middag-php-wordpress": {
+      "label": "MIDDAG WordPress Adapter",
+      "channels": ["latest"],
+      "kinds": ["xref"]
     },
     "infra-terraform": {
       "label": "AWS Access (Launch Stack)",

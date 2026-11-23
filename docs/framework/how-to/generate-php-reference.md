@@ -31,7 +31,7 @@ A local run is for checking the output only. The output is never committed: keep
 
 ## 3. Publish on each release
 
-CI/CD generates the reference on each release, from the released tag, and publishes it as a versioned docs payload through the MIDDAG docs proxy:
+CI/CD generates the reference on each release, from the released tag, and publishes it as a versioned `xref` payload through the MIDDAG docs proxy:
 
 | Library | Bucket                | Reaches this hub                                                    |
 | ------- | --------------------- | ------------------------------------------------------------------- |
@@ -41,9 +41,17 @@ CI/CD generates the reference on each release, from the released tag, and publis
 - There is no reference site per library: this hub aggregates the public payloads.
 - The organization meta repository `github-private` never hosts generated reference content.
 
-## 4. Until the shared pipeline component ships
+## 4. Use the shared pipeline component
 
-No shared pipeline component builds and publishes the reference yet. One is planned in `middag-io/actions` and waits for the first library that opts in. Until then, no library publishes generated reference.
+An OSS library publishes with the reusable workflow `cloudflare-r2-reference-publish.yml` of `middag-io/actions`, pinned to the `cloudflare-r2-reference-publish-v1` tag. Read the component README before wiring it.
+
+## 5. Read the published reference
+
+The hub copies each declared `xref` channel to `/api/{repo}/{segment}/`, as the generator produced it. A library reaches it only when `hub.config.json` declares `"xref"` in its `kinds`.
+
+| Library                | API reference                                                       |
+| ---------------------- | ------------------------------------------------------------------- |
+| `middag-php-wordpress` | <a href="/api/middag-php-wordpress/latest/index.html">Latest</a>    |
 
 ## Out of scope
 

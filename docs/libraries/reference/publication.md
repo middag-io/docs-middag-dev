@@ -46,7 +46,7 @@ Rules:
 ## Generated API reference
 
 - On this hub, generated API reference covers only the `@api` surface of an OSS library and, for `middag-php-core`, only the types of its curated section: the types, signatures and docblocks a consumer codes against. Untagged and `@internal` types are not published here.
-- The library generates it from its source and publishes it as a versioned docs payload through the docs proxy, like any aggregated channel. The hub never commits generated reference and never edits it.
+- The library generates it from its source and publishes it as a versioned `xref` payload through the docs proxy. The hub declares it per library in the `kinds` of `hub.config.json` and serves it, unchanged, under `/api/{repo}/{segment}/`. The hub never commits generated reference and never edits it.
 - Generated reference complements the curated section of `middag-php-core`; it does not replace it. The curated section explains contracts and errors; the generated reference lists signatures.
 - The [Generate PHP reference docs](/framework/how-to/generate-php-reference) guide follows this rule. The choice of generator is outside this page.
 

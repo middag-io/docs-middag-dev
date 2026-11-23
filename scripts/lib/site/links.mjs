@@ -84,12 +84,17 @@ export function pageUrlFor(file) {
 
 /**
  * Check every HTML page in dist. `ignore` lists exact { page, href } pairs
- * that are known and accepted. Returns { pages, links, anchors, broken:
+ * that are known and accepted; `skip(file)` leaves out whole dist files (the
+ * generated API reference, which has its own light check). Links INTO a
+ * skipped tree are still checked. Returns { pages, links, anchors, broken:
  * [{ page, href, reason }] }.
  */
-export async function checkLinks(distDir, { origin, rules = [], ignore = [] } = {}) {
+export async function checkLinks(
+  distDir,
+  { origin, rules = [], ignore = [], skip = () => false } = {},
+) {
   const isIgnored = (page, href) => ignore.some((i) => i.page === page && i.href === href)
-  const files = (await listFiles(distDir)).filter((f) => f.endsWith('.html'))
+  const files = (await listFiles(distDir)).filter((f) => f.endsWith('.html') && !skip(f))
   const idCache = new Map()
   const idsOf = async (file) => {
     if (!idCache.has(file))
