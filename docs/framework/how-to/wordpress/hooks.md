@@ -118,17 +118,17 @@ $events->listen('note.published', static function (int $noteId): void {
 }, 20);
 ```
 
-- `dispatch()` passes each element of the payload list as a separate action argument.
+- `dispatch()` passes each element of the payload as a separate action argument, in order. The keys of an associative payload are ignored.
 - `listen()` accepts every argument the action fires with; you do not pass an argument count.
 - Other plugins and themes can listen with plain `add_action('acme_notes/note.published', ...)`. Name the prefix after your plugin, because two plugins that keep the neutral default `middaglib/` share every event name.
 
 ## What can go wrong
 
-- **No hook runs, and there is no error.** Check the path pair. The namespace must end with `\\` and the directory must not end with `/`. `plugin_dir_path()` returns a trailing slash, so write `ACME_NOTES_DIR . 'src/Hooks'`, not `ACME_NOTES_DIR . 'src/Hooks/'`. The class must also be loadable through your autoloader.
+- **No hook runs, and there is no error.** Check that the directory of the pair is the one that holds the hook classes and that each class is loadable through your autoloader. A trailing `/` on the directory and a missing trailing `\\` on the namespace are normalised.
 - **`HookRegistrar requires at least one namespace => directory pair.`** or **`... received a non-existing directory ...`.** The constructor validates the map. The second error names the namespace and the path it could not find.
+- **`HookRegistrar received a namespace containing a forward slash`.** Write the namespace with backslashes (`'Acme\\Notes\\Hooks\\'`), not slashes.
 - **`... requires constructor arguments but is not registered in the container.`** A discovered hook has a constructor with required arguments and is not a container service. Register it as a public service, as in step 2.
 - **Your callback never fires.** The registrar runs on `init` at priority 5. A hook class that adds a callback to an action that already fired, such as `plugins_loaded` or `init` at a priority before 5, is too late. Hook those from your main plugin file or your kernel's `onBoot()` instead.
-- **`Error: Unknown named parameter $id`.** The payload of `dispatch()` is spread into arguments, so its string keys become named arguments. Pass a list (`[$orderId, $total]`), not an associative array.
 
 ## Reference
 

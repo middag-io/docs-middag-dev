@@ -220,7 +220,6 @@ $first = Note::where('user_id', 9)->first();
 
 ## What can go wrong
 
-- **`wpdb insert into [acme_notes] failed: Table '...acme_notes' doesn't exist`.** You passed the logical name. The connection adapter's record helpers (`insert()`, `update()`, `delete()`, `find()`, `findAll()`) and the framework query builder's `insert()` use the name as given, while the builder's reads, updates and deletes add the prefix. Always pass `dialect()->table('acme_notes')`; the dialect leaves a name that already starts with the prefix unchanged.
 - **`update() into [...] requires an "id" element.`** `update()` keys on a column named `id`. WordPress core tables use `ID`; write to them through the WordPress APIs or the repositories, not through `update()`.
 - **A named parameter is bound to the wrong placeholder.** Placeholders are replaced in the order of the parameter array, first match first. Do not use a name that is the start of another one in the same statement (`:id` and `:id_list`).
 - **A `LIKE` query returns nothing.** `$wpdb->prepare()` reads a literal `%` in the SQL string as part of a placeholder. Pass the pattern as a parameter (`'%' . $wpdb->esc_like($term) . '%'`), not inside the SQL string.

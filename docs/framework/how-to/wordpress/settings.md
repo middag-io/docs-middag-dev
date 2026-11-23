@@ -11,7 +11,7 @@ title: 'wordpress adapter — Definitions and Options'
 - A plugin with a kernel and a container ([Getting started](../../tutorials/wordpress/getting-started)).
 
 ::: info Settings pages are not covered yet
-The adapter's declarative settings page builder (`Settings\SettingsPageRegistrar`, with `Tab`, `Section` and `Field`) cannot yet be wired without a class outside the stable API, so this guide does not cover it.
+This guide does not cover the adapter's declarative settings page builder (`Settings\SettingsPageRegistrar`, with `Tab`, `Section` and `Field`) yet.
 :::
 
 ## 1. Register post types, taxonomies, shortcodes and schedules

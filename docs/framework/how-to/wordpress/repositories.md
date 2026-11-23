@@ -179,7 +179,6 @@ MetaSupport::delete('comment', $commentId, 'acme_flag');
 - **`get()` or `count()` misses drafts.** The builder reads published posts by default. Call `status(['publish', 'draft'])` or `status('any')`.
 - **A stored empty string reads as the default.** `PostMetaRepository::get()` and `UserMeta::get()` return the default for a missing key **and** for a stored `''`.
 - **`UserMeta::getAll()` still returns WordPress keys.** It skips keys that start with `_` or `wp_`, but not core keys such as `nickname` or `admin_color`, and not keys of a site whose table prefix is not `wp_`. Read the keys you own with `get()`.
-- **`MetaSupport::update()` throws a `TypeError` for a new key.** On the current adapter release it declares a `bool` return, while WordPress returns the new meta ID when the key did not exist. Add a new key with the WordPress function (`add_term_meta()`, `update_metadata()`) and use `MetaSupport::update()` only to change an existing one.
 - **`count()` is slow on a large site.** `UserRepository::count()` runs `WP_User_Query` with no limit, so it loads every matching user to count them. Pass filters such as `role` to narrow it.
 
 ## Reference
