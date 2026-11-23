@@ -4,9 +4,9 @@ title: 'Kernel Boot Lifecycle — Discovery, Phases & Failure Policy'
 
 # Kernel Boot Lifecycle — Discovery, Phases & Failure Policy
 
-Reference for `middag-io/middag-php-framework`'s kernel boot pipeline: the container's phase model, its convention-based service discovery, the pluggable boot-failure policy, and (for provenance) the `moodle-local_middag` legacy mechanics it replaced. Backs [FW-012](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-012-kernel-boot-lifecycle.md). Provenance: legacy vault ADR-601 (container and discovery), ADR-602 (extension lifecycle), 2026-03-29; ADR-603 (bootstrap and entry points), 2026-04-04; ADR-609 (boot failure isolation), 2026-04-18.
+Reference for `middag-io/middag-php-framework`'s kernel boot pipeline: the container's phase model, its convention-based service discovery, the pluggable boot-failure policy. Backs [FW-012](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-012-kernel-boot-lifecycle.md).
 
-## The boot pipeline (shipped, current)
+## The boot pipeline
 
 `Kernel/ContainerFactory::build()` runs six steps, then a separate call boots modules:
 
@@ -35,11 +35,11 @@ The container is compiled and frozen **before** any module boots. The order is r
 
 **Circular dependencies** are rejected at compile time by Symfony's own `ContainerBuilder::compile()` (`CheckCircularReferencesPass`) — no lazy-proxy escape hatch is offered; a cycle means refactoring the design (setter injection, an intermediate factory, a responsibility split), not wrapping the dependency in a proxy.
 
-## Modules (shipped, current)
+## Modules
 
 [`ModuleInterface`](https://github.com/middag-io/middag-php-framework/blob/main/src/Kernel/Contract/ModuleInterface.php) (`@api`, base class `AbstractModule`) is the generic module contract: `getName()`, `getLabel()`, `getVersion()`, `getDependencies()`, `register()`, `boot()`, `isEnabled()`, `isAvailable()`. `AbstractModule` adds `registerControllers()` and `registerHooks()`, which discover `*Controller` and `*Hooks` classes. The legacy MIDDAG "Extension" vocabulary (`REQUIRES`, `DISTRIBUTION`, `GROUP`, `PRIORITY`, dependency cascades, distribution-aware failure policy) is not part of this contract; platform module interfaces in the adapters and the governed extension surface downstream extend it.
 
-## Discovery by suffix (shipped, current)
+## Discovery by suffix
 
 `Kernel/ServiceProvider` scans configured directories under `{projectRoot}/src` and registers any class whose name ends in one of these suffixes, with autowiring enabled:
 
@@ -49,25 +49,7 @@ The container is compiled and frozen **before** any module boots. The order is r
 
 A single-interface implementation is auto-aliased so it can be resolved by its interface. Scanned code must live under `{projectRoot}/src`, and the provider's root namespace must map to that tree's PSR-4 root — otherwise the derived FQCN fails `class_exists()` and discovery silently registers nothing for that file.
 
-## Discovery by suffix (legacy, `moodle-local_middag`)
-
-The suffix vocabulary above replaces a richer, host-integrated one. Not shipped in this OSS framework — reference only for whoever ports a legacy extension or implements the host-adapter discovery layer:
-
-| Suffix (legacy) | Loader | Artifact |
-|---|---|---|
-| `_service`, `_repository`, `_manager`, `_handler`, `_factory`, `_provider`, `_loader`, `_builder`, `_connector`, `_adapter`, `_settings` | `service_loader` | Registered in the container |
-| `_extension` | `extension_loader` | Framework extensions |
-| `_controller` (with `#[Route]`) | `route_loader` | HTTP controllers |
-| `_facade` | `facade_loader` | Facades |
-| `_signal` (with `#[moodle_event]`) | `moodle_signal_loader` | Host event bridge |
-| `#[item_type]` or `TYPE` | `type_loader` | Item types |
-| `#[on]` | `signal_loader` | Signal handlers via attribute |
-
-Domains the legacy `service_loader` ignored (containing exclusively non-injectable types): `cli/`, `contract/`, `db/`, `deprecated/`, `dto/`, `entity/`, `enum/`, `exception/`, `fixture/`, `interface/`, `legacy/`, `templates/`, `tests/`, `trait/`, `value_object/`. Notably **not** ignored despite looking like plain data folders: `base/`, `model/`, `domain/`, `view/`, `widget/`, `facade/` — the class-name suffix decides registration, never the folder.
-
-External plugins needed only a `lib.php`-style hook to register their extension directories for non-native distributions; the rest (`extend_..._service_loader`, `extend_..._register_item_types`, `extend_..._moodle_signal_loader`) were optional. This whole mechanism reads a specific host's plugin registry by construction, so it is host-adapter territory and does not appear in this framework's own discovery engine.
-
-## Boot-failure policy (shipped, current)
+## Boot-failure policy
 
 A module `boot()` failure is caught by `ContainerFactory::bootModules()` and handed to the bound `BootFailurePolicyInterface`:
 
@@ -79,31 +61,6 @@ A module `boot()` failure is caught by `ContainerFactory::bootModules()` and han
 `ContainerFactory` defaults to `BootRethrowFailurePolicy` when no policy is passed. A consumer binds whichever policy fits its own governance model (or writes its own) — the framework holds no fixed distribution taxonomy. `FailedModuleRegistryInterface` (`register()`/`has()`/`all()`) is the current, framework-agnostic descendant of the legacy `kernel::failed_extensions()` registry: it carries a plain `distribution` string per failure with no opinion on its meaning, for a consumer to inspect programmatically after boot.
 
 **A `register()`-phase failure is not routed through any policy** — `ContainerFactory::build()` does not wrap `$bootstrap->configure()` or `ServiceProvider::register()` in a try/catch, so it always propagates as an ordinary PHP exception. Only `boot()` failures go through `BootFailurePolicyInterface`.
-
-## Boot-failure policy — legacy distribution mapping (legacy)
-
-| Legacy distribution | Failure in `boot()` | Current OSS equivalent |
-|---|---|---|
-| `NATIVE` | Propagates immediately — fatal, the team fixes it before deploy | `BootRethrowFailurePolicy` |
-| `PRO` | Propagates immediately — same responsibility as `NATIVE` | `BootRethrowFailurePolicy` |
-| `THIRD_PARTY` | Isolated and logged — extension disabled, product keeps running | `BootIsolateFailurePolicy` |
-| `CUSTOM` | Isolated and logged — same treatment as `THIRD_PARTY` | `BootIsolateFailurePolicy` |
-
-A `register()` failure was **always** fatal regardless of distribution, matching the current framework's behaviour above. An extension under the host's own namespace defaulted to `NATIVE`; one loaded from an external plugin defaulted to `THIRD_PARTY`.
-
-**Why the policy is mandatory dispatch, not a nice-to-have:** the legacy loaders originally caught `Throwable` silently through a debug-trace helper — invisible whenever debugging was off, and a direct contradiction of the "lateral never means automatically suppressed" rule elsewhere in the reactive model (see the [signal & hook reference](./signal-hook-legacy-mechanics.md)). `BootFailurePolicyInterface` exists specifically to close that silent-swallowing bug.
-
-**Runtime-only, honestly incomplete legacy mechanism, worth knowing before assuming parity:** a caught failure marked the extension `disabled_by_error` for that runtime only — no flag was ever persisted to storage or config. The ADR-609 body itself claimed an admin would see an inline notification "on the next visit to the MIDDAG panel," but its own reference companion stated plainly that no such notification was ever built — the real mechanism was always the logger plus the failed-extensions registry, consulted programmatically or by hand. Don't assume a UI alert exists just because a decision record once described one.
-
-## Legacy entry points (legacy)
-
-| Entry point | Role | Context |
-|---|---|---|
-| `index.php` | Page routing and REST API | UI navigation and endpoints |
-| `webhook.php` | Inbound external requests | Callbacks from external services (payment gateways) |
-| `ajax.php` | Internal frontend requests | AJAX calls from the product's own JS |
-
-All three delegated to `kernel::handle()`. A known, never-fixed limitation: an external plugin registering controllers only got routes nested under the host plugin's own entry-point path, losing its own URL identity — a "Developer Kit" with delegated entry points was the planned fix, never shipped. Where the adapter triggers boot in the host (a Moodle callback/`setup` step, a WordPress `plugins_loaded`/`init` hook) remains the adapter's own responsibility today, not something this framework prescribes.
 
 ## Anti-patterns
 

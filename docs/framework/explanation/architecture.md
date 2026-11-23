@@ -134,7 +134,7 @@ These are intentionally unresolved at the OSS layer: the seam exists, but the re
 | Multi-plugin collision (same host, different versions) | Per-instance state, with the bounded statics listed below | Product (PHP-Scoper/Mozart at build) |
 | No built-in rate limiting | `#[Middleware]` (+ composer `suggest symfony/rate-limiter`) | Adapter/Product/Core |
 | Input sanitisation not centralised (validation only) | `AbstractFormRequest::rules()` / `#[ValidatedDto]` | Controller/Adapter |
-| Host namespaces kept out of the framework; the domain layers of the tiers above are not linted here | `composer check:portability` (deptrac for host namespaces + `bin/portability-scan.php` for host globals) in the framework's CI | Framework for the host boundary — see [Composer Portability Audit](../reference/portability-audit-historical); Product/Core for their own domain layers |
+| Host namespaces kept out of the framework; the domain layers of the tiers above are not linted here | `composer check:portability` (deptrac for host namespaces + `bin/portability-scan.php` for host globals) in the framework's CI | Framework for the host boundary — see [Portability gate](../reference/bridge-contracts#portability-gate); Product/Core for their own domain layers |
 | Forward-only migrations (no `down()`) | `MigrationRunner::onUpgrade()` — see [Database Schema & Migrations](../reference/database-schema-and-migrations) | Adapter (xmldb/dbDelta) |
 | No service-locator guard (Facades are service locators) | Discipline + `composer check` | PR convention / internal PHPStan rule |
 | Outbox (post-commit) + governed job records | `SignalDispatcherInterface`/`MessageBusInterface`, retry/attempt seams | **Core**, by design |

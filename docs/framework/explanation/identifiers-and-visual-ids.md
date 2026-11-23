@@ -16,7 +16,7 @@ short code nobody can look up.
 |---|---|---|
 | **Key** | `Middag\Framework\Shared\ValueObject\Uuid` — `v4()` or `v7()` | Unique. Never shown in full; 36 characters is unreadable and unspeakable. |
 | **Visual id** | `Uuid::visualId()` / `Uuid::tryVisualId()` (framework `1.19.0`+) | Short, searchable, derived. **Not** unique — see the collision table. |
-| **Business number** | A per-type counter in the product (`middag-php-core#96`, written to `idnumber`) | Sequential, unique per type, stable, meant to be quoted. |
+| **Business number** | A per-type counter kept by the product (written to `idnumber`) | Sequential, unique per type, stable, meant to be quoted. |
 
 ## The rule
 

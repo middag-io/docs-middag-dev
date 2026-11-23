@@ -4,7 +4,7 @@ title: 'framework — Form Field Type Catalog & Renderer Anti-Corruption'
 
 # Form Field Type Catalog & Renderer Anti-Corruption
 
-Reference for the field-type DSL and the renderer boundary in `middag-io/framework`'s form engine. Backs [FW-004](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-004-form-renderer-adapters-field-type-dsl.md). Provenance: legacy vault ADR-805 (renderer adapters) and ADR-806 (field type DSL), both 2026-04-13.
+Reference for the field-type DSL and the renderer boundary in `middag-io/framework`'s form engine. Backs [FW-004](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-004-form-renderer-adapters-field-type-dsl.md).
 
 ## Renderer boundary
 
@@ -30,7 +30,7 @@ A controller has one default renderer. A specific route can override it per call
 
 Host form widgets exist only inside renderers that ship with a host adapter, never in this framework's `Form/` code. The Moodle adapter's `MformRenderer` (`middag-php-moodle`, `src/Form/MformRenderer.php`) implements the same `FormRendererInterface` and maps the schema onto `MoodleQuickForm` through `MformFieldMapper`. The WordPress adapter ships no form renderer of its own and uses the framework's `InertiaRenderer`.
 
-The legacy Moodle-era design had the same split: an `mform_renderer` producing `MoodleQuickForm` HTML as the default for host-page controllers. Nothing in this framework checks the boundary automatically; each adapter keeps its host-specific types inside its own renderer files.
+Nothing in this framework checks the boundary automatically; each adapter keeps its host-specific types inside its own renderer files.
 
 ## Field type catalog
 
@@ -68,15 +68,6 @@ There is no separate `static` factory method: static, non-input content uses `he
 ### Out of MVP scope (still true today)
 
 `editor` (rich text), `repeats`, `filemanager` (multi-file), `tags`, `colorpicker` were explicitly out of scope for the original MVP catalog and are not present in the table above.
-
-### Historical naming (no live code behind these — informational only)
-
-An early legacy reference document used `field::number()` for what the canonical legacy decision called `field::int()`/`field::float()` — `number()` was never actually implemented anywhere. None of the three legacy names (`int()`, `float()`, `number()`) exist in the current code; the live, `@api` names are `integer()` and `decimal()`.
-
-| Concept | Current `FieldFactory` |
-|---|---|
-| Integer field | `integer()` |
-| Float field | `decimal()` |
 
 ## Naming & validation rules
 

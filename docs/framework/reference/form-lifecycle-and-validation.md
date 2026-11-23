@@ -7,7 +7,6 @@ title: 'framework — Form Lifecycle & Validation Reference'
 Reference for how a `Form` moves from construction to submission, how field-level
 validation is enforced, and how the `FormRequest` escalation path relates to it.
 Backs [FW-003](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-003-schema-first-forms-form-request-escalation.md).
-Provenance: legacy vault ADR-802 (2026-04-13).
 
 ## Lifecycle
 
@@ -176,17 +175,3 @@ Labels, help text, option lists and validation error messages never carry a raw 
 `TranslatorInterface` (translation domain `validators`) via `SymfonyTranslatorAdapter` —
 without a configured translator, Symfony's default English messages pass through
 unchanged.
-
-## Legacy context (historical)
-
-Reconstructed from the `moodle-local_middag` vault, kept only for anyone still reading
-that plugin's tree — none of this applies to this package's own layout:
-
-- Extension forms lived at `extensions/{slug}/{aggregate}/{entity}_form.php`;
-  `form_request` classes at `{action}_request.php`; base classes at
-  `classes/base/form.php` / `classes/base/form_request.php`.
-- Migration away from the legacy Moodle form-builder had no hard deadline: migrate a
-  form only when it was touched by an unrelated change, gated by at least one
-  proof-of-concept migration, eventually moving retired forms to a `legacy/` folder.
-  Relevant only to a host adapter that still bridges an older form engine — this
-  package never shipped that renderer in the first place.

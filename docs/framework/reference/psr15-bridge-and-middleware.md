@@ -48,10 +48,6 @@ Symfony, PSR and Monolog stay inside the framework. Where a consumer would other
 
 Some vendor types still cross into consumer code by design: controllers work with HttpFoundation `Request`/`Response` inside the kernel (see above), `#[Route]` is Symfony's routing attribute, and form and request rules accept Symfony Validator `Constraint` objects.
 
-## History
-
-The boundary was first drafted as Symfony `HttpKernel` directly, with `handle(Request): Response` on HttpFoundation types (legacy vault ADR-208, 2026-04-08). It was replaced before shipping by the PSR-15 boundary (legacy ADR-209, 2026-05-20). Moving to PSR-15 changed the top-level `handle()` signature from returning `void` to returning `ResponseInterface`; callers written against the earlier shape need to emit the returned response themselves.
-
 ## Dependencies and scope
 
 The framework's `composer.json` requires `psr/http-server-handler`, `psr/http-server-middleware`, `psr/http-message`, `symfony/psr-http-message-bridge`, and `nyholm/psr7`. Routing and controller authorization build on this boundary and have their own decision, [FW-002](https://github.com/middag-io/middag-php-framework/blob/main/docs/decisions/FW-002-attribute-routing-controller-auth-model.md).
