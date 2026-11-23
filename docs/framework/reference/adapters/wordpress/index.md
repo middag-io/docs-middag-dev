@@ -52,6 +52,11 @@ The platform rules behind these values are in [Platform](/libraries/reference/pl
 - [Controller Bases](./controller-bases) — the page-controller base, the REST base, and why they do not share a parent.
 - [Configuration & Identity](./configuration) — the consumer kernel, injected component identity, config prefixes and neutral defaults.
 
+Guides that put this reference to work:
+
+- [Getting started with the WordPress adapter](../../../tutorials/wordpress/getting-started) — a first plugin: kernel, container, config resolver and a REST controller.
+- How-to: [REST controllers and routes](../../../how-to/wordpress/rest-controllers), [Persistence](../../../how-to/wordpress/persistence), [Repositories](../../../how-to/wordpress/repositories), [Hooks](../../../how-to/wordpress/hooks), [Cron](../../../how-to/wordpress/cron), [Mail](../../../how-to/wordpress/mail), [Definitions and options](../../../how-to/wordpress/settings) and [Boot diagnostics](../../../how-to/wordpress/diagnostics).
+
 ## What the adapter is
 
 - A library, not a plugin. It ships no composition root: a WordPress plugin (the consumer) builds the container, binds the ports and boots the kernel.
