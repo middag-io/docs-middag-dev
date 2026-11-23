@@ -25,6 +25,7 @@
   "devDependencies": {
     "@middag-io/nimbus-preset": "^1.4.0",
     "prettier": "^3.8.3",
-    "vitepress": "^2.0.0-alpha.18"
+    "vitepress": "^2.0.0-alpha.18",
+    "yaml": "^2.9.1"
   }
 }

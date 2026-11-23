@@ -1,6 +1,7 @@
 /**
- * markdown.mjs — small, dependency-free edits to Markdown source text.
+ * markdown.mjs — small edits to Markdown source text.
  */
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/
 
@@ -80,4 +81,47 @@ export function routeSlug(relativePath) {
     .join('/')
     .replace(/\.md$/, '')
   return clean === 'index' ? '' : clean.replace(/\/index$/, '')
+}
+
+/**
+ * Turn a VitePress home page (`layout: home` with `hero` and `features` in
+ * the frontmatter) into plain Markdown: the hero becomes an H1, its text and
+ * tagline, and a list of its actions; the features become a list. Nimbus
+ * renders every page as a document and would drop that frontmatter, so
+ * without this the hero and features would disappear. The remaining
+ * frontmatter keys are kept. Returns { text, converted }.
+ */
+export function convertHomeLayout(markdown) {
+  const match = markdown.match(FRONTMATTER)
+  if (!match) return { text: markdown, converted: false }
+  let data
+  try {
+    data = parseYaml(match[1])
+  } catch {
+    return { text: markdown, converted: false }
+  }
+  if (data?.layout !== 'home') return { text: markdown, converted: false }
+
+  const { layout, hero = {}, features = [], ...rest } = data
+  const blocks = []
+  const name = hero.name ?? rest.title
+  if (name) blocks.push(`# ${name}`)
+  if (hero.text) blocks.push(`**${hero.text}**`)
+  if (hero.tagline) blocks.push(hero.tagline)
+  const actions = (hero.actions ?? []).filter((a) => a?.text && a?.link)
+  if (actions.length > 0) {
+    blocks.push(actions.map((a) => `- [${escapeLinkText(a.text)}](${a.link})`).join('\n'))
+  }
+  const items = (Array.isArray(features) ? features : []).filter((f) => f?.title)
+  if (items.length > 0) {
+    const line = (f) => {
+      const title = f.link ? `[${escapeLinkText(f.title)}](${f.link})` : f.title
+      return `- **${title}**${f.details ? `: ${f.details}` : ''}`
+    }
+    blocks.push(items.map(line).join('\n'))
+  }
+
+  const frontmatter = Object.keys(rest).length > 0 ? `---\n${stringifyYaml(rest)}---\n\n` : ''
+  const body = markdown.slice(match[0].length).replace(/^\s*\n/, '')
+  return { text: `${frontmatter}${blocks.join('\n\n')}\n\n${body}`, converted: true }
 }

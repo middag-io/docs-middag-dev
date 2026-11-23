@@ -10,7 +10,8 @@
  *   4. generated landing pages where a directory has none (/{repo}/,
  *      /libraries/reference/);
  *   5. `searchable: false` on every page of a non-default channel, so search
- *      lists each page once;
+ *      lists each page once; dotted channel routes pinned; VitePress-only
+ *      syntax (`{#id}` headings, `layout: home`) turned into Markdown;
  *   6. navigation overrides (site-navigation.json) from nav.json and the
  *      channel manifests;
  *   7. the preset build, in strict mode: any warning fails it;
@@ -32,6 +33,7 @@ import { checkDist, mapSitemapUrls, parseRedirects, writeRedirects } from './lib
 import { checkLinks } from './lib/site/links.mjs'
 import {
   convertHeadingIds,
+  convertHomeLayout,
   landingPage,
   routeSlug,
   setFrontmatterKey,
@@ -153,17 +155,23 @@ export async function prepareChannels(contentDir, repos) {
   return { hidden, pinned }
 }
 
-/** Convert `{#id}` heading suffixes in every page. Returns the number converted. */
-export async function convertAllHeadingIds(contentDir) {
-  let count = 0
+/**
+ * VitePress-only syntax in every page: `{#id}` heading suffixes become
+ * anchors, and `layout: home` pages become plain Markdown. Returns the counts.
+ */
+export async function convertVitepressSyntax(contentDir) {
+  let headingIds = 0
+  let homePages = 0
   for (const file of await markdownFiles(contentDir)) {
     const path = join(contentDir, file)
-    const result = convertHeadingIds(await readFile(path, 'utf8'))
-    if (result.count === 0) continue
-    count += result.count
-    await writeFile(path, result.text)
+    const original = await readFile(path, 'utf8')
+    const home = convertHomeLayout(original)
+    const headings = convertHeadingIds(home.text)
+    if (home.converted) homePages += 1
+    headingIds += headings.count
+    if (headings.text !== original) await writeFile(path, headings.text)
   }
-  return count
+  return { headingIds, homePages }
 }
 
 /** Build the navigation overrides for the assembled tree. */
@@ -254,7 +262,8 @@ export async function buildSite({ root = ROOT, fetch = true, log = () => {} } = 
   await writeLandings(contentDir, repos, log)
   const { hidden, pinned } = await prepareChannels(contentDir, repos)
   log(`channels: ${hidden} page(s) kept out of search, ${pinned} route(s) pinned`)
-  log(`headings: ${await convertAllHeadingIds(contentDir)} explicit id(s) converted`)
+  const syntax = await convertVitepressSyntax(contentDir)
+  log(`syntax: ${syntax.headingIds} heading id(s), ${syntax.homePages} home page(s) converted`)
 
   const navigation = await buildNavigation(contentDir, repos)
   await writeFile(join(root, NAVIGATION_FILE), `${JSON.stringify(navigation, null, 2)}\n`)

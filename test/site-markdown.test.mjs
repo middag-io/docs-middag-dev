@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   convertHeadingIds,
+  convertHomeLayout,
   escapeLinkText,
   landingPage,
   routeSlug,
@@ -59,4 +60,59 @@ test('landingPage renders a title, an intro and escaped links', () => {
   })
   assert.equal(page, '# Repo\n\nChannels:\n\n- [Latest \\[1.0\\]](/repo/latest/)\n')
   assert.equal(escapeLinkText('a\\b'), 'a\\\\b')
+})
+
+test('convertHomeLayout turns hero and features into Markdown and keeps other keys', () => {
+  const input = [
+    '---',
+    'layout: home',
+    'description: Short',
+    'hero:',
+    '  name: Lib',
+    '  text: Components',
+    '  tagline: Contract driven.',
+    '  actions:',
+    '    - theme: brand',
+    '      text: Get Started',
+    '      link: /lib/latest/getting-started',
+    'features:',
+    '  - title: Typed',
+    '    details: Full types.',
+    '  - title: Docs',
+    '    link: /lib/latest/',
+    '---',
+    '',
+    '## Overview',
+    '',
+  ].join('\n')
+  const { text, converted } = convertHomeLayout(input)
+  assert.ok(converted)
+  assert.equal(
+    text,
+    [
+      '---',
+      'description: Short',
+      '---',
+      '',
+      '# Lib',
+      '',
+      '**Components**',
+      '',
+      'Contract driven.',
+      '',
+      '- [Get Started](/lib/latest/getting-started)',
+      '',
+      '- **Typed**: Full types.',
+      '- **[Docs](/lib/latest/)**',
+      '',
+      '## Overview',
+      '',
+    ].join('\n'),
+  )
+})
+
+test('convertHomeLayout leaves other pages alone', () => {
+  for (const input of ['# Plain\n', '---\ntitle: X\n---\n# X\n', '---\n: bad: yaml: [\n---\n']) {
+    assert.deepEqual(convertHomeLayout(input), { text: input, converted: false })
+  }
 })

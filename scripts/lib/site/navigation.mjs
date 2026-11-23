@@ -32,9 +32,10 @@ const byOrder = (groups) => [...groups].sort((a, b) => (a.order ?? 0) - (b.order
 const humanize = (slug) => slug.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
 /**
- * Every leaf of a nav.json, as [{ file, label }], in reading order: tutorials,
- * how-to, reference groups (by `order`) and UI, adapters, companions,
- * explanation. That is the order the VitePress sidebar showed.
+ * Every leaf of a nav.json, as [{ file, label, section? }], in reading order:
+ * tutorials, how-to, reference groups (by `order`) and UI, adapters,
+ * companions, explanation. That is the order the VitePress sidebar showed.
+ * Leaves of a named section (an adapter or a companion) carry its name.
  */
 export function navLeaves(spec) {
   const leaves = []
@@ -50,7 +51,11 @@ export function navLeaves(spec) {
   leaves.push(...byOrder(spec.reference?.groups ?? []).flatMap(cluster))
   leaves.push(...(spec.reference?.ui ?? []))
   for (const named of [...(spec.adapters ?? []), ...(spec.companions ?? [])]) {
-    leaves.push(...byOrder(named.groups ?? []).flatMap(cluster))
+    leaves.push(
+      ...byOrder(named.groups ?? []).flatMap((g) =>
+        cluster(g).map((l) => ({ ...l, section: named.name })),
+      ),
+    )
   }
   leaves.push(...section(spec.explanation))
   return leaves
@@ -86,7 +91,11 @@ export function axisOverrides({ contentPath, axis, spec, existing }) {
       return
     }
     const key = leafKey(contentPath, axis, leaf.file)
-    overrides[key] = { ...overrides[key], label: leaf.label, order: index + 1 }
+    // The index page of a named section labels its directory, which becomes
+    // the sidebar group: "Moodle Adapter", not the page's own title.
+    const isSectionIndex = leaf.section && /(^|\/)index$/.test(clean)
+    const label = isSectionIndex ? leaf.section : leaf.label
+    overrides[key] = { ...overrides[key], label, order: index + 1 }
   })
   if (missing.length > 0) {
     throw new Error(`${axis}/nav.json lists pages that do not exist: ${missing.join(', ')}`)

@@ -11,7 +11,7 @@ import { dirname, join } from 'node:path'
 import { assembleContent, parseChannels, writeIfMissing } from '../scripts/lib/site/content.mjs'
 import {
   buildNavigation,
-  convertAllHeadingIds,
+  convertVitepressSyntax,
   firstHeading,
   isSlugSafe,
   prepareChannels,
@@ -52,6 +52,10 @@ before(async () => {
     }),
   )
   put('docs/injected/lib/latest/index.md', '# Lib\n\n## Setup {#setup}\n')
+  put(
+    'docs/injected/lib/latest/home.md',
+    '---\nlayout: home\nhero:\n  name: Lib Home\n---\n\n## Overview {#overview}\n',
+  )
   put('docs/injected/lib/0.30/index.md', '---\ntitle: Old\n---\n# Old\n')
   put('docs/injected/lib/0.30/guide.md', '# Guide\n')
   put('docs/injected/lib/unlisted/index.md', '# Not a declared channel\n')
@@ -121,9 +125,10 @@ test('prepareChannels hides older channels from search and pins dotted routes', 
   assert.doesNotMatch(read('lib/latest/index.md'), /searchable|slug/)
 })
 
-test('convertAllHeadingIds rewrites explicit heading ids in the assembled tree', async () => {
-  assert.equal(await convertAllHeadingIds(content), 1)
+test('convertVitepressSyntax rewrites heading ids and home layouts in the assembled tree', async () => {
+  assert.deepEqual(await convertVitepressSyntax(content), { headingIds: 2, homePages: 1 })
   assert.match(read('lib/latest/index.md'), /<a id="setup"><\/a>\n\n## Setup\n/)
+  assert.equal(read('lib/latest/home.md'), '# Lib Home\n\n<a id="overview"></a>\n\n## Overview\n')
 })
 
 test('buildNavigation merges channel, axis and section overrides', async () => {

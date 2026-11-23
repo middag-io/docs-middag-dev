@@ -41,14 +41,14 @@ const SPEC = {
 
 test('navLeaves keeps the VitePress reading order and falls back to a humanized label', () => {
   assert.deepEqual(
-    navLeaves(SPEC).map((l) => `${l.file}=${l.label}`),
+    navLeaves(SPEC).map((l) => `${l.file}=${l.label}${l.section ? ` (${l.section})` : ''}`),
     [
       'tutorials/start=Start',
       'how-to/task=Task',
       'reference/a-thing=A Thing',
       'reference/b=Bee',
       'reference/ui/wire=Wire',
-      'reference/adapters/moodle/index=Overview',
+      'reference/adapters/moodle/index=Overview (Moodle)',
       'explanation/why=Why',
     ],
   )
@@ -70,7 +70,8 @@ test('axisOverrides orders and labels every leaf, plus the Diataxis folders', ()
   assert.deepEqual(out['c/fw/tutorials'], { order: 1 })
   assert.deepEqual(out['c/fw/explanation'], { order: 4 })
   assert.deepEqual(out['c/fw/reference/b.md'], { label: 'Bee', order: 4 })
-  assert.deepEqual(out['c/fw/reference/adapters/moodle'], { label: 'Overview', order: 6 })
+  // The index page of a named section labels the directory with the section name.
+  assert.deepEqual(out['c/fw/reference/adapters/moodle'], { label: 'Moodle', order: 6 })
 })
 
 test('axisOverrides fails on a nav.json entry whose page does not exist', () => {
