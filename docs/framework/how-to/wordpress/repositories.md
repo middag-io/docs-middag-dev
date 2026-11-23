@@ -9,7 +9,7 @@ title: 'wordpress adapter — Repositories'
 **Prerequisites:**
 
 - A plugin built on the adapter ([Getting started](../../tutorials/wordpress/getting-started)).
-- A registered post type. This guide uses `acme_note`, registered as shown in [Settings and definitions](./settings#_4-register-post-types-taxonomies-shortcodes-and-schedules).
+- A registered post type. This guide uses `acme_note`, registered as shown in [Definitions and options](./settings#_1-register-post-types-taxonomies-shortcodes-and-schedules).
 
 The repositories are plain objects over the WordPress APIs. They need no container binding; create them where you need them, or register them as services to inject them.
 

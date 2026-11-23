@@ -10,6 +10,7 @@ title: 'wordpress adapter — REST Controllers and Routes'
 
 - A plugin with a kernel and a container, as built in [Getting started with the WordPress adapter](../../tutorials/wordpress/getting-started).
 - A `WpComponentContext` and a `RequestAuthenticatorInterface` binding in the container.
+- The constants `ACME_NOTES_FILE`, `ACME_NOTES_DIR` and `ACME_NOTES_VERSION`, defined in the main plugin file as in [Boot diagnostics](./diagnostics#_1-declare-the-probe-in-the-main-plugin-file).
 
 The adapter has two ways to declare routes. Both produce routes under `{component}/v1`, so they can coexist while you move controllers from one to the other.
 
@@ -93,12 +94,7 @@ final class NoteController
 }
 ```
 
-How the REST kernel calls the actions:
-
-- **Arguments.** A parameter typed `WP_REST_Request` receives the request. Any other parameter receives `$request->get_param($name)`, so the `{id}` placeholder arrives as a **string**. When the param is absent, the parameter's default is used.
-- **Return values.** A returned `WP_REST_Response` is sent as is. Any other value is wrapped by `RestResponse::success()`, so `status()` answers `{"success": true, "data": {"ok": true}, ...}`.
-- **Errors.** Any exception from an action or a middleware becomes `RestResponse::internalError()` (`500`), inside the REST envelope.
-- **Paths.** `{id}` with the requirement `\d+` becomes the WordPress pattern `(?P<id>\d+)`. A placeholder without a requirement matches `[^/]+`. A route without `methods` answers `GET` only.
+The REST kernel passes each action the request or the named request params, so the `{id}` placeholder arrives as a **string**. It wraps any return value that is not a `WP_REST_Response` in `RestResponse::success()`, and turns an exception into a `500` inside the REST envelope. A route without `methods` answers `GET` only. The full dispatch sequence, and how paths are translated, is in [Routing Surfaces](../../reference/adapters/wordpress/routing-surfaces#declarative-restrouteattributeregistrar-wprestkernel).
 
 ## 2. Add route middleware
 
@@ -169,17 +165,11 @@ protected function onBoot(ContainerInterface $container): void
 }
 ```
 
-The routes now live under `acme-notes/v1`, the component name of your `WpComponentContext`. To use another version segment, pass `apiVersion` to the registrar's constructor.
+The routes now live under `acme-notes/v1`, the component name of your `WpComponentContext`. To use another version segment, set the registrar's `$apiVersion` constructor argument by name, for example `->setArgument('$apiVersion', 'v2')` on its service definition.
 
 ## 4. Protect routes with capabilities
 
-`WpRestKernel::authorize()` is the `permission_callback` of every attribute route:
-
-1. `OPTIONS` (CORS preflight) passes.
-2. The effective `#[Auth]` is the method's, else the class's, else `new Auth()`. An action with no `#[Auth]` anywhere **requires login**.
-3. `#[Auth(login: false)]` passes without a user.
-4. Otherwise the authenticator resolves the user. No user gives `401`.
-5. Each capability in `#[Auth]` must pass `user_can()` for that user, otherwise `403`.
+`WpRestKernel::authorize()` is the `permission_callback` of every attribute route. The effective `#[Auth]` is the method's, else the class's, else `new Auth()`, so an action with no `#[Auth]` anywhere **requires login**. A request without a user gets `401`, and a user without one of the listed capabilities gets `403`. The full order of the checks is in [Routing Surfaces](../../reference/adapters/wordpress/routing-surfaces#declarative-restrouteattributeregistrar-wprestkernel).
 
 A method-level `#[Auth]` replaces the class-level one; it does not add to it. In the controller above, `forPost()` has a bare `#[Auth]`, so it requires login only, and the action checks `edit_post` itself.
 
@@ -283,9 +273,7 @@ final class TokenAuthenticator implements RequestAuthenticatorInterface
 }
 ```
 
-- Return `null` for an anonymous request and a `WP_Error` when a credential was presented and rejected. The REST kernel returns that `WP_Error` as the response.
-- Capabilities are checked against the user you return, so the token user needs the capabilities its routes list.
-- `isAdmin()` is used only by `AbstractWpRestController::adminPermissionCheck()`. No capability check uses it.
+Return `null` for an anonymous request and a `WP_Error` when a credential was presented and rejected. Capabilities are checked against the user you return, so the token user needs the capabilities its routes list. The contract is described in [Authentication seam](../../reference/adapters/wordpress/routing-surfaces#authentication-seam).
 
 ## Response helpers
 

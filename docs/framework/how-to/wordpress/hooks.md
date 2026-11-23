@@ -10,6 +10,7 @@ title: 'wordpress adapter — Hooks'
 
 - A plugin with a kernel and a container ([Getting started](../../tutorials/wordpress/getting-started)).
 - A Composer PSR-4 autoload entry for the namespace of your hook classes.
+- The constants `ACME_NOTES_FILE`, `ACME_NOTES_DIR` and `ACME_NOTES_VERSION`, defined in the main plugin file as in [Boot diagnostics](./diagnostics#_1-declare-the-probe-in-the-main-plugin-file).
 
 ## 1. Write a hook class
 

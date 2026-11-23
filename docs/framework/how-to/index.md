@@ -17,5 +17,5 @@ Task-oriented guides for a specific goal.
 - [Register WordPress hooks and host events](./wordpress/hooks)
 - [Schedule recurring events and background jobs](./wordpress/cron)
 - [Send email through `wp_mail`](./wordpress/mail)
-- [Build a settings page and register definitions](./wordpress/settings)
+- [Register definitions and read options](./wordpress/settings)
 - [Check that your plugin booted with `wp <root> doctor`](./wordpress/diagnostics)

@@ -72,7 +72,7 @@ add_action('plugins_loaded', [AcmeNotesKernel::class, 'init']);
 - **`register()`** does nothing outside WP-CLI, so this code is safe on web requests.
 - **A `CallbackCheck`** passes when the closure returns `true`, fails with the returned string as the message, or returns a `CheckResult` for a warning.
 
-For each package, the report checks that the kernel class resolves through the autoloader (and from which file), which autoloader file was loaded when you pass `autoloaderPath`, that the kernel booted (it reads `isBooted()` and never boots it), that a version was declared, and then runs your checks. A check that throws becomes a failure, and the next check still runs.
+For each package, the report checks the kernel class, the autoloader, the boot and the version, then runs your checks. The full list is in [Boot diagnostics](../../reference/adapters/wordpress/#boot-diagnostics).
 
 ## 2. Run the command
 
@@ -106,11 +106,12 @@ Pass the full list of packages the site must run with `--expect`. The list given
 wp acme doctor --expect=acme-notes,acme-shop --strict
 ```
 
-When `acme-shop` is not active, the report fails with:
+When `acme-shop` is not active, the report fails. After the lines of `acme-notes`, the output ends with:
 
 ```text
 Issues:
   [fail] expected package "acme-shop" is not registered (did it load?)
+Scope: boot only. No render check is registered, so a green report does not prove that pages render.
 Status: FAIL (1 package(s))
 ```
 

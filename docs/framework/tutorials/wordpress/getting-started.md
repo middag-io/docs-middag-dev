@@ -13,14 +13,13 @@ The adapter is a library, not a plugin. Your plugin is the composition root: it 
 
 ## What you need
 
-| Item     | Version                                                                                 |
-| -------- | --------------------------------------------------------------------------------------- |
-| PHP      | `^8.3` (8.3, 8.4 and 8.5), with the `json` extension                                    |
-| WordPress | 7.0 or 7.1                                                                             |
-| Composer | 2.x                                                                                     |
-| Symfony  | `^7.4 \|\| ^8.1`, resolved by Composer (PHP 8.3 resolves 7.4; PHP 8.4 and 8.5 can resolve 8.x) |
+| Item      | Version                                                                     |
+| --------- | --------------------------------------------------------------------------- |
+| PHP       | `^8.3` (8.3, 8.4 and 8.5), with the `intl`, `json`, `mbstring` and `pdo` extensions |
+| WordPress | 7.0 or 7.1                                                                  |
+| Composer  | 2.x                                                                         |
 
-The full requirements table, including the `middag-io/framework` range of each release line, is in [Requirements and install](../../reference/adapters/wordpress/#requirements-and-install).
+The adapter needs `json`, and `middag-io/framework`, which Composer installs with it, needs `intl`, `mbstring` and `pdo`. Without one of them, `composer require` fails. Composer also resolves the Symfony components. The full requirements table, including the `middag-io/framework` range of each release line, is in [Requirements and install](../../reference/adapters/wordpress/#requirements-and-install).
 
 You also need a WordPress site you can install plugins on, and a user with the `administrator` role.
 
@@ -50,7 +49,7 @@ cd wp-content/plugins/acme-hello
 composer require middag-io/wordpress
 ```
 
-Composer adds `middag-io/wordpress` to `require` and also installs `middag-io/framework` and `middag-io/ui`, which the adapter depends on.
+Composer adds `middag-io/wordpress` to `require` and also installs `middag-io/framework`, which the adapter depends on, and the framework's own dependencies, `middag-io/ui` among them.
 
 ## 2. Write the main plugin file
 
@@ -284,5 +283,5 @@ A logged-in administrator who calls `/me` from the browser, with the REST nonce 
 
 - [REST controllers and routes](../../how-to/wordpress/rest-controllers): attribute routes, capabilities, nonces and your own authenticator.
 - [Persistence](../../how-to/wordpress/persistence) and [Repositories](../../how-to/wordpress/repositories): custom tables, posts, users and metadata.
-- [Hooks](../../how-to/wordpress/hooks), [Cron](../../how-to/wordpress/cron), [Mail](../../how-to/wordpress/mail), [Settings and definitions](../../how-to/wordpress/settings) and [Boot diagnostics](../../how-to/wordpress/diagnostics).
+- [Hooks](../../how-to/wordpress/hooks), [Cron](../../how-to/wordpress/cron), [Mail](../../how-to/wordpress/mail), [Definitions and options](../../how-to/wordpress/settings) and [Boot diagnostics](../../how-to/wordpress/diagnostics).
 - [Configuration & Identity](../../reference/adapters/wordpress/configuration): the kernel's boot timeline and the full list of neutral defaults.

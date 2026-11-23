@@ -18,6 +18,8 @@ Your code depends on the framework contracts `ConnectionAdapterInterface` and `V
 In `buildContainer()`, register `$wpdb` as a synthetic service, the connection adapter on top of it, and a version tracker with **your** option name:
 
 ```php
+use Acme\Notes\Domain\NoteSchema;
+use Acme\Notes\Domain\NoteStore;
 use Middag\Framework\Database\Contract\ConnectionAdapterInterface;
 use Middag\Framework\Database\Contract\VersionTrackerInterface;
 use Middag\WordPress\Database\WpdbConnectionAdapter;
@@ -32,6 +34,9 @@ $builder->register(ConnectionAdapterInterface::class, WpdbConnectionAdapter::cla
 $builder->register(VersionTrackerInterface::class, VersionTracker::class)
     ->setArguments(['acme_notes_schema_version'])
     ->setPublic(true);
+// Your own classes, written in steps 2 and 3.
+$builder->register(NoteSchema::class)->setAutowired(true)->setPublic(true);
+$builder->register(NoteStore::class)->setAutowired(true)->setPublic(true);
 
 // ... your other services ...
 
@@ -39,6 +44,7 @@ $builder->compile();
 $builder->set('wpdb', $GLOBALS['wpdb']);
 ```
 
+- `NoteSchema` and `NoteStore` are the classes you write in steps 2 and 3. Autowiring passes them the two contracts bound above.
 - The connection adapter builds its own SQL dialect (`WpdbSqlDialect`) from `$wpdb->prefix`. Reach it with `$connection->dialect()`.
 - `VersionTracker` stores an integer in a `wp_options` row that is not autoloaded. The option name is required; there is no default.
 

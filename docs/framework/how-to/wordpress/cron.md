@@ -9,6 +9,8 @@ title: 'wordpress adapter — Cron'
 **Prerequisites:**
 
 - A plugin with a kernel and a container ([Getting started](../../tutorials/wordpress/getting-started)), with a `WpComponentContext` bound as `HostComponentContextInterface`.
+- The connection, `NoteSchema` and `NoteStore` bound as in [Persistence](./persistence#_1-bind-the-connection-and-the-version-tracker). The job below uses `NoteStore`.
+- The constants `ACME_NOTES_FILE`, `ACME_NOTES_DIR` and `ACME_NOTES_VERSION`, defined in the main plugin file as in [Boot diagnostics](./diagnostics#_1-declare-the-probe-in-the-main-plugin-file).
 - A `TranslatorInterface` binding for the interval labels. This guide uses the framework's `FallbackTranslator`, which returns the English labels unchanged.
 
 Two classes cover two needs:
@@ -115,6 +117,9 @@ register_deactivation_hook(__FILE__, static function (): void {
 Add activation work in `onBoot()`, for example the schema install from [Persistence](./persistence#_2-create-the-table-on-activation):
 
 ```php
+use Acme\Notes\Domain\NoteSchema;
+use Middag\WordPress\Runtime\PluginLifecycle;
+
 $lifecycle = $container->get(PluginLifecycle::class);
 $lifecycle->onActivate(static fn () => $container->get(NoteSchema::class)->install());
 ```
@@ -147,12 +152,16 @@ add_action('acme_notes_reindex', static function (int $noteId): void {
 
 ## 5. Use a schedule of your own
 
-`CronRegistrar` only takes `CronInterval` cases. For another recurrence, add the schedule with a `CronScheduleDefinition` (see [Settings and definitions](./settings#_4-register-post-types-taxonomies-shortcodes-and-schedules)) and schedule the event with the WordPress functions:
+`CronRegistrar` only takes `CronInterval` cases. For another recurrence, add the schedule with a `CronScheduleDefinition` (see [Definitions and options](./settings#_1-register-post-types-taxonomies-shortcodes-and-schedules)) and schedule the event with the WordPress functions:
+
+WordPress refuses an event whose schedule it does not know, so schedule it only after `DefinitionRegistrar` has added `acme_weekly`. The definitions are registered on `init` at the default priority 10, so use a later priority:
 
 ```php
-if (!wp_next_scheduled('acme_notes_weekly')) {
-    wp_schedule_event(time(), 'acme_weekly', 'acme_notes_weekly');
-}
+add_action('init', static function (): void {
+    if (!wp_next_scheduled('acme_notes_weekly')) {
+        wp_schedule_event(time(), 'acme_weekly', 'acme_notes_weekly');
+    }
+}, 20);
 ```
 
 Unschedule such an event yourself in an `onDeactivate()` callback, with `wp_clear_scheduled_hook('acme_notes_weekly')`.
@@ -171,4 +180,4 @@ Unschedule such an event yourself in an `onDeactivate()` callback, with `wp_clea
 
 - [Cron and async jobs](../../reference/adapters/wordpress/#cron-and-async-jobs): both concerns and their drivers.
 - [Configuration & Identity](../../reference/adapters/wordpress/configuration#component-identity): the component name in the schedule keys.
-- [Dispatch, Handlers & Scheduling](../../reference/command-bus): the framework's command bus.
+- [Command bus, handlers and scheduling](../../reference/command-bus): the framework's command bus.

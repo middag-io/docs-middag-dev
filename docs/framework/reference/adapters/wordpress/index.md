@@ -55,7 +55,7 @@ The platform rules behind these values are in [Platform](/libraries/reference/pl
 Guides that put this reference to work:
 
 - [Getting started with the WordPress adapter](../../../tutorials/wordpress/getting-started) — a first plugin: kernel, container, config resolver and a REST controller.
-- How-to: [REST controllers and routes](../../../how-to/wordpress/rest-controllers), [Persistence](../../../how-to/wordpress/persistence), [Repositories](../../../how-to/wordpress/repositories), [Hooks](../../../how-to/wordpress/hooks), [Cron](../../../how-to/wordpress/cron), [Mail](../../../how-to/wordpress/mail), [Settings and definitions](../../../how-to/wordpress/settings) and [Boot diagnostics](../../../how-to/wordpress/diagnostics).
+- How-to: [REST controllers and routes](../../../how-to/wordpress/rest-controllers), [Persistence](../../../how-to/wordpress/persistence), [Repositories](../../../how-to/wordpress/repositories), [Hooks](../../../how-to/wordpress/hooks), [Cron](../../../how-to/wordpress/cron), [Mail](../../../how-to/wordpress/mail), [Definitions and options](../../../how-to/wordpress/settings) and [Boot diagnostics](../../../how-to/wordpress/diagnostics).
 
 ## What the adapter is
 
