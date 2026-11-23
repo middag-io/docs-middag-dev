@@ -31,7 +31,7 @@ A `PageContract` is built from five layers:
 
 `entities` maps an entity type to a route pattern; blocks resolve entity references against it.
 
-Since 1.14.0 there is no `resources` key. `PageResources`, `PageResourcesInterface`, `Branding` and `ResourcePatch` are removed, and the `resources` property is gone from `PageContract`, `Fragment` and `ActionResult`, so the contract no longer carries feature flags or branding. Identity, capabilities, theme and locale travel in the [shared props](#shared-props). `PageContract::__construct()` and `ActionResult::__construct()` lost their `$resources` parameter, so later parameters moved up one position; pass them by name. The contract version stays `'2'`.
+Since 1.14.0 there is no `resources` key. `PageResources`, `PageResourcesInterface`, `Branding` and `ResourcePatch` are removed, and the `resources` property is gone from `PageContract`, `Fragment` and `ActionResult`, so the contract no longer carries feature flags or branding. Identity, capabilities, theme and locale travel in the [shared props](#shared-props). `PageContract::__construct()` lost its fourth parameter, `$resources`, so `$notifications` and `$entities` moved up to positions 4 and 5; pass them by name. `ActionResult::__construct()` lost its last parameter, `$resources`. The contract version stays `'2'`.
 
 ### Open vocabulary
 
@@ -136,7 +136,7 @@ Since 1.14.0, the registry takes what a `NavigationNode` carries:
 | `section()` | A section in a group (`{group}.{section}`) | The same parameters as `group()` |
 | `item()` | A leaf item in a section (`{group}.{section}.{item}`) | `key`, `label`, a nullable `route`, and the optional `routeParams`, `icon`, `weight`, `entityType`, `badgeVariant`, `statusColor`, `target` and `href` |
 
-A label is a string or a `Translatable`, stored as given: the registry never translates it, and a `Translatable` reaches the client as `{key, domain, params?}`. An item has exactly one destination: a `route`, which the host resolves to a URL, or an external `href`, which the registry uses as given. An `href` must be an absolute URL that starts with a lowercase `http://` or `https://`, and it takes no `routeParams`. An item without a route is never marked active.
+A label is a string or a `Translatable`, stored as given: the registry never translates it, and a `Translatable` reaches the client as `{key, domain, params?}`. An item has exactly one destination: a `route`, which the host resolves to a URL, or an external `href`, which the registry uses as given. An `href` must be an absolute URL that starts with a lowercase `http://` or `https://`, with a non-empty host and no whitespace or control characters, and it takes no `routeParams`. An item without a route is never marked active.
 
 ```php
 $registry->group('audience', Translatable::of('nav.audience', 'app'), icon: 'users', statusColor: 'blue')
@@ -167,7 +167,7 @@ The wire does not say which of the two shapes it carries. The client that sent t
 
 ### Empty maps
 
-Since 1.13.0, an empty map goes on the wire as a JSON object `{}`, never as an empty array `[]`. This applies to `FormErrors`, `FormErrorBags`, `FlashMessages`, `SharedTheme.strings` and `SharedProps.scope`.
+Since 1.13.0, an empty map goes on the wire as a JSON object `{}`, never as an empty array `[]`. This applies to `FormErrors`, `FlashMessages`, `SharedTheme.strings` and `SharedProps.scope`, and to `FormErrorBags` since it was added in 1.14.0.
 
 ## Published schemas
 
@@ -181,7 +181,7 @@ The PHP value objects are the source of truth. Each wire value object and enum d
 
 Each bundle declares `x-contract-version` (the envelope `VERSION`), a `$ref` to its root and every type under `$defs`. `@middag-io/ui-contracts` ships the TypeScript types and zod schemas that `@middag-io/ui-contracts-codegen` generates from these files.
 
-The schemas are strict. Every value object is `additionalProperties: false`, except the `SharedProps` root, the `FormErrors` map (field name to `FieldError`) and the `FormErrorBags` map (bag name to `FormErrors`), and discriminated unions such as `ActionTarget` use `oneOf` on a `kind` const. The only open objects are the `SharedProps` root, its `scope`, and passthrough bags: a block's `data` and `meta`, layout `meta`, a fragment's `payload`, `Translatable`, `FieldMessage` and route `params`, and a column's `options` and `formatOptions`. The form schema tree (`FormSchemaNode` and its node types) is registered but not yet referenced from the page tree; the `form_panel` block payload stays a passthrough.
+The schemas are strict. Every value object is `additionalProperties: false`, except the `SharedProps` root, the `FormErrors` map (field name to `FieldError`) and the `FormErrorBags` map (bag name to `FormErrors`). `FieldPropsBase`, which other schemas compose through `allOf`, declares no `additionalProperties`. Discriminated unions such as `ActionTarget` use `oneOf` on a `kind` const. The only open objects are the `SharedProps` root, its `scope`, and passthrough bags: a block's `data` and `meta`, layout `meta`, a fragment's `payload`, `Translatable` `params`, `FieldMessage` `params`, route `params`, and a column's `options` and `formatOptions`. The form schema tree (`FormSchemaNode` and its node types) is registered but not yet referenced from the page tree; the `form_panel` block payload stays a passthrough.
 
 ### Drift gate
 
