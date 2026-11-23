@@ -19,6 +19,7 @@
 export const SECTION_ORDER = Object.freeze([
   'framework',
   'libraries',
+  'integrate',
   'middag-react',
   'infra-terraform',
   'about.md',
