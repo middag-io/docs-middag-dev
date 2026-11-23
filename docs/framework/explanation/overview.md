@@ -34,7 +34,7 @@ This page states the `2.x` line of the library family. Support starts at `2.0.0`
 composer require middag-io/framework
 ```
 
-The libraries of the family share MAJOR.MINOR ([The family](/libraries/reference/versioning-and-compatibility#the-family)). A project that requires more than one of them should declare the same `^2.N` range for each; a MINOR upgrade inside that range never breaks.
+The libraries of the family share the MAJOR version; MINOR and PATCH releases are per library ([The family](/libraries/reference/versioning-and-compatibility#the-family)). A project requires each package it imports with `^2.0`, or with the MINOR whose features it uses; a MINOR upgrade inside that range never breaks.
 
 ### Dependencies
 
@@ -63,7 +63,7 @@ The platform rules behind these values are in [Platform](/libraries/reference/pl
 - Support covers the types tagged `@api` only, under the rules of [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#supported-surface). A type tagged `@internal`, or with no tag, is an implementation detail and may change in any release.
 - Every type of the framework carries its stability tag at class level. The `@api` surface is the interfaces in the `Contract/` sub-namespace of each concern, plus the exported `@api` classes: value objects, default implementations, base classes, attributes, enums and exceptions.
 - [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md) in the repository lists every `@api` type of the public surface; a test in the repository keeps the list equal to the tags in `src/`.
-- Depend only on `@api` types. When a behavior is reachable only through an `@internal` type, open an issue to have it promoted; a promotion is an additive change for a family MINOR.
+- Depend only on `@api` types. When a behavior is reachable only through an `@internal` type, open an issue to have it promoted; a promotion is an additive change for a MINOR.
 - The framework ships no MIDDAG domain base classes and no MIDDAG domain helpers. Entity and value-object bases, formatting helpers and validators of the MIDDAG domain belong to the internal library `middag-io/core`; for entities, the framework exposes only the generic `EntityInterface` contract. The generic DTO base and utilities in `Shared` are outside this exclusion.
 
 The contract reference is on this hub, one page per topic:
@@ -88,7 +88,7 @@ In progress: the generated reference of the `@api` surface is not published yet 
 
 - [`CHANGELOG.md`](https://github.com/middag-io/middag-php-framework/blob/main/CHANGELOG.md) records every release.
 - [Releases](https://github.com/middag-io/middag-php-framework/releases) on GitHub carry the tags, and [Packagist](https://packagist.org/packages/middag-io/framework) serves the package.
-- Releases are cut only by release-please, from Conventional Commits; there are no manual tags. The framework shares MAJOR.MINOR with the rest of the family, so a family MINOR ships here even when the framework itself did not change. What each part of a version may carry is in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#lifecycle).
+- Releases are cut only by release-please, from Conventional Commits; there are no manual tags. The framework shares only the MAJOR with the rest of the family; its MINOR and PATCH releases are its own. What each part of a version may carry is in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility#lifecycle).
 
 ## Decision records
 
@@ -125,7 +125,7 @@ The framework, the Moodle and WordPress adapters, `middag-io/ui` and `middag-io/
 
 ## Licensing note
 
-Apache-2.0. Support starts at `2.0.0`, the first stable release of the library family: from there a MINOR never breaks, and a removal is deprecated first and leaves only in the next MAJOR. Earlier releases are pre-stable and unsupported. The rules and the compatibility matrix are in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility); the public surface is listed in [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md).
+Apache-2.0. Support starts at `2.0.0`, the first stable release of the library family: from there a MINOR never breaks, and a removal leaves only in a MAJOR, deprecated first where possible. Earlier releases are pre-stable and unsupported. The rules and the compatibility matrix are in [Versioning and compatibility](/libraries/reference/versioning-and-compatibility); the public surface is listed in [`API-STABILITY.md`](https://github.com/middag-io/middag-php-framework/blob/main/API-STABILITY.md).
 
 ## Contributing
 
