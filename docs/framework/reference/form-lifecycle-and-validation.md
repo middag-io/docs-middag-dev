@@ -95,9 +95,13 @@ submitted values using the **Symfony Validator** (`symfony/validator`).
 | `rule(Constraint)` | The given constraint, verbatim |
 
 An optional field left empty (`null` or `''`) is skipped entirely — mirrors Symfony's own
-null/empty handling and keeps comparison constraints from firing on nothing. Violation
-messages come back per field: a single string, or a `string[]` when several constraints
-fail on the same field.
+null/empty handling and keeps comparison constraints from firing on nothing. Since
+framework 1.24.0, violations come back per field as ui
+[`FieldMessage`](./ui/wire-contract#form-errors) objects (`{message, key, domain, params?}`):
+one when a single constraint fails, or a list when several fail on the same field.
+`message` is the violation message, already translated when a translator is configured;
+`key`, `domain` and `params` let a client render it in its own language. Messages are no
+longer flattened to strings.
 
 ## `FormRequest` — standalone or companion validation
 
@@ -165,7 +169,9 @@ The same properties can also carry [`#[Field]`](https://github.com/middag-io/mid
 | JSON/XHR API, or no `FlashBag` bound | `422` with `{success: false, error: 'validation_failed', message, errors}` |
 | Browser or Inertia visit with a `FlashBag` bound | Errors flashed to the session and a `303` back to the referrer; `ShareFlashMiddleware` re-shares them as the Inertia `errors` prop |
 
-When the request carries an `X-Inertia-Error-Bag` header, the field map is nested under that bag name.
+Since framework 1.24.0, each field error in both responses is a ui `FieldError`: a `FieldMessage` (`{message, key, domain, params?}`, `params` omitted when empty) or a list of them. An empty error map is flashed and shared as `{}`.
+
+When the request carries an `X-Inertia-Error-Bag` header, the field map is nested under that bag name. In the 422 body, `errors` becomes `{bag: {field: ...}}`. For the flash path, `FlashBag::setErrors(FormErrors $errors, ?string $bag = null)` is the single writer and `FlashBag::pullErrors()` the single reader: it returns a ui `FormErrorBags` when a bag was named and a `FormErrors` otherwise, which `ShareFlashMiddleware` shares as the `errors` prop (see [Error bags](./ui/wire-contract#error-bags)).
 
 ## i18n
 
