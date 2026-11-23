@@ -31,6 +31,7 @@ import { parseArgs, promisify } from 'node:util'
 import { assertTreePublishable } from './lib/publish-guard.mjs'
 import { assembleContent, writeIfMissing } from './lib/site/content.mjs'
 import { preserveLegacyAnchors } from './lib/site/anchors.mjs'
+import { readDocDates, stampLastUpdated } from './lib/site/git-dates.mjs'
 import { checkDist, mapSitemapUrls, parseRedirects } from './lib/site/dist.mjs'
 import { checkLinks } from './lib/site/links.mjs'
 import {
@@ -265,6 +266,8 @@ export async function buildSite({ root = ROOT, fetch = true, log = () => {} } = 
   await writeLandings(contentDir, repos, log)
   const { hidden, pinned } = await prepareChannels(contentDir, repos)
   log(`channels: ${hidden} page(s) kept out of search, ${pinned} route(s) pinned`)
+  const stamped = await stampLastUpdated(contentDir, await readDocDates(root))
+  log(`last updated: ${stamped} page(s) dated from git`)
   const syntax = await convertVitepressSyntax(contentDir)
   log(`syntax: ${syntax.headingIds} heading id(s), ${syntax.homePages} home page(s) converted`)
 
