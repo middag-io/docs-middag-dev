@@ -32,7 +32,7 @@ The framework itself shares only these keys:
 | `flash`, `errors` | `ShareFlashMiddleware` (one-shot session flash and validation errors) |
 | `csrf_token` | `VerifyCsrfMiddleware` |
 
-Everything else is host composition. The Moodle adapter, for example, registers `navigation`, `auth`, `theme`, `scope`, `flash`, `errors`, `locale` and `version` in its `InertiaSharedProps`.
+Everything else is host composition. The Moodle adapter, for example, registers `navigation`, `auth`, `theme`, `scope`, `flash`, `errors`, `csrf_token` and `locale` in its `InertiaSharedProps`, building `navigation`, `auth`, `theme`, `flash` and `errors` from the `middag-io/ui` value objects ([Shared props](./ui/wire-contract#shared-props)). A shared prop whose value or closure resolves to `null` is left off the wire (`InertiaResponse`); a local prop keeps its `null`.
 
 ## Redirects
 

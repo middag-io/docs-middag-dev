@@ -65,7 +65,7 @@ SettingsSupport::set(ShopConfig::ApiKey, 'secret', $policy); // write
 SettingsSupport::unset(ShopConfig::ApiKey, $policy);         // remove
 ```
 
-The key argument is a string-backed enum whose short class name follows `{slug}_config`: the slug becomes the extension, the case value becomes the setting name. PascalCase names are normalised first (`ShopConfig` → `shop_config` → `shop`). An enum whose name cannot be mapped onto `{slug}_config` throws `InvalidArgumentException` instead of resolving a dead key. Subclasses can remap legacy slugs through `extensionAliases()`.
+The key argument is a string-backed enum whose short class name follows `{slug}_config`: the slug becomes the extension, the case value becomes the setting name. PascalCase names are normalised first (`ShopConfig` → `shop_config` → `shop`). An enum whose name cannot be mapped onto `{slug}_config` throws `InvalidArgumentException` instead of resolving a dead key.
 
 Each extension with settings keeps one such enum as the source of truth for its keys. A richer schema contract over the enum (type, default, static options, and an `isLazy()` marker for options that need services) is defined downstream; see [Config Schema Inventory](./config-schema-inventory).
 

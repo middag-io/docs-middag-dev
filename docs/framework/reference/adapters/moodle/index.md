@@ -24,7 +24,8 @@ This page states the `2.x` line of the library family. Support starts at `2.0.0`
 | Package             | `middag-io/moodle` ([middag-php-moodle](https://github.com/middag-io/middag-php-moodle)), Apache-2.0        |
 | PHP                 | `^8.3`: 8.3, 8.4 and 8.5, within the PHP versions the Moodle version supports; with the `json` extension   |
 | Symfony             | `^7.4 \|\| ^8.1` for every Symfony component it requires (contracts and polyfills keep their own ranges)    |
-| Sibling libraries   | `middag-io/framework` and `middag-io/ui`, on the family MAJOR (`^2.0` on `2.x`)                            |
+| Sibling libraries   | `middag-io/framework` `^1.22` and `middag-io/ui` `^1.13` on the `1.x` line, then the family MAJOR (`^2.0` on `2.x`) |
+| Client              | the shared props target `@middag-io/react` `^0.48.0` (envelope version `2`); the adapter does not install it |
 | Moodle              | 4.5 (PHP 8.3), 5.1, 5.2 and 5.3 (PHP 8.4; PHP 8.3 expected, not installed in CI)                             |
 | Database engines    | PostgreSQL, MySQL and MariaDB, as supported by the Moodle version; SQL Server and Oracle are outside the range |
 
