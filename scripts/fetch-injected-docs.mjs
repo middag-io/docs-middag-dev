@@ -36,6 +36,7 @@ import { fetchHub } from '@middag-io/docs-proxy-client/hub'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { withRetry } from './lib/retry-fetch.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -91,6 +92,11 @@ async function main() {
   const outDir = resolve(process.env.DOCS_INJECTED_DIR ?? resolve(ROOT, 'docs', 'injected'))
   const xrefDir = resolve(process.env.DOCS_XREF_DIR ?? resolve(ROOT, XREF_DIR))
   console.log(`[inject] proxy ${baseUrl} (anonymous)`)
+  // The client calls the global fetch; transient network errors and 502/503/504
+  // are retried instead of failing the deploy (scripts/lib/retry-fetch.mjs).
+  globalThis.fetch = withRetry(globalThis.fetch, {
+    log: (message) => console.warn(`[inject] ${message}`),
+  })
   const result = await fetchHub({
     client: new DocsProxyClient(baseUrl),
     config,
