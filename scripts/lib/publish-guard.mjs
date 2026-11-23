@@ -1,10 +1,9 @@
 /**
- * publish-guard.mjs — refuses internal decision records in the aggregate
- * (docs-middag-ops#66).
+ * publish-guard.mjs — refuses internal decision records in the aggregate.
  *
  * ADRs/MADRs and other internal material stay in each source repo's
  * `docs/decisions/` or `internal/` tree; this hub never publishes them, in
- * either layer (ADR-020). The guard matches by PATH SEGMENT, case-insensitive:
+ * either layer. The guard matches by PATH SEGMENT, case-insensitive:
  * any path with a segment equal to one of FORBIDDEN_SEGMENTS is refused, both
  * where a file comes from (proxy key, local file) and where it would land.
  * "adr-guide.md" or "internals/" do not match; "ADR/" or "x/Decisions/y" do.
@@ -30,7 +29,7 @@ export function assertPublishable(source, path) {
   throw new Error(
     `publish guard: ${source} -> "${path}" is under "${segment}/". ` +
       `Paths under ${FORBIDDEN_SEGMENTS.map((s) => `${s}/`).join(', ')} are never ` +
-      'aggregated (docs-middag-ops#66). Remove it from the source payload or the allowlist.',
+      'aggregated. Remove it from the source payload or the allowlist.',
   )
 }
 
