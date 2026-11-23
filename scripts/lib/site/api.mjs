@@ -5,7 +5,7 @@
  * .xref/{repo}/{segment}/. After the preset build, it is copied to
  * dist/api/{repo}/{segment}/ as the generator produced it: never rewritten,
  * never compiled as a page, never link-checked page by page. The site links
- * to its index.html from an "API reference" page in each docs channel and
+ * to its folder (/api/{repo}/{segment}/, no 308 redirect) from an "API reference" page in each docs channel and
  * from the repo landing, and checkApiDist() makes sure each copied tree has
  * an HTML index.
  */
@@ -25,7 +25,7 @@ export const channelKinds = (channel) => channel?.kinds ?? ['docs']
 export const hasKind = (channel, kind) => channelKinds(channel).includes(kind)
 
 /** Site URL of a channel's API reference. */
-export const apiHref = (repo, segment) => `/${API_DIR}/${repo}/${segment}/index.html`
+export const apiHref = (repo, segment) => `/${API_DIR}/${repo}/${segment}/`
 
 /** Is a dist-relative path inside the API reference trees? */
 export const isApiPath = (file) => file.startsWith(`${API_DIR}/`)

@@ -51,7 +51,7 @@ The hub copies each declared `xref` channel to `/api/{repo}/{segment}/`, as the 
 
 | Library                | API reference                                                       |
 | ---------------------- | ------------------------------------------------------------------- |
-| `middag-php-wordpress` | <a href="/api/middag-php-wordpress/latest/index.html">Latest</a>    |
+| `middag-php-wordpress` | <a href="/api/middag-php-wordpress/latest/">Latest</a>    |
 
 ## Out of scope
 

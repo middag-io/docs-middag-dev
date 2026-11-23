@@ -61,14 +61,14 @@ test('xref-only repo is assembled without pages; its landing links to the API re
   assert.equal(existsSync(join(content, 'only', 'latest')), false)
   await writeLandings(content, repos, () => {})
   const landing = readFileSync(join(content, 'only', 'index.md'), 'utf8')
-  assert.match(landing, /\[API reference: Latest \(2\.0\.0\)\]\(\/api\/only\/latest\/index\.html\)/)
+  assert.match(landing, /\[API reference: Latest \(2\.0\.0\)\]\(\/api\/only\/latest\/\)/)
 })
 
 test('a docs channel that declares xref gets an API reference page and nav entry', async (t) => {
   const { content, repos } = await fixture(t)
   assert.equal(await writeApiPages(content, repos), 1)
   const page = readFileSync(join(content, 'both', 'latest', 'api-reference.md'), 'utf8')
-  assert.match(page, /href="\/api\/both\/latest\/index\.html"/)
+  assert.match(page, /href="\/api\/both\/latest\/"/)
   assert.deepEqual(apiPageOverrides(repos), {
     'site-content/both/latest/api-reference.md': { label: 'API reference', order: 9999 },
   })
