@@ -15,8 +15,9 @@
  *   6. navigation overrides (site-navigation.json) from nav.json and the
  *      channel manifests;
  *   7. the preset build, in strict mode: any warning fails it;
- *   8. post-build: dist/_redirects, structural checks, offline link check with
- *      anchors, and the sitemap snapshot mapping.
+ *   8. post-build: VitePress heading ids kept as anchors, structural checks (dist/_redirects comes from site-public/
+ *      through the preset's publicDir), offline link check with anchors, and
+ *      the sitemap snapshot mapping.
  *
  * Usage: node scripts/build-site.mjs [--no-fetch]
  */
@@ -29,7 +30,8 @@ import { parseArgs, promisify } from 'node:util'
 
 import { assertTreePublishable } from './lib/publish-guard.mjs'
 import { assembleContent, writeIfMissing } from './lib/site/content.mjs'
-import { checkDist, mapSitemapUrls, parseRedirects, writeRedirects } from './lib/site/dist.mjs'
+import { preserveLegacyAnchors } from './lib/site/anchors.mjs'
+import { checkDist, mapSitemapUrls, parseRedirects } from './lib/site/dist.mjs'
 import { checkLinks } from './lib/site/links.mjs'
 import {
   convertHeadingIds,
@@ -203,15 +205,16 @@ async function runPreset(root, log) {
   return result
 }
 
-/** Post-build: _redirects, structural checks, link check, sitemap mapping. */
+/** Post-build: legacy anchors, structural checks, link check, sitemap mapping. */
 export async function finishDist({ root, log }) {
   const distDir = join(root, 'dist')
-  await writeRedirects(distDir)
-  const rules = parseRedirects(await readFile(join(distDir, '_redirects'), 'utf8'))
-
-  const homeHeading = firstHeading(await readFile(join(root, 'docs', 'index.md'), 'utf8'))
+  const legacy = await preserveLegacyAnchors(distDir)
+  log(`anchors: ${legacy.anchors} VitePress heading id(s) kept on ${legacy.pages} page(s)`)
+  // The assembled home page, after `layout: home` was turned into Markdown.
+  const homeHeading = firstHeading(await readFile(join(root, CONTENT_PATH, 'index.md'), 'utf8'))
   const violations = await checkDist(distDir, { homeHeading })
   if (violations.length > 0) throw new Error(`dist/ was refused:\n- ${violations.join('\n- ')}`)
+  const rules = parseRedirects(await readFile(join(distDir, '_redirects'), 'utf8'))
 
   const links = await checkLinks(distDir, {
     origin: SITE_ORIGIN,

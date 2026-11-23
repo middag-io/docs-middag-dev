@@ -157,11 +157,13 @@ It needs Node 24.
 5. turns each axis's `nav.json` and the channel manifests into navigation order
    and labels (`site-navigation.json`, gitignored);
 6. builds into `dist/` in strict mode (any preset warning fails);
-7. writes `dist/_redirects` (`/sitemap.xml` to `/sitemap-index.xml`) and checks
+7. adds an empty anchor with the old VitePress id before every heading whose
+   Nimbus id differs, so deep links from outside keep working, and checks
    `dist/`: home built from `docs/index.md`, no `/index/` route, search index
-   present, every internal link and anchor resolves, and every URL of the live
-   sitemap snapshot (`test/fixtures/live-sitemap-urls.txt`) has a page or a
-   redirect.
+   present, `_redirects` (copied from `site-public/` by the preset's
+   `publicDir`) sends `/sitemap.xml` to `/sitemap-index.xml`, every internal
+   link and anchor resolves, and every URL of the live sitemap snapshot
+   (`test/fixtures/live-sitemap-urls.txt`) has a page or a redirect.
 
 [`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) runs the
 format check, the tests and `site:build` on pull requests from this repository,

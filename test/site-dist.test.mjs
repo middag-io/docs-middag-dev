@@ -8,9 +8,9 @@ import {
   REDIRECTS,
   checkDist,
   mapSitemapUrls,
+  missingRedirects,
   parseRedirects,
   redirectCovers,
-  renderRedirects,
   resolveDistPath,
 } from '../scripts/lib/site/dist.mjs'
 
@@ -29,17 +29,26 @@ before(() => {
   put('middag-react/0.30/cli/index.html', '<h1>CLI</h1>')
   put('pagefind/pagefind.js')
   put('sitemap-index.xml', '<sitemapindex/>')
+  put('_redirects', '/sitemap.xml /sitemap-index.xml 301\n')
 })
 
 after(() => rmSync(dist, { recursive: true, force: true }))
 
-test('redirects render and parse back, and the sitemap rule is present', () => {
-  const text = renderRedirects(REDIRECTS)
-  assert.equal(text, '/sitemap.xml /sitemap-index.xml 301\n')
-  assert.deepEqual(parseRedirects(`# comment\n\n${text}`), [
-    { from: '/sitemap.xml', to: '/sitemap-index.xml', status: 301 },
+test('site-public/_redirects holds every required rule', () => {
+  const file = fileURLToPath(new URL('../site-public/_redirects', import.meta.url))
+  const rules = parseRedirects(readFileSync(file, 'utf8'))
+  assert.deepEqual(missingRedirects(rules), [])
+  assert.deepEqual(rules, [{ from: '/sitemap.xml', to: '/sitemap-index.xml', status: 301 }])
+})
+
+test('parseRedirects skips comments and blanks, missingRedirects lists what is absent', () => {
+  const rules = parseRedirects('# comment\n\n/a /b 301\n/c /d\n')
+  assert.deepEqual(rules, [
+    { from: '/a', to: '/b', status: 301 },
+    { from: '/c', to: '/d', status: 302 },
   ])
-  assert.throws(() => renderRedirects([{ from: 'no-slash', to: '/x', status: 301 }]), /invalid/)
+  assert.deepEqual(missingRedirects(rules), [...REDIRECTS])
+  assert.deepEqual(missingRedirects([...rules, ...REDIRECTS]), [])
 })
 
 test('resolveDistPath serves directories, slashless paths and exact files', () => {
@@ -85,12 +94,29 @@ test('checkDist refuses a template home, a /index/ route, no search and leaked n
     mkdirSync(join(bad, 'framework'))
     writeFileSync(join(bad, 'framework', 'nav.json'), '{}')
     const violations = await checkDist(bad, { homeHeading: 'MIDDAG Docs' })
-    assert.equal(violations.length, 5, violations.join('\n'))
+    assert.equal(violations.length, 6, violations.join('\n'))
+    assert.match(violations.join('\n'), /dist\/_redirects is missing/)
     assert.match(violations.join('\n'), /does not come from docs\/index\.md/)
     assert.match(violations.join('\n'), /links to \/welcome/)
     assert.match(violations.join('\n'), /dist\/index\/ exists/)
     assert.match(violations.join('\n'), /pagefind/)
     assert.match(violations.join('\n'), /framework\/nav\.json must not be published/)
+  } finally {
+    rmSync(bad, { recursive: true, force: true })
+  }
+})
+
+test('checkDist refuses a _redirects without the sitemap rule and a home source without an H1', async () => {
+  const bad = mkdtempSync(join(tmpdir(), 'site-dist-redirects-'))
+  try {
+    writeFileSync(join(bad, 'index.html'), '<h1>MIDDAG Docs</h1>')
+    mkdirSync(join(bad, 'pagefind'))
+    writeFileSync(join(bad, 'pagefind', 'pagefind.js'), '')
+    writeFileSync(join(bad, '_redirects'), '/old /new 301\n')
+    assert.deepEqual(await checkDist(bad, { homeHeading: null }), [
+      'the home page source has no H1 to check dist/index.html against',
+      'dist/_redirects lacks "/sitemap.xml /sitemap-index.xml 301"',
+    ])
   } finally {
     rmSync(bad, { recursive: true, force: true })
   }

@@ -27,6 +27,8 @@ export default defineMiddagDocsConfig({
   // Navigation data and channel manifests are build inputs, never public files.
   exclude: ['nav.json', '_channels.json'],
   navigation: { overrides },
+  // Copied to the site root as is: _redirects (Cloudflare Pages).
+  publicDir: 'site-public',
   outDir: 'dist',
   search: true,
   strict: true,

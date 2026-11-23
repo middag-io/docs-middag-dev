@@ -4,14 +4,15 @@
  * Everything here reads or writes plain files, so the checks run the same
  * locally and in CI, without a server and without the network.
  */
-import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { existsSync, statSync } from 'node:fs'
 import { join, posix } from 'node:path'
 
 /**
- * Redirect rules written to dist/_redirects (Cloudflare Pages syntax:
- * "<from> <to> <status>"). VitePress served the sitemap at /sitemap.xml; the
- * Nimbus build emits /sitemap-index.xml.
+ * Redirect rules the published dist/_redirects must contain (Cloudflare Pages
+ * syntax: "<from> <to> <status>"). The file itself is site-public/_redirects,
+ * copied to the site root by the preset's `publicDir`. VitePress served the
+ * sitemap at /sitemap.xml; the Nimbus build emits /sitemap-index.xml.
  */
 export const REDIRECTS = Object.freeze([
   { from: '/sitemap.xml', to: '/sitemap-index.xml', status: 301 },
@@ -20,17 +21,7 @@ export const REDIRECTS = Object.freeze([
 /** Files that must never be published (navigation data, channel manifests). */
 export const FORBIDDEN_DIST_FILES = Object.freeze(['nav.json', '_channels.json'])
 
-/** Render redirect rules as a _redirects file. */
-export function renderRedirects(rules) {
-  for (const rule of rules) {
-    if (!rule.from.startsWith('/') || /\s/.test(rule.from) || /\s/.test(rule.to)) {
-      throw new Error(`invalid redirect rule: ${JSON.stringify(rule)}`)
-    }
-  }
-  return rules.map((r) => `${r.from} ${r.to} ${r.status}`).join('\n') + '\n'
-}
-
-/** Parse a _redirects file back into { from, to, status } rules; comments and blanks skipped. */
+/** Parse a _redirects file into { from, to, status } rules; comments and blanks skipped. */
 export function parseRedirects(text) {
   return text
     .split(/\r?\n/)
@@ -42,8 +33,12 @@ export function parseRedirects(text) {
     })
 }
 
-export async function writeRedirects(distDir, rules = REDIRECTS) {
-  await writeFile(join(distDir, '_redirects'), renderRedirects(rules), 'utf8')
+/** The required rules (REDIRECTS by default) that `rules` lacks. */
+export function missingRedirects(rules, required = REDIRECTS) {
+  return required.filter(
+    (want) =>
+      !rules.some((r) => r.from === want.from && r.to === want.to && r.status === want.status),
+  )
 }
 
 /** Every file under `dir`, relative to it, with POSIX separators. */
@@ -94,7 +89,9 @@ export async function checkDist(distDir, { homeHeading }) {
     violations.push('dist/index.html is missing')
   } else {
     const home = await readFile(homePath, 'utf8')
-    if (homeHeading && !home.includes(homeHeading)) {
+    if (!homeHeading) {
+      violations.push('the home page source has no H1 to check dist/index.html against')
+    } else if (!home.includes(homeHeading)) {
       violations.push(`dist/index.html does not come from docs/index.md (no "${homeHeading}")`)
     }
     for (const placeholder of ['href="/welcome', 'href="/getting-started', 'href="/components']) {
@@ -107,6 +104,14 @@ export async function checkDist(distDir, { homeHeading }) {
   }
   if (!files.some((f) => f.startsWith('pagefind/'))) {
     violations.push('dist/pagefind/ is missing: the site has no search index')
+  }
+  if (!files.includes('_redirects')) {
+    violations.push('dist/_redirects is missing: check publicDir in middag-docs.config.ts')
+  } else {
+    const rules = parseRedirects(await readFile(join(distDir, '_redirects'), 'utf8'))
+    for (const rule of missingRedirects(rules)) {
+      violations.push(`dist/_redirects lacks "${rule.from} ${rule.to} ${rule.status}"`)
+    }
   }
   for (const file of files) {
     if (FORBIDDEN_DIST_FILES.includes(posix.basename(file))) {
