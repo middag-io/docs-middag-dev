@@ -3,13 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "MIDDAG unified documentation hub — build-time aggregation via edge storage (ADR-016).",
+  "description": "MIDDAG developer documentation hub (docs.middag.dev), built with the Nimbus preset.",
   "scripts": {
     "docs:prebuild": "node scripts/fetch-injected-docs.mjs",
-    "docs:dev": "npm run docs:prebuild && vitepress dev docs",
-    "docs:dev:nofetch": "vitepress dev docs",
-    "docs:build": "npm run docs:prebuild && vitepress build docs",
-    "docs:preview": "vitepress preview docs",
+    "docs:build": "node scripts/build-site.mjs",
+    "docs:build:nofetch": "node scripts/build-site.mjs --no-fetch",
+    "docs:preview": "middag-docs preview",
     "docs:available": "node scripts/list-available.mjs",
     "site:build": "node scripts/build-site.mjs",
     "site:build:nofetch": "node scripts/build-site.mjs --no-fetch",
@@ -19,13 +18,11 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@middag-io/docs-proxy-client": "^0.2.0",
-    "@middag-io/docs-theme": "^0.1.0"
+    "@middag-io/docs-proxy-client": "^0.2.0"
   },
   "devDependencies": {
     "@middag-io/nimbus-preset": "^1.4.0",
     "prettier": "^3.8.3",
-    "vitepress": "^2.0.0-alpha.18",
     "yaml": "^2.9.1"
   }
 }

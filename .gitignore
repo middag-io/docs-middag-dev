@@ -14,7 +14,7 @@
 # Normalmente devem continuar rastreados:
 # - composer.lock
 # - package-lock.json / pnpm-lock.yaml / yarn.lock
-# - .env.*.tpl  (local, staging, production — uma forma só; docs-middag-ops#27)
+# - .env.*.tpl  (local, staging, production — uma forma só)
 # - docker-compose.yml
 # - Makefile
 # - configurações de ferramentas (.php-cs-fixer.php, phpstan.neon, rector.php)
@@ -38,7 +38,7 @@ desktop.ini
 # -----------------------------------------------------------------------------
 .env
 .env.*
-# UMA exceção só (middag-io/docs-middag-ops#27): os templates versionados dos 3
+# UMA exceção só: os templates versionados dos 3
 # ambientes têm a MESMA forma de nome — .env.local.tpl, .env.staging.tpl,
 # .env.production.tpl. As exceções `!.env.example` / `!.env.*.example` /
 # `!.env.tpl` saíram: nomes alternativos para o mesmo contrato de chaves.
@@ -127,14 +127,8 @@ coverage/
 /releases/
 
 # -----------------------------------------------------------------------------
-# Documentação: VitePress e MkDocs
+# Documentação: MkDocs
 # -----------------------------------------------------------------------------
-docs/.vitepress/dist/
-docs/.vitepress/cache/
-docs/.vitepress/.temp/
-docs-site/.vitepress/dist/
-docs-site/.vitepress/cache/
-docs-site/.vitepress/.temp/
 
 /site/
 /mkdocs-material/
@@ -237,7 +231,7 @@ skills-lock.json
 *.orig
 
 # -----------------------------------------------------------------------------
-# Documentação injetada (build-time, ADR-016)
+# Documentação injetada (build-time)
 # -----------------------------------------------------------------------------
 # Puxada do docs proxy por `npm run docs:prebuild`; reproduzível a cada build,
 # nunca versionada.

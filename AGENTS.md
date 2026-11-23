@@ -1,55 +1,47 @@
 # AGENTS.md — docs-middag-dev
 
-MIDDAG's unified developer documentation hub — a VitePress static site published to Cloudflare Pages at <https://docs.middag.dev>. It serves **two content layers**:
+MIDDAG's developer documentation hub: a static site built with the Nimbus preset (`@middag-io/nimbus-preset`) and published to Cloudflare Pages at <https://docs.middag.dev>. It serves **two content layers**:
 
-- **Fixed (own-authored, versionless).** Diataxis content this repo authors and owns directly, living in `docs/<axis>/{tutorials,how-to,reference,explanation}/`. Used for the OSS "nuclear family" (the MIDDAG Framework and its host adapters, plus `middag-php-ui`): those subjects interleave too much to document one repo at a time, so they are condensed here into a single coherent tree instead of being split across the source repos. Ratified in ADR-020 (narrows ADR-016).
-- **Variable (aggregated, versioned).** Repos that keep their own independent doc-site (e.g. `middag-react`) publish a versioned docs payload to the docs proxy (Worker + R2); `docs:prebuild` pulls and injects them under `docs/injected/` at build time. Original ADR-016 flow, unchanged.
+- **Own-authored (versionless).** Diataxis content this repo authors and owns, in `docs/<axis>/{tutorials,how-to,reference,explanation}/`. It covers the open-source MIDDAG PHP libraries (the MIDDAG Framework, its host adapters, `middag-php-ui` and the demo application) and the library policy in `docs/libraries/`. Those subjects interleave too much to document one repository at a time, so they live here in a single tree.
+- **Aggregated (versioned).** Libraries that keep their own documentation site (for example `middag-react`) publish a versioned docs payload to the docs proxy; `docs:prebuild` pulls and injects them under `docs/injected/` at build time.
 
-It is also the reader-facing hub for product developer documentation. `docs-middag-for-moodle/dev/` and `docs-middag-account/dev/` are the canonical sources for third-party integration with their respective products; each reaches this hub only after its publication channel is deliberately opened. Product specifications and decision records remain in each product's `internal/` tree. End-user and administrator guides go to `docs-middag-io`, sourced from the products' `public/` trees. The two layers above describe the library content already served; they do not transfer product authorship to this repository.
+The README describes the build, the content tree and the deployment.
 
 **What this repo is NOT:**
 
-- ADRs are never hosted here — every lib/product keeps its own `docs/decisions/`, in both layers (ADR-020, explicit).
-- Source of the variable layer: aggregated content is authored in the source repo's `docs/` — never edited here.
-- The proxy/edge layer lives in `worker-ts-middag-docs-proxy` (aggregator doctrine in its README); the doctrine-search MCP in `worker-ts-middag-docs-mcp`.
-- Client-facing product docs are `docs-middag-io`. The neutral norm, valid for any adopting organization, lives in `docs-middag-standards`, MIDDAG values in `org-middag`, and `docs-middag-ops` documents the MIDDAG profile (how MIDDAG applies the norm; ADR-030).
+- Decision records are never hosted here: every library keeps its own `docs/decisions/`.
+- The source of the aggregated layer: that content is authored in the source repository's `docs/` and never edited here.
+- Product end-user documentation.
 
 ## Git
 
 - Conventional Commits; **never** `Co-Authored-By`.
-- Base branch: `main` trunk-based — push to `main` deploys via GitHub Actions + wrangler-action.
+- Base branch: `main`. Change by pull request: `pr-checks.yml` must be green. A push to `main` deploys production (`deploy.yml`).
 
 ## Language
 
-Docs and commits in EN (public repo).
+Docs, commits, pull requests and issues in English (public repository).
 
 ## Quality gates
 
-Green before delivering: `npm run docs:build` (runs `docs:prebuild` fetch+inject first) and `npm run format:check` (Prettier).
+Green before delivering: `npm test`, `npm run docs:build` (fetch, assemble, strict Nimbus build and the `dist/` checks) and `npm run format:check` (Prettier).
 
-## Inherited rules (pointers, do not copy)
+## Public repository rules
 
-- ADR-020 (direct content ownership for the nuclear family); the content tree is in the README, section "Own-authored content tree".
-- ADR-016 (build-time aggregation via edge storage) + the aggregator doctrine in `worker-ts-middag-docs-proxy`.
-- Sources of truth: where content lives and which document prevails follows an internal MIDDAG Policy, which is not part of this repository.
-- Norm and profile: the neutral norm in `docs-middag-standards` (Standards `MSR-NNN`, Practices `MPR-*`), values in `org-middag`, MIDDAG profile in `docs-middag-ops` (also via docs-MCP, alias `ops`). Cite the part (`MSR-NNN.Rn(x)`) or the profile key; do not copy the rule.
-- Backlog: issues in the owning repository and the organization's board; `tool-middag-planning` is the PMO agent, not the backlog.
-- How agents decide to keep working or to stop, and how issue and comment bodies are edited: Policies `agent-ways-of-working` and `forge-collaboration` of `docs-middag-ops` — point to them, never restate them.
+- No link or reference to a private repository, no internal decision identifier, no person name and no secret, in files, commits, pull requests or issues.
+- Document only what is merged on a library's `main` or in a published release.
 
 ## NOT in scope / do not do without permission
 
-- Adding a **new** own-authored axis, or extending ownership to a repo outside the ADR-020 nuclear-family scope — the Product/`middag-php-core` axis is curated Surface-API-only and currently **paused** (gated on product launch).
-- Editing content of the variable layer here — it belongs in the source repo's `docs/`.
-- Editing anything under `docs/injected/` — generated at prebuild and gitignored.
-- Deploy/Cloudflare Pages config changes.
+- Adding a new own-authored axis.
+- Editing content of the aggregated layer here: it belongs in the source repository's `docs/`.
+- Editing anything under `docs/injected/`, `site-content/` or `dist/`: generated and gitignored.
+- Deploy or Cloudflare Pages configuration changes.
 
 ## Gotchas — READ before touching
 
-1. Two sidebar builders in `docs/.vitepress/config.ts`: aggregated channels are generated from the injected tree; own-authored axes are generated by `ownedSidebarItems()`. Don't hardcode entries in either.
-2. Own-authored nav is curated data in `docs/<axis>/nav.json`, not TypeScript — adding/removing a page means updating that file in the same change. An axis with no `nav.json` falls back to the mechanical, uncurated walker.
-3. Multi-version channels come from the `hub.config.json` allowlist — adding a repo/version happens there, not in VitePress config.
-4. `npm run docs:dev:nofetch` skips the proxy fetch — use it when offline or iterating on theme/own-authored content only.
-
-## Local path
-
-Lives at `/var/www/middag-org/docs-middag-dev` (organizational workspace — Policy `local-workspace-paths.md`, `docs-middag-ops#42`), not `/var/www/docs-middag-dev`.
+1. Own-authored navigation is curated data in `docs/<axis>/nav.json` — adding or removing a page means updating that file in the same change. `scripts/build-site.mjs` turns it into `site-navigation.json` for the preset.
+2. Multi-version channels come from the `hub.config.json` allowlist — adding a repo or version happens there.
+3. `npm run docs:build:nofetch` skips the proxy fetch — use it offline or when iterating on own-authored content only.
+4. The build fails on any preset warning, on a broken internal link or anchor, and on a URL of `test/fixtures/live-sitemap-urls.txt` that has no page or redirect. Moving a page means adding a redirect in `site-public/_redirects`.
+5. Headings whose id changed with the move to Nimbus keep their previous id as an extra anchor (`scripts/lib/site/anchors.mjs`); do not remove it, external deep links depend on it.

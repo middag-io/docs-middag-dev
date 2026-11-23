@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * fetch-injected-docs.mjs — hub pre-build step (ADR-016 Build-Time Aggregation).
+ * fetch-injected-docs.mjs — hub pre-build step (build-time aggregation).
  *
  * Reads hub.config.json (an ALLOWLIST: nothing is published unless declared),
  * then for each repo pulls the `docs` artifact of every declared CHANNEL from
@@ -22,7 +22,7 @@
  *
  * Internal decision records are refused: before a channel is downloaded, every
  * key and destination path goes through scripts/lib/publish-guard.mjs; a path
- * under decisions/, internal/, adr/ or madr/ fails the build (docs-middag-ops#66).
+ * under decisions/, internal/, adr/ or madr/ fails the build.
  *
  * Auth: the private proxy needs a bearer token in DOCS_PROXY_TOKEN (a Cloudflare
  * Access service token). The public deployment ignores it. Override the host
@@ -119,7 +119,7 @@ async function downloadChannel(repo, selector, version, segment, keys) {
   if (files.length === 0) {
     throw new Error(`${repo}@${version}: no ${KIND} files under ${prefix}`)
   }
-  // Refuse the whole channel before writing anything (docs-middag-ops#66).
+  // Refuse the whole channel before writing anything.
   assertChannelPublishable({ repo, selector, version, segment, files })
 
   const outDir = join(INJECTED_DIR, repo, segment)
@@ -189,7 +189,7 @@ async function main() {
       continue
     }
 
-    // Channel manifest consumed by docs/.vitepress/config.ts to build the nav,
+    // Channel manifest consumed by scripts/build-site.mjs to build the nav,
     // sidebars and version switcher. defaultSegment = first declared channel.
     await writeFile(
       join(INJECTED_DIR, repo, '_channels.json'),

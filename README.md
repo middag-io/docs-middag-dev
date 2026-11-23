@@ -1,81 +1,102 @@
 # docs-middag-dev
 
-MIDDAG's unified documentation hub. A [VitePress](https://vitepress.dev) static
-site that serves developer documentation for MIDDAG libraries and product integrations. It aggregates eligible documentation **at build time** and
-publishes it to Cloudflare Pages at **<https://docs.middag.dev>**.
+MIDDAG's developer documentation hub, published at **<https://docs.middag.dev>**.
+It is a static site built with the Nimbus preset (`@middag-io/nimbus-preset`)
+and deployed to Cloudflare Pages.
 
-Product documentation keeps its own source. Third-party API and integration
-guides belong to `docs-middag-for-moodle/dev/` for MIDDAG for Moodle and
-`docs-middag-account/dev/` for MIDDAG Account. Each tree will be aggregated
-here only after its publication channel opens. Their `public/` trees are for
-`docs-middag-io`; `internal/` specifications and decision records are not
-published in either hub. The library content below describes the hub's current
-implementation and ownership under ADR-020.
+The hub has **two content layers**:
 
-This repository serves **two content layers**. Following **ADR-020 (docs-middag-dev Direct Content Ownership for the Nuclear Family, narrowing ADR-016)**, it authors and owns the Diataxis documentation of the OSS nuclear family (the MIDDAG Framework and its host adapters, plus `middag-php-ui`) directly in `docs/<axis>/`. Following **ADR-016 (Build-Time Documentation Aggregation via Edge Storage)**, each library that keeps its own doc-site publishes a versioned documentation payload to the MIDDAG docs proxy (a Cloudflare Worker in front of an R2 bucket); at build time this hub pulls those payloads, injects them into the VitePress source tree, and compiles a single static site.
+- **Own-authored (versionless).** The documentation of the open-source MIDDAG
+  PHP libraries (the MIDDAG Framework, its host adapters, `middag-php-ui` and
+  the example application `middag-php-demo-standalone`) and the policy of the
+  library family are written here, in `docs/<axis>/`, following Diataxis.
+- **Aggregated (versioned).** A library that keeps its own documentation site
+  (for example `middag-react`) publishes a versioned documentation payload to
+  the MIDDAG docs proxy. At build time the hub pulls the channels it declares
+  and serves each one under `/{repo}/{segment}/`.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-  A["hub.config.json — documentation dependencies"] --> B["docs:prebuild<br/>scripts/fetch-injected-docs.mjs"]
-  B <-->|"DocsProxyClient: fetchManifest + listArtifacts (?list=true)"| P[("docs proxy — Cloudflare R2<br/>docs-proxy.middag.dev")]
-  B -->|"rewrite in-package links, write files"| I["docs/injected/ (per repo + version — gitignored)"]
-  S["docs/index.md + docs/.vitepress/config.ts"] --> V["VitePress build<br/>(rewrites injected paths → clean URLs)"]
-  I --> V
-  V --> O["docs/.vitepress/dist (static site)"]
-  O -->|"GitHub Actions + wrangler-action, on push to main"| CF["Cloudflare Pages — project docs-middag-dev"]
+  A["hub.config.json — publish allowlist"] --> B["docs:prebuild<br/>scripts/fetch-injected-docs.mjs"]
+  B <-->|"fetchManifest + listArtifacts"| P[("docs proxy")]
+  B -->|"rewrite in-package links, write files"| I["docs/injected/ (gitignored)"]
+  S["docs/ (own-authored)"] --> C["site-content/ (assembled, gitignored)"]
+  I --> C
+  C --> N["Nimbus preset build, strict mode<br/>scripts/build-site.mjs"]
+  N --> O["dist/ (static site)"]
+  O -->|"GitHub Actions, on push to main"| CF["Cloudflare Pages — project docs-middag-dev"]
   CF --> DOM["https://docs.middag.dev"]
 ```
 
 ### How it works
 
-1. **Allowlist** — `hub.config.json` is the explicit, reviewable list of which
-   libraries the hub documents and, per library, which **channels** (versions)
-   are published. Nothing appears on the site unless declared here — adding a
-   channel IS the deliberate publish action (an operational workflow step).
-2. **Fetch & inject** (`scripts/fetch-injected-docs.mjs`, run as `docs:prebuild`):
-   - Discovers the retained versions per repo via the proxy `?list=true`
-     endpoint and resolves each declared channel selector to a concrete version:
-     `latest` → the manifest's newest, `0.30.x` → highest retained `0.30.*`, or
-     an exact pin. No filenames or versions are hardcoded.
-   - Downloads every file (including subdirectories) into
-     `docs/injected/{repo}/{segment}/`, one folder per channel (segment:
-     `latest` stays `latest`; `0.30.x` → `0.30`).
-   - **Rewrites in-package links** so they survive the URL remap: root-absolute
-     Markdown links `](/x)`, inline `href="/x"`, and home-layout frontmatter
-     `link:` fields become `/{repo}/{segment}/x`. External, anchor, and relative
-     links are left untouched.
-   - Writes `docs/injected/{repo}/_channels.json` (label + resolved channels)
-     for the config to build the nav, sidebars and version switcher.
-3. **Build** — VitePress compiles the site. `docs/.vitepress/config.ts` reads
-   the injected tree + `_channels.json` and generates, **fully dynamically**, a
-   per-repo version-switcher dropdown and a per-channel sidebar. A `rewrites`
-   function maps `injected/{repo}/{segment}/**` → `/{repo}/{segment}/**`, giving
-   versioned URLs (e.g. `/middag-react/0.30/getting-started`).
-4. **Deploy** — GitHub Actions builds and ships `docs/.vitepress/dist` to
-   Cloudflare Pages on every push to `main`.
-
-`docs/injected/` is **gitignored** — reproduced on every build, never committed.
+1. **Allowlist.** `hub.config.json` lists which libraries the hub aggregates
+   and, per library, which **channels** (versions) are published. Nothing
+   aggregated appears on the site unless it is declared here.
+2. **Fetch and inject** (`scripts/fetch-injected-docs.mjs`, run as
+   `docs:prebuild`):
+   - resolves each declared channel selector against the versions the proxy
+     retains: `latest` is the newest, `0.30.x` the highest retained `0.30.*`,
+     or an exact pin;
+   - downloads every file into `docs/injected/{repo}/{segment}/`, one folder
+     per channel (`latest` stays `latest`; `0.30.x` becomes `0.30`);
+   - rewrites root-absolute in-package links (`](/x)`, `href="/x"`, home
+     `link:` fields) to `/{repo}/{segment}/x`; external, anchor and relative
+     links are left untouched;
+   - writes `docs/injected/{repo}/_channels.json` (label and resolved
+     channels), which the build turns into navigation.
+3. **Build** (`scripts/build-site.mjs`, run as `docs:build`):
+   1. runs `docs:prebuild` (skipped with `docs:build:nofetch`);
+   2. copies `docs/` and `docs/injected/{repo}/{segment}/` into `site-content/`,
+      mounted at the site root by [`middag-docs.config.ts`](middag-docs.config.ts),
+      so every page keeps its URL;
+   3. runs the publish guard over the assembled tree: it refuses
+      `decisions/`, `internal/`, `adr/` and `madr/` paths;
+   4. writes landing pages where a directory has none (`/{repo}/`,
+      `/libraries/reference/`), marks older channels `searchable: false`,
+      keeps the dots of channel URLs (`/middag-react/0.30/`) and turns `{#id}`
+      heading ids into anchors;
+   5. turns each axis's `nav.json` and the channel manifests into navigation
+      order and labels (`site-navigation.json`, gitignored);
+   6. builds into `dist/` in strict mode: any preset warning fails the build;
+   7. adds an empty anchor with the previous heading id before every heading
+      whose id changed, so deep links from outside keep working, and checks
+      `dist/`: home built from `docs/index.md`, no `/index/` route, search
+      index present, `_redirects` (copied from `site-public/`) sends
+      `/sitemap.xml` to `/sitemap-index.xml`, every internal link and anchor
+      resolves, and every URL of the sitemap snapshot
+      (`test/fixtures/live-sitemap-urls.txt`) has a page or a redirect.
+4. **Deploy.** GitHub Actions builds `dist/` and deploys it to Cloudflare Pages
+   on every push to `main` ([Deployment](#deployment)).
 
 ## Project layout
 
 ```
 docs-middag-dev/
-├─ .github/workflows/deploy.yml      # CD → Cloudflare Pages
-├─ docs/
-│  ├─ .vitepress/config.ts           # VitePress config: rewrites + DYNAMIC nav/sidebar/switcher
-│  ├─ index.md                       # hub homepage
-│  └─ injected/                      # generated at build time (gitignored)
-├─ scripts/fetch-injected-docs.mjs   # build-time documentation injector (multi-channel)
-├─ hub.config.json                   # publish allowlist: repos → label + channels
-├─ .npmrc                            # maps the @middag-io scope to GitHub Packages
+├─ .github/workflows/
+│  ├─ pr-checks.yml           # format, tests and the full site build on every pull request
+│  └─ deploy.yml              # production deploy to Cloudflare Pages
+├─ docs/                      # own-authored content (see below); docs/injected/ is generated
+├─ scripts/
+│  ├─ build-site.mjs          # assemble, guard, build with the Nimbus preset, check dist/
+│  ├─ fetch-injected-docs.mjs # build-time injector of the aggregated channels
+│  └─ lib/                    # publish guard and site build helpers
+├─ site-public/               # files copied as is into dist/ (_redirects)
+├─ test/                      # node:test suites and fixtures
+├─ hub.config.json            # publish allowlist: repos, labels and channels
+├─ middag-docs.config.ts      # Nimbus site configuration
+├─ .npmrc                     # maps the @middag-io scope to GitHub Packages
 └─ package.json
 ```
 
 ## Own-authored content tree
 
-The fixed layer (ADR-020) is split by **product axis first**, then by Diataxis type. This repository hosts two parallel mini-documentations, each with its own full Diataxis cycle, so the product axis is the top level and the adapter or concern is a subfolder under each Diataxis type. That keeps one `adapters/moodle/` per type instead of four empty copies per concern. It is a scoped exception: single knowledge bases keep the Diataxis type as their primary axis.
+The own-authored layer is split by **product axis first**, then by Diataxis
+type. Each axis is a full Diataxis documentation, so the adapter or concern is
+a subfolder under each Diataxis type: one `adapters/moodle/` per type instead
+of four empty copies per concern.
 
 ```
 docs/
@@ -84,27 +105,33 @@ docs/
 │   ├── how-to/
 │   ├── reference/
 │   └── explanation/
-├── libraries/          # policy of the whole PHP library family (OSS and internal)
-│   └── reference/
-└── core/               # middag-php-core and its adapters (proprietary; paused)
-    ├── tutorials/      # each type: adapters/{moodle,wordpress}/
-    ├── how-to/
-    ├── reference/
-    └── explanation/
+└── libraries/          # policy of the PHP libraries
+    └── reference/
 ```
 
-- **`framework/`**: `middag-php-framework`, its host adapters (`moodle`, `wordpress`, `standalone`), `middag-php-ui` and the example application `middag-php-demo-standalone` (`reference/demo-standalone/`). Ownership is full: each source repository's reference docs and loose docs move here, and the source repository keeps only `docs/decisions/`.
-- **`core/`**: `middag-php-core` and the same adapter pattern, product-scoped. Ownership is narrower: `docs/decisions/` and `docs/ref/` stay in the source repository, and only a curated Surface-API subset is authored here. The axis is paused until the product launches, so the folder does not exist yet.
-- **`libraries/`**: the family policy of the eight `middag-php-*` libraries (versioning and compatibility, platform, documentation publication, guards). It covers OSS and internal libraries alike, so it sits outside `framework/`, whose content is Apache-2.0. Reference only; it documents no library API.
-- **`ui/`** is a leaf under the Diataxis folders of `framework/`, not a third axis. On the site it gets its own sidebar entry, because `middag-php-ui` is an isolated library rather than a host adapter. Navigation (`docs/<axis>/nav.json`) and the physical path are decoupled on purpose.
-- **Not in this tree**: satellite libraries with their own doc site (for example `middag-react`) stay on the aggregated layer (ADR-016).
-- **ADRs are never in this tree.** Every library and product keeps its decision records in its own `docs/decisions/`.
+- **`framework/`**: `middag-php-framework`, its host adapters (`moodle`,
+  `wordpress`, `standalone`), `middag-php-ui` and the example application
+  `middag-php-demo-standalone` (`reference/demo-standalone/`). The source
+  repositories keep their `README.md`, `API-STABILITY.md` and decision records;
+  the guides and the reference live here.
+- **`libraries/`**: versioning and compatibility, platform, documentation
+  publication and guards. It sits outside `framework/` because it also states
+  where the documentation of the internal libraries lives. Reference only; it
+  documents no library API.
+- **`ui/`** is a leaf under the Diataxis folders of `framework/`, not a third
+  axis. On the site it gets its own sidebar entry, because `middag-php-ui` is an
+  isolated library rather than a host adapter. Navigation
+  (`docs/<axis>/nav.json`) and the physical path are decoupled on purpose.
+- **Not in this tree**: libraries with their own documentation site (for
+  example `middag-react`) stay on the aggregated layer.
+- **Decision records are never in this tree.** Every library keeps them in its
+  own `docs/decisions/`.
 
 ## Local development
 
 **Prerequisites**
 
-- Node.js ≥ 20 (CI runs Node 22).
+- Node.js 24 (CI runs Node 24).
 - Read access to the `@middag-io` packages on GitHub Packages. The committed
   `.npmrc` reads the token from `NODE_AUTH_TOKEN`:
   ```bash
@@ -115,103 +142,71 @@ docs/
 
 ```bash
 npm ci
-npm run docs:dev        # prebuild (fetch docs) + dev server with HMR
+npm run docs:build      # prebuild (fetch docs) + full site build into dist/
+npm run docs:preview    # serve dist/ locally
 ```
 
-The `docs:prebuild` step reaches the **public** docs proxy anonymously — no
-`DOCS_PROXY_TOKEN` is needed. Set `DOCS_PROXY_TOKEN` only when targeting the
+The `docs:prebuild` step reaches the **public** docs proxy anonymously; no
+`DOCS_PROXY_TOKEN` is needed. Set `DOCS_PROXY_TOKEN` only when targeting a
 private proxy deployment.
 
 ## Scripts
 
-| Script          | What it does                                                       |
-| --------------- | ------------------------------------------------------------------ |
-| `docs:prebuild`   | Fetch and inject the declared channels from the proxy into `docs/injected/` |
-| `docs:dev`        | `docs:prebuild`, then the VitePress dev server                        |
-| `docs:dev:nofetch`| Dev server against the already-injected tree (skips the proxy fetch)  |
-| `docs:build`      | `docs:prebuild`, then build the static site to `docs/.vitepress/dist` |
-| `docs:preview`    | Serve the built site locally                                          |
-| `docs:available`  | Read-only discovery: list repos/versions in the proxy and diff against the allowlist |
-| `site:build`      | Nimbus build (see below): `docs:prebuild`, assemble, build with `@middag-io/nimbus-preset` in strict mode, check `dist/` |
-| `site:build:nofetch` | `site:build` against the already-injected tree (skips the proxy fetch) |
-| `site:preview`    | Serve the Nimbus `dist/` locally                                      |
+| Script               | What it does                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------- |
+| `docs:prebuild`      | Fetch and inject the declared channels from the proxy into `docs/injected/`           |
+| `docs:build`         | Full site build (`scripts/build-site.mjs`): prebuild, assemble, Nimbus build, checks  |
+| `docs:build:nofetch` | `docs:build` against the already-injected tree (skips the proxy fetch)                |
+| `docs:preview`       | Serve the built `dist/` locally                                                       |
+| `docs:available`     | Read-only discovery: list repos and versions in the proxy and diff against the allowlist |
+| `site:build`, `site:build:nofetch`, `site:preview` | Aliases of `docs:build`, `docs:build:nofetch` and `docs:preview` |
+| `test`               | Unit tests and the end-to-end build checks (`node --test`)                            |
+| `format`, `format:check` | Prettier                                                                          |
 
-## Nimbus site build (migration in progress)
-
-The site is moving from VitePress to Nimbus (`@middag-io/nimbus-preset`). Until
-the cut-over, production still deploys the VitePress build; the Nimbus build
-runs next to it on every pull request and is deployed to a preview branch.
-It needs Node 24.
-
-`npm run site:build` runs [`scripts/build-site.mjs`](scripts/build-site.mjs):
-
-1. fetches the injected channels (`docs:prebuild`);
-2. copies `docs/` and `docs/injected/{repo}/{segment}/` into `site-content/`
-   (gitignored), mounted at the site root by
-   [`middag-docs.config.ts`](middag-docs.config.ts), so every page keeps its URL;
-3. runs the publish guard over the assembled tree;
-4. writes landing pages where a directory has none (`/{repo}/`,
-   `/libraries/reference/`), marks older channels `searchable: false`, keeps the
-   dots of channel URLs (`/middag-react/0.30/`) and turns `{#id}` heading ids
-   into anchors;
-5. turns each axis's `nav.json` and the channel manifests into navigation order
-   and labels (`site-navigation.json`, gitignored);
-6. builds into `dist/` in strict mode (any preset warning fails);
-7. adds an empty anchor with the old VitePress id before every heading whose
-   Nimbus id differs, so deep links from outside keep working, and checks
-   `dist/`: home built from `docs/index.md`, no `/index/` route, search index
-   present, `_redirects` (copied from `site-public/` by the preset's
-   `publicDir`) sends `/sitemap.xml` to `/sitemap-index.xml`, every internal
-   link and anchor resolves, and every URL of the live sitemap snapshot
-   (`test/fixtures/live-sitemap-urls.txt`) has a page or a redirect.
-
-[`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) runs the
-format check, the tests and `site:build` on pull requests from this repository,
-and deploys the Nimbus build to the Pages branch alias `nimbus` of the
-`docs-middag-dev` project on push to the migration branch or by manual dispatch.
-
-## Publishing a library / version to the hub
+## Publishing a library version to the hub
 
 `hub.config.json` is the allowlist. Declare the repo, a friendly `label`, and
-the `channels` to publish (order = display order; the first is the default):
+the `channels` to publish (order is display order; the first is the default):
 
 ```json
 {
   "repos": {
     "middag-react": { "label": "MIDDAG React", "channels": ["latest", "0.30.x", "0.20.x"] },
-    "another-lib":  { "label": "Another Lib",  "channels": ["latest"] }
+    "another-lib": { "label": "Another Lib", "channels": ["latest"] }
   }
 }
 ```
 
-Channel selectors: `latest` (proxy manifest's newest), `MAJOR.MINOR.x` (highest
-retained patch of that line), or an exact `X.Y.Z` pin. Each becomes a versioned
-URL `/{repo}/{segment}/` and an entry in that repo's version-switcher dropdown.
-**No config.ts edit is needed** — nav, sidebars and switcher are generated from
-the injected tree. The library must publish a `docs` payload to the proxy (see
-ADR-016 and each library's `prepare-docs-payload` step). To unpublish a version,
-remove its channel here — allowlist is default-hidden.
+Channel selectors: `latest` (the newest version in the proxy manifest),
+`MAJOR.MINOR.x` (highest retained patch of that line), or an exact `X.Y.Z` pin.
+Each becomes a versioned URL `/{repo}/{segment}/` with its own navigation. The
+library must publish a `docs` payload to the proxy from its release workflow.
+To unpublish a version, remove its channel here: the allowlist is
+default-hidden.
 
 ## Deployment
 
-CD is defined in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
-on push to `main` (or manual `workflow_dispatch`) it installs, runs
-`docs:build`, and deploys `docs/.vitepress/dist` to the Cloudflare Pages project
-`docs-middag-dev` via `cloudflare/wrangler-action@v3`.
+[`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) runs the
+format check, the tests and the full site build on every pull request from this
+repository; a pull request that breaks the build, a link or an anchor fails
+there.
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs on push to
+`main` (or manual `workflow_dispatch`). A `build` job installs, tests and runs
+`site:build`, then uploads `dist/`; a `deploy` job, under the `production`
+environment and with no checkout, deploys it to the Cloudflare Pages project
+`docs-middag-dev` with `cloudflare/wrangler-action` pinned by commit SHA.
 
 **Required repository configuration**
 
-| Name                    | Type   | Purpose                                              |
-| ----------------------- | ------ | ---------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | secret | Cloudflare token with **Pages: Edit**                |
-| `CLOUDFLARE_ACCOUNT_ID` | var    | Target Cloudflare account                            |
-| `NODE_AUTH_TOKEN`       | secret | *(optional)* PAT with `read:packages`; falls back to `GITHUB_TOKEN` when the `@middag-io` packages grant this repo read access |
+| Name                    | Type   | Where                     | Purpose                                              |
+| ----------------------- | ------ | ------------------------- | ---------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`  | secret | `production` environment  | Cloudflare token with **Pages: Edit**                |
+| `CLOUDFLARE_ACCOUNT_ID` | var    | repository                | Target Cloudflare account                            |
+| `NODE_AUTH_TOKEN`       | secret | repository                | *(optional)* PAT with `read:packages`; falls back to `GITHUB_TOKEN` when the `@middag-io` packages grant this repository read access |
+
+The `production` environment accepts deployments from `main` only.
 
 ## References
 
-- **ADR-016** — Build-Time Documentation Aggregation via Edge Storage.
-- **ADR-020** — docs-middag-dev Direct Content Ownership for the Nuclear Family (narrows ADR-016).
-- [`worker-ts-middag-docs-proxy`](https://github.com/middag-io/worker-ts-middag-docs-proxy)
-  — the docs proxy (Cloudflare Worker + R2) and the `@middag-io/docs-proxy-client`
-  / `@middag-io/docs-theme` packages.
-- [VitePress](https://vitepress.dev) · [Cloudflare Pages](https://developers.cloudflare.com/pages/)
+- [Cloudflare Pages](https://developers.cloudflare.com/pages/)
