@@ -132,7 +132,7 @@ Payments, webhooks and store integrations are not in this adapter.
 ## Database ($wpdb)
 
 - **`Database/WpdbConnectionAdapter`** (`@api`) is the only object in the adapter that knows `$wpdb`. Everything above it (query builders, repositories, domain) depends on the framework `ConnectionAdapterInterface`. Records and conditions are associative arrays; rows come back as `ARRAY_A`.
-- **`Database/WpdbSqlDialect`** (`@api`) is MySQL/MariaDB. WordPress raw SQL uses physical table names, so `table()` prepends the `$wpdb->prefix` (`wp_`, `wp_2_`, ...) instead of bracing the name as Moodle does. The connection adapter builds its own prefixed dialect from `$wpdb->prefix`, and `WpBootstrap` resolves `SqlDialectInterface` to that same instance. The record helpers on the connection adapter take the already-prefixed physical name.
+- **`Database/WpdbSqlDialect`** (`@api`) is MySQL/MariaDB. WordPress raw SQL uses physical table names, so `table()` prepends the `$wpdb->prefix` (`wp_`, `wp_2_`, ...) instead of bracing the name as Moodle does. The connection adapter builds its own prefixed dialect from `$wpdb->prefix`, and `WpBootstrap` resolves `SqlDialectInterface` to that same instance. The record helpers on the connection adapter (`insert()`, `update()`, `delete()`, `find()`, `findAll()`) accept a logical or an already-prefixed name and add the prefix when it is missing.
 - **Capabilities reported by `supports()`:**
 
 | `Capability` | Reported | Why |
