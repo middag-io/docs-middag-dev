@@ -25,6 +25,7 @@ test('vitepressSlug matches the VitePress ids of the live site', () => {
 test('headingText drops tags and decodes entities', () => {
   assert.equal(headingText('2. Check for a <code>core</code> import'), '2. Check for a core import')
   assert.equal(headingText('DI &amp; Events &#39;x&#x27;'), "DI & Events 'x'")
+  assert.doesNotMatch(headingText('a<scr<b>ipt>b <<i>x>'), /</)
 })
 
 test('addLegacyAnchors adds only the ids the page lacks, with VitePress suffixes', () => {

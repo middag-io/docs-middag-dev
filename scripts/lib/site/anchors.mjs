@@ -34,10 +34,23 @@ export function vitepressSlug(text) {
 
 const ENTITIES = Object.freeze({ amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' })
 
-/** The text of a heading's inner HTML: tags dropped, entities decoded. */
+/** `html` with every tag removed, repeated until nothing changes (no `<scr<b>ipt` left over). */
+function stripTags(html) {
+  let previous
+  let text = html
+  do {
+    previous = text
+    text = text.replace(/<[^>]*>/g, '')
+  } while (text !== previous)
+  return text
+}
+
+/**
+ * The text of a heading's inner HTML: tags dropped, entities decoded. Only
+ * used as slug input, never written back as HTML.
+ */
 export function headingText(innerHtml) {
-  return innerHtml
-    .replace(/<[^>]*>/g, '')
+  return stripTags(innerHtml)
     .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, name) => {
       if (name[0] !== '#') return ENTITIES[name.toLowerCase()] ?? entity
       const code =
