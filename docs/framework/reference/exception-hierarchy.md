@@ -1,5 +1,25 @@
 ---
 title: 'framework — Exception Hierarchy: Status Codes, Layer Matrix & Anti-Patterns'
+source:
+  - repo: middag-io/middag-php-framework
+    commit: 611cfb077b90054d49a6a8a9f5c795a705ecc8b4
+    paths:
+      - src/Exception/MiddagException.php
+      - src/Exception/MiddagDomainException.php
+      - src/Exception/MiddagValidationException.php
+      - src/Exception/MiddagNotFoundException.php
+      - src/Exception/MiddagLifecycleViolationException.php
+      - src/Http/HttpKernel.php
+      - src/Persistence/Model.php
+      - docs/decisions/FW-010-typed-exception-hierarchy.md
+  - repo: middag-io/middag-php-framework
+    commit: 15d3f2e29e4f34d4f91c9e5f470dae613192059c
+    paths:
+      - src/Exception/MiddagValidationException.php
+  - repo: middag-io/middag-php-moodle
+    commit: 22d9c2ced29e0e4d6ad53695faa33f4ed334e967
+    paths:
+      - src/Exception/
 ---
 
 # Exception Hierarchy: Status Codes, Layer Matrix & Anti-Patterns
@@ -46,11 +66,71 @@ Which layer may throw which type. This is a code-review convention, not a static
 | Infrastructure (persistence, external I/O) | `MiddagInfrastructureException`, `MiddagPersistenceException` |
 | Host boundary (adapters) | `MiddagInfrastructureException`, wrapping the host failure |
 | Kernel / HTTP | `MiddagLifecycleViolationException`, `MiddagAuthenticationException`, `MiddagAuthorizationException` |
-| Extensions | `MiddagDomainException`, `MiddagValidationException`, `MiddagAuthorizationException` — never infrastructure types directly; they delegate to the service that coordinates that concern |
+| Extensions | `MiddagDomainException`, `MiddagValidationException`, `MiddagNotFoundException`, `MiddagAuthorizationException` — never infrastructure types directly; they delegate to the service that coordinates that concern |
 
 `MiddagAuthenticationException` is reserved exclusively for the HTTP layer (the API controller boundary) — domain/service code must never throw it directly. Any native exception (a database driver exception, for example) is wrapped into the matching framework exception before it crosses a layer boundary.
 
-**Known drift.** The Moodle adapter's own exceptions do not descend from `MiddagException`: in `middag-php-moodle`, `MoodleAdapterException` extends `\RuntimeException`, `MoodleConfigurationException` and `MoodleTransportException` extend `\LogicException`, and `MoodleVersionException` extends `\InvalidArgumentException` (`src/Exception/`). The kernel maps them to a 500 like any foreign throwable.
+**Host adapter exceptions.** The Moodle adapter's own exceptions descend from the framework family: in `middag-php-moodle`, `MoodleAdapterException`, `MoodleConfigurationException`, `MoodleTransportException`, `MoodleVersionException` and `EmailNotSentException` all extend `MiddagInfrastructureException` (`src/Exception/`). The kernel maps them to a 500 through `getStatusCode()`.
+
+### What an extension may throw
+
+An extension is code that a host application adds on top of the framework: its services, data providers and controllers. It sits on the domain side of the matrix, plus authorization:
+
+| Exception | Status | When an extension throws it |
+|---|---|---|
+| `MiddagDomainException` | 400 | A business rule or invariant fails |
+| `MiddagValidationException` | 422 | Input fails validation; pass the field map as `errors:` (see [Validation errors](#validation-errors)) |
+| `MiddagNotFoundException` | 404 | A lookup by id or criteria finds no record |
+| `MiddagAuthorizationException` | 403 | The caller lacks the permission for the action |
+
+`MiddagNotFoundException` extends `MiddagDomainException`, so it belongs to the domain branch that the extension row already allows. The framework uses it the same way: `Model::findOrFail()` throws it when no record matches the key. An extension's service or data provider throws it when a record it was asked for does not exist, and the kernel answers 404.
+
+An extension does not throw these types:
+
+- `MiddagInfrastructureException` or `MiddagPersistenceException`: it delegates to the service that coordinates that concern, which wraps the host failure.
+- `MiddagAuthenticationException`: only the HTTP layer throws it.
+- `MiddagLifecycleViolationException`: the class is `@internal` and only the kernel throws it, when code runs a register-phase operation outside its phase. It signals a developer error, so an extension does not catch it either.
+
+## Validation errors
+
+`MiddagValidationException` carries a map of field errors. Its constructor, in `src/Exception/MiddagValidationException.php`:
+
+```php
+public function __construct(
+    string $message = 'Validation failed',
+    private readonly array $errors = [],
+    ?Throwable $previous = null,
+)
+```
+
+- `errors` is the second parameter. Pass it by position or by name (`errors:`). It defaults to `[]`.
+- The map type is `array<string, list<string|TranslatableMessage>|string|TranslatableMessage>`: each field maps to one message or a list of messages. A message is a plain string or a `TranslatableMessage`.
+- The constructor passes code `0` to the parent, so the exception code is always `0`.
+- `errors(): array` returns the map unchanged.
+- `getStatusCode()` returns `422`.
+
+```php
+use Middag\Framework\Exception\MiddagValidationException;
+
+throw new MiddagValidationException(
+    message: 'Invalid connector',
+    errors: [
+        'name' => 'The name is required.',
+        'connector_type' => ['Unknown connector type.'],
+    ],
+);
+```
+
+```php
+try {
+    $service->save($input);
+} catch (MiddagValidationException $e) {
+    $fieldErrors = $e->errors(); // the map passed as errors:
+    $status = $e->getStatusCode(); // 422
+}
+```
+
+`errors()` is the only way to read the map. The kernel reads it to build the 422 body or the flashed form errors: see [One error shape](./form-lifecycle-and-validation#one-error-shape).
 
 ## Wrapping a native exception at a boundary crossing
 
