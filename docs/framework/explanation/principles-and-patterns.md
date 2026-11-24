@@ -5,6 +5,8 @@ source:
     commit: 864faac0a621d2914e56924ad9c80bcf53921da5
     paths:
       - src/Database/Contract/ConnectionAdapterInterface.php
+      - src/Database/Contract/ConnectionInterface.php
+      - src/Database/Contract/RecordConnectionInterface.php
       - src/Database/Contract/SqlDialectInterface.php
       - src/Database/StandardSqlDialect.php
       - src/Database/MysqlSqlDialect.php
@@ -51,6 +53,7 @@ source:
       - src/Exception/MiddagException.php
       - src/Shared/Util/Arr.php
       - src/Shared/Util/Inflector.php
+      - src/Runtime/StandaloneKernel.php
 ---
 
 # Principles & Patterns
@@ -94,9 +97,9 @@ Two interfaces that share a name show the same rule. `Bus\Retry\RetryPolicyInter
 a queued item is retried and how long to wait, with no host dependency. `Http\Contract\RetryPolicyInterface` decides the same for an outbound HTTP attempt, from the
 attempt number, the response status and a `Retry-After` header. Each has its own reason to change, so they stay separate.
 
-Split a class when its parts change on different schedules, or when testing one part needs heavy
-mocking of the other. Keep it whole when its parts always change together and splitting would add
-more coordination than it removes.
+The same test settles a split in your own code. Parts that are edited for different reasons, or a
+test of one part that needs elaborate fakes of the other, point to two classes. Parts that are always
+edited together stay in one class: splitting them would only add wiring.
 
 ### Depend on a contract where variation is real
 
@@ -122,9 +125,9 @@ The framework pairs each such contract with an OSS default, so it runs with no h
 Host adapters implement the same contracts against the host. The full list of ports an adapter
 fills is in [Bridge Contracts](../reference/bridge-contracts).
 
-Before adding an interface, ask: is there more than one real or planned implementation? Is this a
-rule/infrastructure boundary or an extension point? Does an isolated test depend on it? Would the
-concrete dependency be expensive to undo later? If most answers are no, wait.
+Every contract in the table has either a second implementation in the framework or a host that
+supplies its own. A new contract with neither is a single class behind an extra name: keep the class
+concrete until the second implementation is real.
 
 ### Composition over inheritance
 
@@ -143,8 +146,9 @@ from its argument or the container, and falls back to `DefaultExceptionRenderer`
 `BootFailurePolicyInterface` in its constructor.
 Most concrete classes are `final`, which keeps inheritance an explicit choice of the base class.
 
-Before writing `extends`, ask: is it really a subtype? Does the subclass keep the base contract? Is
-it modelling a type, or only reusing code? Would composition say the same thing more plainly?
+The test is substitutability. A host controller is still an `AbstractController` to the code that
+runs it, and a host dialect on the MySQL family is still a `MysqlSqlDialect`. A subclass that only
+borrows code from its parent is composition written as inheritance; inject the collaborator instead.
 
 ### Explicit extension points
 
@@ -162,7 +166,8 @@ a contract or an interface on speculation; if nothing extends a point, it did no
 
 ## Patterns
 
-Read each pattern's "when not" first: an unneeded pattern costs as much as a missing one.
+Each pattern below says when to skip it. Read that part first: an unneeded pattern costs as much as a
+missing one.
 
 ### Strategy
 
@@ -176,8 +181,9 @@ constructor:
 - `Kernel\Contract\BootFailurePolicyInterface`: `BootRethrowFailurePolicy` (the default, loud in
   development) or `BootIsolateFailurePolicy` (log at `critical` and boot the remaining modules), given
   to `ContainerFactory`. See [Bootstrap Lifecycle](./bootstrap-lifecycle).
-- `Bus\Retry\RetryPolicyInterface`, implemented by `Bus\Retry\MultiplierRetryPolicy`, shared by
-  unrelated queue implementations that only agree on the attempt shape.
+- `Bus\Retry\RetryPolicyInterface`, implemented by `Bus\Retry\MultiplierRetryPolicy`: it has no
+  host dependency, so queue implementations that only agree on the attempt shape can share it. In the
+  framework, `Bus\Command\CommandWorker` and `Runtime\StandaloneKernel` take it.
 - `Database\Contract\SqlDialectInterface`: `StandardSqlDialect` (ANSI, a near-passthrough) or
   `MysqlSqlDialect` (MySQL and MariaDB idioms).
 - `Http\Contract\ExceptionRendererInterface`, bound by an adapter to wrap the host layout.
@@ -189,14 +195,15 @@ the decorated class and may apply to more than one implementation. A decorator i
 the object it wraps and delegates everything it does not change. Skip it for a one-off case, or when
 the behaviour is essential to the class rather than cross-cutting.
 
-`Database\PrefixingSqlDialect` wraps any `SqlDialectInterface`, prefixes the logical table name in
-`table()` and passes every other method through.
+`Database\PrefixingSqlDialect` wraps a prefixless `SqlDialectInterface` such as `StandardSqlDialect`,
+prefixes the logical table name in `table()` and passes every other method through. A host dialect
+that already prefixes its tables is not wrapped.
 
 Where a pipeline exists, the framework adds cross-cutting behaviour as middleware instead of a
 decorator. `Bus\Middleware\ProfilingMiddleware` records every dispatched message "without decorating
 the bus or the handlers", prepended to the stack through `Bus\MessageBusFactory`. On HTTP,
 `Http\Contract\RouteMiddlewareInterface` plays the same role per route (see
-[PSR-15 Bridge & Middleware](../reference/psr15-bridge-and-middleware)).
+[PSR-15 HTTP boundary and middleware](../reference/psr15-bridge-and-middleware)).
 
 ### Adapter
 
@@ -239,7 +246,7 @@ that should simply be called, or for trivial operations.
 - `Bus\Contract\MessageBusInterface` dispatches it, inline or to a transport, and
   `Bus\Command\CommandWorker` drains the transports later.
 
-Details: [Dispatch, Handlers & Scheduling](../reference/command-bus).
+Details: [Command bus, handlers and scheduling](../reference/command-bus).
 
 ### Factories, not abstract factories
 
@@ -251,12 +258,15 @@ factory, and a choice of algorithm needs a strategy.
 
 ## Combining them
 
-The patterns compose in a few recurring ways:
+In the framework the patterns meet at a few points:
 
-- strategy and the container: a policy contract with an OSS default, replaced by binding another
-  implementation;
-- decorator and contract: the wrapper and the wrapped share one interface, so callers never know;
-- command and hooks: a command does the work, hooks let other code react to it.
+- `Kernel\ContainerFactory` takes a `BootFailurePolicyInterface`: a strategy chosen when the container
+  is built, with `BootRethrowFailurePolicy` as the default;
+- `Database\PrefixingSqlDialect` is itself a `SqlDialectInterface`: the decorator and the strategy it
+  wraps share one contract, so the code that renders SQL does not know it is there;
+- commands travel through `Bus\Contract\MessageBusInterface`, and `Bus\Middleware\ProfilingMiddleware`,
+  when it is in the stack, sees each one on the way: the command carries the work, the middleware adds the cross-cutting
+  concern.
 
 ## See also
 
