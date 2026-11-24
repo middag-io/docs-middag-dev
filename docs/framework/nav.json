@@ -31,6 +31,10 @@
         "label": "Architecture"
       },
       {
+        "file": "explanation/principles-and-patterns",
+        "label": "Principles & Patterns"
+      },
+      {
         "file": "explanation/bootstrap-lifecycle",
         "label": "Bootstrap Lifecycle"
       },
