@@ -66,4 +66,4 @@ The cost is a bespoke plugin that must track Moodle's `requirejs.php` expectatio
 
 ---
 
-Decision records: MDL-001 and MDL-019 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision record: MDL-001 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

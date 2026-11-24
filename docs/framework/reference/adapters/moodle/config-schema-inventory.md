@@ -52,4 +52,4 @@ Extensions covered: `core`, `ecommerce`, `videolibrary`, `automessage`, `bigquer
 
 ---
 
-Decision records: MDL-011 and MDL-012 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision record: MDL-011 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

@@ -64,4 +64,4 @@ Asynchronous work restored this way may need its own governance pass after impor
 
 ---
 
-Decision records: MDL-001 and MDL-010 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision record: MDL-001 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

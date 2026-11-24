@@ -93,6 +93,8 @@ When no `AuthenticatorInterface` is bound, the gate is inert (returns `null`/all
 
 `Http/Middleware/VerifyCsrfMiddleware.php` is a host-neutral PSR-15 middleware, independent of the exception hierarchy above: for unsafe methods (`POST`/`PUT`/`PATCH`/`DELETE`) it validates a token from the `X-CSRF-Token`/`X-XSRF-TOKEN` header or a `_token` body field, and returns a plain `419` response directly ("CSRF Token Mismatch") on failure — it does not throw `MiddagAuthorizationException`. Safe methods (`GET`, etc.) pass straight through. It also shares the current token as the Inertia `csrf_token` prop and sets a JS-readable `XSRF-TOKEN` cookie (`SameSite=Lax`) so the client can echo the token back automatically.
 
+The Moodle adapter does not register `VerifyCsrfMiddleware`: its controller bases verify the Moodle sesskey instead, on by default. `AbstractController` and `AbstractApiController` run the check in `preHandle()` (`verifyCsrf()`), before parameter resolution and the action, for every non-idempotent request that rides a Moodle session. The token is read from `X-CSRF-Token`, `X-XSRF-TOKEN`, the `sesskey` payload or query field, or `_token`, and a missing or wrong token throws `MiddagAuthorizationException` (403). A request with no Moodle session and a route marked `#[Sesskey(require: false)]` are exempt (`MoodleHttpKernel::applyPlatformAuth()` reads that attribute, method then class); `AbstractApiController` also exempts public routes and requests authenticated with a `wstoken`. The sesskey is published as the `csrf_token` Inertia shared prop (`InertiaSharedProps`) and as the `XSRF-TOKEN` cookie (`MoodleHttpKernel`), so Inertia visits pass the check with no client change.
+
 ## `#[Auth]` capability requirements
 
 `Http/Attribute/Auth.php` keeps `capabilities: list<string>` as first-class, plus a `requirements: list<CapabilityRequirement>` field:
@@ -120,3 +122,7 @@ When no `AuthenticatorInterface` is bound, the gate is inert (returns `null`/all
 `RouteLoader` scans `#[Route]` attributes off controllers into a `RouteCollection`, but the OSS `HttpKernel` only receives a pre-built collection: the host assembles routes (a standalone app lists them; the adapters ship their own loaders). Scanning is a boot-time cost that a host can cache, not a per-request cost; the collection grows linearly with the number of registered controllers.
 
 The host-adapter bridge contracts that resolve user, session and capability data (`UserContextResolverInterface` and siblings) are listed in [Bridge Contracts](./bridge-contracts).
+
+---
+
+Decision record: MDL-022 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

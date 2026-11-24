@@ -113,4 +113,4 @@ Each extension with settings keeps one such enum as the source of truth for its 
 
 ---
 
-Decision records: MDL-011, MDL-012 and MDL-021 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision records: MDL-011 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions) and FW-015 in [`middag-php-framework/docs/decisions`](https://github.com/middag-io/middag-php-framework/tree/main/docs/decisions).
