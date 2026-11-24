@@ -9,6 +9,10 @@ source:
       - src/Exception/MiddagValidationException.php
       - src/Exception/MiddagNotFoundException.php
       - src/Exception/MiddagLifecycleViolationException.php
+      - src/Exception/MiddagAuthenticationException.php
+      - src/Exception/MiddagAuthorizationException.php
+      - src/Exception/MiddagInfrastructureException.php
+      - src/Kernel/ContainerFactory.php
       - src/Http/HttpKernel.php
       - src/Persistence/Model.php
       - docs/decisions/FW-010-typed-exception-hierarchy.md
@@ -18,6 +22,10 @@ source:
       - src/Exception/MiddagValidationException.php
   - repo: middag-io/middag-php-moodle
     commit: 22d9c2ced29e0e4d6ad53695faa33f4ed334e967
+    paths:
+      - src/Exception/
+  - repo: middag-io/middag-php-moodle
+    commit: c1f3dd15084c356efa369faf2f5272c36ac1405e
     paths:
       - src/Exception/
 ---
@@ -70,7 +78,7 @@ Which layer may throw which type. This is a code-review convention, not a static
 
 `MiddagAuthenticationException` is reserved exclusively for the HTTP layer (the API controller boundary) — domain/service code must never throw it directly. Any native exception (a database driver exception, for example) is wrapped into the matching framework exception before it crosses a layer boundary.
 
-**Host adapter exceptions.** The Moodle adapter's own exceptions descend from the framework family: in `middag-php-moodle`, `MoodleAdapterException`, `MoodleConfigurationException`, `MoodleTransportException`, `MoodleVersionException` and `EmailNotSentException` all extend `MiddagInfrastructureException` (`src/Exception/`). The kernel maps them to a 500 through `getStatusCode()`.
+**Host adapter exceptions.** The Moodle adapter's own exceptions descend from the framework family: in `middag-php-moodle`, `MoodleAdapterException`, `MoodleConfigurationException`, `MoodleTransportException`, `MoodleVersionException` and `EmailNotSentException` all extend `MiddagInfrastructureException` (`src/Exception/`, on `main` and in release v1.19.1). The kernel maps them to a 500 through `getStatusCode()`.
 
 ### What an extension may throw
 
@@ -89,7 +97,7 @@ An extension does not throw these types:
 
 - `MiddagInfrastructureException` or `MiddagPersistenceException`: it delegates to the service that coordinates that concern, which wraps the host failure.
 - `MiddagAuthenticationException`: only the HTTP layer throws it.
-- `MiddagLifecycleViolationException`: the class is `@internal` and only the kernel throws it, when code runs a register-phase operation outside its phase. It signals a developer error, so an extension does not catch it either.
+- `MiddagLifecycleViolationException`: the class is `@internal` and only the kernel throws it, when code runs a register-phase operation outside its phase. Its docblock calls it a developer error, not a runtime failure: fix the call order instead of catching it.
 
 ## Validation errors
 
@@ -113,10 +121,10 @@ public function __construct(
 use Middag\Framework\Exception\MiddagValidationException;
 
 throw new MiddagValidationException(
-    message: 'Invalid connector',
+    message: 'Invalid contact',
     errors: [
         'name' => 'The name is required.',
-        'connector_type' => ['Unknown connector type.'],
+        'email' => ['The email address is not valid.'],
     ],
 );
 ```
