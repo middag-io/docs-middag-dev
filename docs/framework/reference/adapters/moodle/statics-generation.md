@@ -56,7 +56,25 @@ Here `{plugin}` is the frankenstyle name with `_` replaced by `/`. External func
 
 ## Generation
 
-The generator sorts entries by name, so diffs stay predictable and a file that changes for an unrelated reason is easy to spot, and it writes idempotently (unchanged input leaves files untouched). It is not part of this package. The legacy plugin drove it through one consolidated entry point, `php cli/build.php --statics [target] [--basedir=.] [--dry-run]`, which replaced the per-target scripts `build_tasks.php` and `build_events.php` (removed without a compatibility shim).
+The generator sorts entries by name, so diffs stay predictable and a file that changes for an unrelated reason is easy to spot, and it writes idempotently (unchanged input leaves files untouched). It is not part of this package: the MIDDAG build tooling exposes it as the `generate:statics` console command.
+
+The command loads the consumer's extension classes, which need Moodle, so it refuses to run without a booted Moodle. It also cannot enumerate extensions by itself. A consumer therefore runs it from its own script, wired as a Composer script, that boots Moodle, collects the extension classes the plugin owns and calls `generate:statics` with:
+
+| Option                            | Purpose                                                                                                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `--adapter=moodle`                | The only adapter implemented (also the default)                                                           |
+| `--extension` (repeatable)        | FQCN of each extension to include; at least one is required                                                |
+| `--plugin-name`                   | Frankenstyle plugin name (required, no default), used to qualify capabilities and services               |
+| `--output-dir`                    | The plugin's `db/` directory (required)                                                                    |
+| `--target` (repeatable)           | Restrict the run to some targets; default is all: `caches`, `access`, `services`, `messages`, `hooks`, `events`, `fileareas`, `lang` |
+| `--observer-class`                | Observer class written into `db/events.php`                                                                |
+| `--event-dir`                     | Where the generated event classes go; omit to skip class generation                                       |
+| `--marker`                        | The line comment that marks a file as generated                                                            |
+| `--moodle-version`                | Moodle version (semver) used to drop incompatible definitions; defaults to `4.3.0`                         |
+| `--lang-catalog` and `--lang-dir` | Catalog class and `lang/` directory for the managed lang block; omit the catalog to skip it               |
+| `--dry-run`                       | Log what would change without writing                                                                      |
+
+The `fileareas` target only counts the file-area definitions: Moodle has no `db/fileareas.php`. The command overwrites only files that carry the marker before their first declaration and splices only lang files whose managed block is balanced; any other file at a generated path is refused, left unchanged, and makes the run fail. `db/tasks.php` is not produced by this command: a separate build command scans the task classes and writes it.
 
 ## Outside the pipeline
 
