@@ -105,4 +105,4 @@ External plugins add their own areas through a hook the consumer exposes (the MI
 
 ---
 
-Decision records: MDL-008 and MDL-016 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision record: MDL-016 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

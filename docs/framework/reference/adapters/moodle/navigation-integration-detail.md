@@ -70,4 +70,4 @@ The two paths coexist by design. The delegation pattern above is generic Moodle 
 
 ---
 
-Decision records: MDL-001 and MDL-018 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision record: MDL-001 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

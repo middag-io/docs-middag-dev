@@ -60,4 +60,4 @@ The original decision specified **two** layers: a request-local in-memory cache 
 
 ---
 
-Decision records: MDL-001 (cache port) and MDL-014 in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision record: MDL-001 (cache port) in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).

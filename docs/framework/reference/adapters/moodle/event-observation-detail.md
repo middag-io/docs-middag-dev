@@ -71,4 +71,4 @@ External plugins expose their signal-class directories to the loader through one
 
 ---
 
-Decision records: MDL-001 (inbound host seam), MDL-015 and MDL-016 (outbound generation) in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
+Decision records: MDL-001 (inbound host seam) and MDL-016 (outbound generation) in [`middag-php-moodle/docs/decisions`](https://github.com/middag-io/middag-php-moodle/tree/main/docs/decisions).
