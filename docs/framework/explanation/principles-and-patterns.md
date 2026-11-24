@@ -58,7 +58,7 @@ source:
 The engineering principles and design patterns the MIDDAG Framework (`middag-io/framework`) is built
 on, each tied to the classes that show it. They are decision filters for design and code review, not
 a checklist: a principle helps you name a problem, it does not mandate a structure. Every item here
-is backed by code on the framework's `main`; a pattern the framework does not use is not listed.
+is backed by code on the framework's `main`; the one common pattern it does not use, Abstract Factory, appears only to say so.
 
 This page does not repeat the architecture. The layering, the OSS boundary, the ownership map and the
 locked decisions are in [Architecture](./architecture). Where a file lives inside `src/` is in
@@ -91,8 +91,8 @@ tables, records and SQL, never domain types: mapping rows to entities happens ab
 repositories.
 
 Two interfaces that share a name show the same rule. `Bus\Retry\RetryPolicyInterface` decides whether
-a queued item is retried and how long to wait, with no host dependency. `Http\Contract\RetryPolicyInterface`
-classifies an HTTP response. Each has its own reason to change, so they stay separate.
+a queued item is retried and how long to wait, with no host dependency. `Http\Contract\RetryPolicyInterface` decides the same for an outbound HTTP attempt, from the
+attempt number, the response status and a `Retry-After` header. Each has its own reason to change, so they stay separate.
 
 Split a class when its parts change on different schedules, or when testing one part needs heavy
 mocking of the other. Keep it whole when its parts always change together and splitting would add
@@ -139,8 +139,8 @@ MySQL SQL as is.
 
 Compose when the variation is behavioural, configurable or an integration. The kernel does not expect
 to be subclassed for a themed error page: `Http\HttpKernel` resolves an `ExceptionRendererInterface`
-from its argument or the container, and falls back to `DefaultExceptionRenderer`. `Kernel\ContainerFactory`
-takes a `BootFailurePolicyInterface` in its constructor instead of exposing a method to override.
+from its argument or the container, and falls back to `DefaultExceptionRenderer`. `Kernel\ContainerFactory` takes a
+`BootFailurePolicyInterface` in its constructor.
 Most concrete classes are `final`, which keeps inheritance an explicit choice of the base class.
 
 Before writing `extends`, ask: is it really a subtype? Does the subclass keep the base contract? Is
@@ -178,14 +178,14 @@ constructor:
   to `ContainerFactory`. See [Bootstrap Lifecycle](./bootstrap-lifecycle).
 - `Bus\Retry\RetryPolicyInterface`, implemented by `Bus\Retry\MultiplierRetryPolicy`, shared by
   unrelated queue implementations that only agree on the attempt shape.
-- `Database\Contract\SqlDialectInterface`: `StandardSqlDialect` (ANSI and SQLite idioms) or
+- `Database\Contract\SqlDialectInterface`: `StandardSqlDialect` (ANSI, a near-passthrough) or
   `MysqlSqlDialect` (MySQL and MariaDB idioms).
 - `Http\Contract\ExceptionRendererInterface`, bound by an adapter to wrap the host layout.
 
 ### Decorator
 
-Use it for a cross-cutting concern over an existing contract (a prefix, a cache, logging, metrics),
-when the concern does not belong in the decorated class. A decorator implements the same contract as
+Use it to add a cross-cutting concern over an existing contract, when the concern does not belong in
+the decorated class and may apply to more than one implementation. A decorator implements the same contract as
 the object it wraps and delegates everything it does not change. Skip it for a one-off case, or when
 the behaviour is essential to the class rather than cross-cutting.
 
