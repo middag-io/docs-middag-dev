@@ -58,7 +58,7 @@ The records live in the repository, in [`docs/decisions`](https://github.com/mid
 
 | Id     | Decision                                                                            |
 | ------ | ----------------------------------------------------------------------------------- |
-| [UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) | UI contracts are a separate zero-dependency package at the bottom of the stack      |
+| [UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-zero-dependency-contracts-package.md) | UI contracts are a separate zero-dependency package at the bottom of the stack      |
 | [UI-002](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-002-page-contract-composition-model.md) | A versioned data contract, published as schema                                      |
 | [UI-003](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-003-first-party-client-stack.md) | The first-party UI client is React + TypeScript + Inertia + ReUI                    |
 

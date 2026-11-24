@@ -14,7 +14,7 @@ The contract is the entire public surface: if a value can appear on the wire, it
 
 ## Why nothing here renders
 
-[UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) records this decision.
+[UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-zero-dependency-contracts-package.md) records this decision.
 
 `middag-io/ui` sits at the bottom of the stack and defines only generic contracts. Rendering, host wiring, and HTTP transport all live downstream, never here:
 
@@ -58,7 +58,7 @@ The JSON schemas emitted under `schema/` (`page-contract.json`, `fragment.json`)
 
 ## Why the first-party client is React and ReUI
 
-[UI-003](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-003-first-party-client-stack.md) records this decision; [UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-react-typescript-inertia-stack.md) keeps the wire renderer-neutral.
+[UI-003](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-003-first-party-client-stack.md) records this decision; [UI-001](https://github.com/middag-io/middag-php-ui/blob/main/docs/decisions/UI-001-zero-dependency-contracts-package.md) keeps the wire renderer-neutral.
 
 The contracts do not choose a renderer, but MIDDAG ships one first-party client, `@middag-io/react`. It is React + TypeScript over `@inertiajs/react`, with ReUI (shadcn/ui, Radix UI and Tailwind CSS, MIT, copy-paste distribution) as the design system foundation. The [design system catalog](../../reference/ui/design-system-catalog) lists the current package and versions.
 
